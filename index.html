@@ -2,344 +2,406 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DanaKita - Portal Kas Komunitas</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>DanaKita - Portal Warga</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
   <style>
-    body { background-color: #f8fafc; font-family: ui-sans-serif, system-ui, sans-serif; }
-    .hidden { display: none !important; }
-    .loader { border: 3px solid #f3f3f3; border-top: 3px solid #2563eb; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
-    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    body { background-color: #f8fafc; font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; padding-bottom: 100px; }
+    .tab-content { display: none; }
+    .active { display: block; animation: fadeIn 0.2s; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .nav-active { border-top: 3px solid #2563eb; color: #2563eb; font-weight: 800; }
+    .nav-admin-active { border-top: 3px solid #1e293b; color: #1e293b; font-weight: 800; }
+    
+    input[type="text"], input[type="number"], input[type="month"], select, input[type="password"] { 
+      @apply w-full p-3 border border-slate-300 bg-slate-50 shadow-inner rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition text-sm; 
+    }
+    
+    .btn-solid-blue { @apply bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow-md transition active:scale-95 text-sm w-full; }
+    .btn-solid-red { @apply bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-xl shadow-md transition active:scale-95 text-sm w-full; }
+    .btn-solid-green { @apply bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl shadow-md transition active:scale-95 text-sm w-full; }
+    .btn-solid-slate { @apply bg-slate-600 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded-xl shadow-md transition active:scale-95 text-sm w-full; }
+    
+    .form-grid { @apply grid grid-cols-[100px_10px_1fr] items-center gap-y-3 text-sm; }
   </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4">
+<body>
 
-  <!-- LOADING OVERLAY -->
-  <div id="loader" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center">
-    <div class="loader"></div>
+  <!-- LOADER -->
+  <div id="loader" class="fixed inset-0 bg-white/90 backdrop-blur-sm z-[150] hidden items-center justify-center">
+    <div class="flex flex-col items-center"><div class="animate-spin rounded-full h-10 w-10 border-b-4 border-blue-600 mb-2"></div><p class="text-xs font-bold text-slate-600">Memuat...</p></div>
   </div>
 
-  <!-- MAIN CONTAINER -->
-  <div class="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md">
-    
-    <!-- HEADER -->
-    <div class="text-center mb-8">
-      <h1 class="text-3xl font-black text-blue-600 mb-2">DANAKITA</h1>
-      <p class="text-slate-500 text-sm">Portal Kas Komunitas RT/RW</p>
+  <!-- LOGIN MODAL -->
+  <div id="login-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+    <!-- Step 1: Kode Org -->
+    <div id="step-kode" class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl">
+      <h2 class="text-lg font-black text-slate-800 mb-4">🔑 Kode Organisasi</h2>
+      <input type="text" id="input-kode-org" placeholder="Contoh: DKT-RT01-XYZ" class="mb-4 uppercase text-center font-mono text-lg tracking-wider">
+      <button onclick="handleValidateCode()" class="btn-solid-blue">Lanjutkan</button>
+      <p class="text-xs text-slate-400 mt-4 text-center"><a href="/super-admin.html" class="text-blue-600">Masuk Super Admin?</a></p>
     </div>
 
-    <!-- SESSION INFO (Muncul jika sudah login) -->
-    <div id="session-info" class="hidden mb-6 p-4 bg-green-50 border border-green-200 rounded-xl">
-      <p class="text-sm text-green-800">
-        ✅ Login sebagai: <strong id="session-name">-</strong><br>
-        <span class="text-xs" id="session-role">-</span>
-      </p>
-      <button onclick="handleLogout()" class="mt-3 text-xs bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">
-        Keluar
-      </button>
-    </div>
-
-    <!-- STEP 1: INPUT KODE ORGANISASI -->
-    <div id="step-kode-org">
-      <h2 class="text-lg font-bold text-slate-800 mb-4">🔑 Masukkan Kode Organisasi</h2>
-      <input type="text" id="input-kode-org" 
-        placeholder="Contoh: RT005-CIPETE-XYZ" 
-        class="w-full p-4 border border-slate-300 rounded-xl mb-4 text-center font-mono text-lg uppercase tracking-wider"
-        onkeypress="if(event.key==='Enter') handleValidateCode()">
-      <button onclick="handleValidateCode()" 
-        class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 transition">
-        Lanjutkan
-      </button>
-      <p class="text-xs text-slate-400 mt-4 text-center">
-        Belum punya kode? Hubungi Super Admin DanaKita
-      </p>
-    </div>
-
-    <!-- STEP 2: LOGIN FORM (Muncul setelah kode valid) -->
-    <div id="step-login" class="hidden">
-      <div class="mb-6 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-        <p class="text-sm text-blue-800 font-bold" id="org-name-display">-</p>
-        <p class="text-xs text-blue-600">Kode: <span id="org-code-display" class="font-mono">-</span></p>
+    <!-- Step 2: Login Form -->
+    <div id="step-login" class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl hidden">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-lg font-black text-slate-800" id="org-title-display">Login</h2>
+        <button onclick="backToKode()" class="text-slate-400 text-xl">&times;</button>
       </div>
-
+      
       <!-- Tab Login -->
-      <div class="flex gap-2 mb-6">
-        <button onclick="switchLoginTab('admin')" id="tab-admin" 
-          class="flex-1 py-3 font-bold rounded-lg bg-blue-600 text-white transition">
-          Pengurus
-        </button>
-        <button onclick="switchLoginTab('warga')" id="tab-warga" 
-          class="flex-1 py-3 font-bold rounded-lg bg-slate-200 text-slate-600 transition">
-          Warga
-        </button>
+      <div class="flex gap-2 mb-4 bg-slate-100 p-1 rounded-xl">
+        <button onclick="switchLoginTab('admin')" id="tab-admin" class="flex-1 bg-white shadow-sm py-2 rounded-lg text-sm font-bold text-blue-600">Pengurus</button>
+        <button onclick="switchLoginTab('warga')" id="tab-warga" class="flex-1 py-2 rounded-lg text-sm font-bold text-slate-500">Warga</button>
       </div>
 
-      <!-- Form Login Admin -->
-      <div id="form-admin">
-        <input type="text" id="admin-username" placeholder="Username" 
-          class="w-full p-4 border border-slate-300 rounded-xl mb-4">
-        <input type="password" id="admin-password" placeholder="Password" 
-          class="w-full p-4 border border-slate-300 rounded-xl mb-4">
-        <button onclick="handleAdminLogin()" 
-          class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 transition">
-          Masuk sebagai Pengurus
-        </button>
+      <!-- Form Admin -->
+      <div id="form-admin" class="space-y-4">
+        <input type="text" id="auth-user" placeholder="Username">
+        <input type="password" id="auth-pass" placeholder="Password">
+        <button onclick="handleAdminLogin()" class="btn-solid-blue">Masuk Panel Admin</button>
       </div>
 
-      <!-- Form Login Warga -->
-      <div id="form-warga" class="hidden">
-        <input type="text" id="warga-no-rumah" placeholder="No. Rumah (contoh: A-12)" 
-          class="w-full p-4 border border-slate-300 rounded-xl mb-4 uppercase">
-        <input type="password" id="warga-pin" placeholder="PIN (4-6 digit)" maxlength="6" 
-          class="w-full p-4 border border-slate-300 rounded-xl mb-4">
-        <button onclick="handleWargaLogin()" 
-          class="w-full bg-green-600 text-white font-bold py-4 rounded-xl hover:bg-green-700 transition">
-          Masuk sebagai Warga
-        </button>
+      <!-- Form Warga -->
+      <div id="form-warga" class="space-y-4 hidden">
+        <input type="text" id="warga-no-rumah" placeholder="No. Rumah (A-12)">
+        <input type="password" id="warga-pin" placeholder="PIN (4-6 digit)" maxlength="6">
+        <button onclick="handleWargaLogin()" class="btn-solid-green">Masuk Portal Warga</button>
       </div>
-
-      <button onclick="backToKode()" class="w-full mt-4 text-slate-500 text-sm py-2 hover:text-slate-700">
-        ← Ganti Kode Organisasi
-      </button>
     </div>
+  </div>
 
-    <!-- DASHBOARD PLACEHOLDER (Akan diisi di Step 3) -->
-    <div id="dashboard" class="hidden">
-      <div class="text-center py-8">
-        <div class="text-6xl mb-4">🏠</div>
-        <h2 class="text-xl font-bold text-slate-800 mb-2">Selamat Datang!</h2>
-        <p class="text-slate-500 text-sm mb-6">Dashboard akan ditampilkan di sini</p>
-        <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
-           Step 3: Super Admin Panel akan ditambahkan selanjutnya
+  <!-- MAIN APP (Hidden until login) -->
+  <div id="main-app" class="hidden">
+    <header id="main-header" class="bg-white border-b sticky top-0 z-50 p-4 shadow-sm">
+      <div class="flex justify-between items-center max-w-2xl mx-auto">
+        <div><h1 class="text-xl font-black text-slate-800">DANAKITA</h1><p class="text-[10px] text-slate-500 font-bold tracking-widest" id="header-subtitle">PORTAL</p></div>
+        <button onclick="handleLogout()" class="bg-red-50 text-red-600 font-bold px-3 py-2 rounded-xl text-xs hover:bg-red-100">Keluar</button>
+      </div>
+    </header>
+
+    <main class="p-4 max-w-2xl mx-auto space-y-4">
+      
+      <!-- ===== AREA WARGA ===== -->
+      <div id="area-warga" class="hidden">
+        <div id="view-dashboard" class="tab-content active w-sec">
+          <div class="bg-gradient-to-br from-blue-600 to-indigo-700 p-6 rounded-3xl text-white shadow-xl mb-5">
+            <p class="text-blue-200 text-xs font-bold uppercase tracking-widest">Saldo Kas Aktif</p>
+            <h2 id="card-saldo" class="text-4xl font-black mt-1 mb-6">Rp 0</h2>
+            <div class="flex gap-3 text-xs">
+              <div class="flex-1 bg-white/20 backdrop-blur-sm p-3 rounded-xl"><span class="block text-[9px] text-blue-200 mb-1">TOTAL MASUK</span><span id="card-in" class="font-bold text-sm">Rp 0</span></div>
+              <div class="flex-1 bg-white/20 backdrop-blur-sm p-3 rounded-xl"><span class="block text-[9px] text-blue-200 mb-1">TOTAL KELUAR</span><span id="card-out" class="font-bold text-sm">Rp 0</span></div>
+            </div>
+          </div>
+          <div class="bg-white p-5 rounded-3xl shadow-sm border"><h3 class="font-black text-xs uppercase mb-4 text-slate-600 tracking-widest">Progress Project</h3><div id="warga-project-progress" class="space-y-4"></div></div>
+        </div>
+        <div id="view-iuran" class="tab-content w-sec">
+          <div class="bg-white p-6 rounded-3xl shadow-sm border">
+            <p class="text-center text-slate-500 text-sm mt-10">Fitur Bayar Iuran (Akan diaktifkan penuh di Step 5)</p>
+          </div>
         </div>
       </div>
-    </div>
 
+      <!-- ===== AREA ADMIN ===== -->
+      <div id="area-admin" class="hidden pb-10">
+        <div id="view-admin-verify" class="tab-content active a-sec">
+          <div class="bg-white p-6 rounded-3xl border-t-4 border-blue-500 shadow-sm">
+            <h3 class="font-black text-slate-800 mb-4">✅ Verifikasi Pembayaran</h3>
+            <div id="admin-pending-container" class="space-y-3"></div>
+            <p id="empty-pending" class="text-center text-xs text-slate-400 py-4 hidden">Tidak ada pembayaran menunggu.</p>
+          </div>
+        </div>
+        
+        <div id="view-admin-master" class="tab-content a-sec space-y-6">
+          <div class="bg-white p-6 rounded-3xl shadow-sm border">
+            <h3 class="font-black text-slate-800 mb-4 text-sm uppercase">👥 Kelola Warga</h3>
+            <div class="form-grid mb-4"><label>Nama</label><span>:</span><input type="text" id="adm-wrg-nama"><label>Blok</label><span>:</span><input type="text" id="adm-wrg-blok"><label>WA</label><span>:</span><input type="text" id="adm-wrg-wa"></div>
+            <button onclick="adminCreateWarga()" class="btn-solid-blue">+ Simpan Warga</button>
+            <div id="admin-warga-list" class="mt-6 space-y-2 max-h-60 overflow-y-auto"></div>
+          </div>
+          
+          <div class="bg-white p-6 rounded-3xl shadow-sm border">
+            <h3 class="font-black text-slate-800 mb-4 text-sm uppercase">📁 Buka Project</h3>
+            <div class="form-grid mb-4"><label>Project</label><span>:</span><input type="text" id="adm-proj-nama"><label>Nominal</label><span>:</span><input type="number" id="adm-proj-nominal"></div>
+            <button onclick="adminCreateProject()" class="btn-solid-blue">+ Terbitkan</button>
+            <div id="admin-project-list" class="mt-6 space-y-2"></div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- NAV WARGA -->
+    <nav id="nav-warga" class="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around p-2 pb-6 z-40 hidden">
+      <button onclick="switchTab('dashboard', 'warga')" class="w-nav flex-1 nav-active flex flex-col items-center p-2 text-slate-400"><span class="text-2xl mb-1">🏠</span><span class="text-[10px] font-black uppercase">Beranda</span></button>
+      <button onclick="switchTab('iuran', 'warga')" class="w-nav flex-1 flex flex-col items-center p-2 text-slate-400"><span class="text-2xl mb-1">💰</span><span class="text-[10px] font-black uppercase">Bayar</span></button>
+    </nav>
+
+    <!-- NAV ADMIN -->
+    <nav id="nav-admin" class="fixed bottom-0 left-0 right-0 bg-slate-900 border-t flex justify-around p-2 pb-6 z-40 hidden text-white">
+      <button onclick="switchTab('admin-verify', 'admin')" class="a-nav flex-1 nav-admin-active flex flex-col items-center p-2 text-slate-500"><span class="text-xl mb-1">✅</span><span class="text-[9px] font-bold text-white uppercase">Verifikasi</span></button>
+      <button onclick="switchTab('admin-master', 'admin')" class="a-nav flex-1 flex flex-col items-center p-2 text-slate-500"><span class="text-xl mb-1">👥</span><span class="text-[9px] font-bold text-white uppercase">Master</span></button>
+    </nav>
   </div>
 
-  <!-- JAVASCRIPT -->
   <script>
-    // =======================================================================
-    // KONFIGURASI SUPABASE
-    // =======================================================================
+    // KONFIGURASI
     const SUPABASE_URL = 'https://tgcpyatrllswhlysqfer.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRnY3B5YXRybGxzd2hseXNxZmVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MjI2ODMsImV4cCI6MjA5MTM5ODY4M30.BHY6R2e62YvXz-N_2n_qHossbKxPZxUX0y1lrNKketg';
-    
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    // =======================================================================
-    // AUTH SYSTEM - DANAKITA
-    // =======================================================================
-    const AUTH_STORAGE_KEY = 'danakita_session';
-    const SESSION_DURATION_MS = 24 * 60 * 60 * 1000; // 24 jam
+    
     let currentOrgId = null;
-    let currentOrgCode = null;
+    let appData = { warga: [], project: [], pembayaran: [], detail: [], pengeluaran: [], danaLain: [] };
+    let currentUser = null; // { type: 'admin'|'warga', id: '...', name: '...' }
 
-    // Init: Cek session saat halaman load
-    window.addEventListener('DOMContentLoaded', () => {
-      checkExistingSession();
-    });
-
-    function showLoader(show) {
-      document.getElementById('loader').classList.toggle('hidden', !show);
-    }
-
-    // Cek session yang tersimpan
-    function checkExistingSession() {
-      try {
-        const session = JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY));
-        if (session && session.expiresAt > Date.now()) {
-          // Session masih valid
-          showDashboard(session);
-        } else {
-          // Session tidak ada/expired
-          showKodeOrgStep();
-        }
-      } catch (e) {
-        showKodeOrgStep();
+    // INIT
+    window.onload = () => {
+      const session = JSON.parse(localStorage.getItem('danakita_session'));
+      if (session && session.expiresAt > Date.now()) {
+        currentOrgId = session.orgId;
+        currentUser = { type: session.userType, id: session.userId, name: session.displayName };
+        showApp();
+      } else {
+        document.getElementById('login-modal').classList.remove('hidden');
       }
-    }
+    };
 
-    // STEP 1: Validasi Kode Organisasi
+    // UI HELPERS
+    function showLoader(show) { document.getElementById('loader').classList.toggle('hidden', !show); }
+    function formatIDR(num) { return 'Rp ' + Number(num||0).toLocaleString('id-ID'); }
+    function generateId(prefix) { return prefix + '-' + Date.now() + '-' + Math.floor(Math.random()*100); }
+
+    // --- AUTH LOGIC ---
     async function handleValidateCode() {
       const code = document.getElementById('input-kode-org').value.trim().toUpperCase();
-      if (!code) return alert('Masukkan kode organisasi!');
-
       showLoader(true);
-      try {
-        const { data, error } = await supabase
-          .from('organizations')
-          .select('id, nama, is_active, plan_tier')
-          .eq('client_code', code)
-          .single();
-
-        if (error || !data) {
-          alert('❌ Kode organisasi tidak valid!');
-          return;
-        }
-
-        if (!data.is_active) {
-          alert('❌ Organisasi ini sedang nonaktif. Hubungi Super Admin.');
-          return;
-        }
-
-        // Kode valid, simpan dan tampilkan form login
-        currentOrgId = data.id;
-        currentOrgCode = code;
-        
-        document.getElementById('org-name-display').innerText = data.nama;
-        document.getElementById('org-code-display').innerText = code;
-        
-        document.getElementById('step-kode-org').classList.add('hidden');
-        document.getElementById('step-login').classList.remove('hidden');
-        
-      } catch (e) {
-        alert('Error: ' + e.message);
-      } finally {
-        showLoader(false);
-      }
-    }
-
-    // STEP 2A: Login Admin
-    async function handleAdminLogin() {
-      const username = document.getElementById('admin-username').value.trim();
-      const password = document.getElementById('admin-password').value;
-
-      if (!username || !password) return alert('Isi username dan password!');
-
-      showLoader(true);
-      try {
-        const { data, error } = await supabase.rpc('rpc_login_admin', {
-          p_username: username,
-          p_password: password,
-          p_org_id: currentOrgId
-        });
-
-        if (error || !data?.success) {
-          alert('❌ ' + (data?.msg || 'Login gagal'));
-          return;
-        }
-
-        // Simpan session
-        const session = {
-          userType: 'admin',
-          userId: data.data.id,
-          orgId: currentOrgId,
-          orgCode: currentOrgCode,
-          username: data.data.username,
-          displayName: data.data.nama_admin,
-          role: data.data.role,
-          mustChangePassword: data.data.must_change_password,
-          expiresAt: Date.now() + SESSION_DURATION_MS
-        };
-
-        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
-        showDashboard(session);
-
-      } catch (e) {
-        alert('Error: ' + e.message);
-      } finally {
-        showLoader(false);
-      }
-    }
-
-    // STEP 2B: Login Warga
-    async function handleWargaLogin() {
-      const noRumah = document.getElementById('warga-no-rumah').value.trim().toUpperCase();
-      const pin = document.getElementById('warga-pin').value;
-
-      if (!noRumah || !pin) return alert('Isi No. Rumah dan PIN!');
-      if (pin.length < 4) return alert('PIN minimal 4 digit!');
-
-      showLoader(true);
-      try {
-        const { data, error } = await supabase.rpc('rpc_login_warga', {
-          p_no_rumah: noRumah,
-          p_pin: pin,
-          p_org_id: currentOrgId
-        });
-
-        if (error || !data?.success) {
-          alert('❌ ' + (data?.msg || 'Login gagal'));
-          return;
-        }
-
-        // Simpan session
-        const session = {
-          userType: 'warga',
-          userId: data.data.id,
-          orgId: currentOrgId,
-          orgCode: currentOrgCode,
-          noRumah: data.data.no_rumah,
-          displayName: data.data.nama,
-          expiresAt: Date.now() + SESSION_DURATION_MS
-        };
-
-        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
-        showDashboard(session);
-
-      } catch (e) {
-        alert('Error: ' + e.message);
-      } finally {
-        showLoader(false);
-      }
-    }
-
-    // Tampilkan Dashboard
-    function showDashboard(session) {
-      document.getElementById('step-kode-org').classList.add('hidden');
-      document.getElementById('step-login').classList.add('hidden');
-      document.getElementById('dashboard').classList.remove('hidden');
-      document.getElementById('session-info').classList.remove('hidden');
+      const { data, error } = await supabase.from('organizations').select('id, nama').eq('client_code', code).single();
+      showLoader(false);
       
-      document.getElementById('session-name').innerText = session.displayName;
-      document.getElementById('session-role').innerText = 
-        session.userType === 'admin' ? `Pengurus (${session.role})` : 'Warga';
+      if (data && !error) {
+        currentOrgId = data.id;
+        document.getElementById('org-title-display').innerText = data.nama;
+        document.getElementById('step-kode').classList.add('hidden');
+        document.getElementById('step-login').classList.remove('hidden');
+      } else {
+        alert('Kode Organisasi Salah!');
+      }
     }
 
-    // Logout
+    function backToKode() {
+      document.getElementById('step-login').classList.add('hidden');
+      document.getElementById('step-kode').classList.remove('hidden');
+    }
+
+    function switchLoginTab(type) {
+      const tabAdm = document.getElementById('tab-admin');
+      const tabWrg = document.getElementById('tab-warga');
+      const formAdm = document.getElementById('form-admin');
+      const formWrg = document.getElementById('form-warga');
+
+      if(type==='admin') {
+        tabAdm.className = 'flex-1 bg-white shadow-sm py-2 rounded-lg text-sm font-bold text-blue-600';
+        tabWrg.className = 'flex-1 py-2 rounded-lg text-sm font-bold text-slate-500';
+        formAdm.classList.remove('hidden'); formWrg.classList.add('hidden');
+      } else {
+        tabWrg.className = 'flex-1 bg-white shadow-sm py-2 rounded-lg text-sm font-bold text-green-600';
+        tabAdm.className = 'flex-1 py-2 rounded-lg text-sm font-bold text-slate-500';
+        formWrg.classList.remove('hidden'); formAdm.classList.add('hidden');
+      }
+    }
+
+    async function handleAdminLogin() {
+      const u = document.getElementById('auth-user').value;
+      const p = document.getElementById('auth-pass').value;
+      showLoader(true);
+      const { data, error } = await supabase.rpc('rpc_login_admin', { p_username: u, p_password: p, p_org_id: currentOrgId });
+      showLoader(false);
+      
+      if(data && data.success) {
+        saveSession('admin', data.data.id, data.data.username, data.data.nama_admin);
+      } else {
+        alert('Login Gagal: ' + (data?.msg || 'Check credential'));
+      }
+    }
+
+    async function handleWargaLogin() {
+      const r = document.getElementById('warga-no-rumah').value;
+      const pin = document.getElementById('warga-pin').value;
+      showLoader(true);
+      const { data, error } = await supabase.rpc('rpc_login_warga', { p_no_rumah: r, p_pin: pin, p_org_id: currentOrgId });
+      showLoader(false);
+      
+      if(data && data.success) {
+        saveSession('warga', data.data.id, data.data.no_rumah, data.data.nama);
+      } else {
+        alert('Login Gagal: ' + (data?.msg || 'Check credential'));
+      }
+    }
+
+    function saveSession(type, id, userRef, name) {
+      const session = { userType: type, userId: id, userRef: userRef, displayName: name, orgId: currentOrgId, expiresAt: Date.now() + 86400000 };
+      localStorage.setItem('danakita_session', JSON.stringify(session));
+      currentUser = { type, id, name };
+      showApp();
+    }
+
     function handleLogout() {
-      localStorage.removeItem(AUTH_STORAGE_KEY);
-      currentOrgId = null;
-      currentOrgCode = null;
+      localStorage.removeItem('danakita_session');
       location.reload();
     }
 
-    // Kembali ke step kode org
-    function backToKode() {
-      document.getElementById('step-login').classList.add('hidden');
-      document.getElementById('step-kode-org').classList.remove('hidden');
-      document.getElementById('input-kode-org').value = '';
-    }
-
-    // Switch tab login
-    function switchLoginTab(type) {
-      const tabAdmin = document.getElementById('tab-admin');
-      const tabWarga = document.getElementById('tab-warga');
-      const formAdmin = document.getElementById('form-admin');
-      const formWarga = document.getElementById('form-warga');
-
-      if (type === 'admin') {
-        tabAdmin.className = 'flex-1 py-3 font-bold rounded-lg bg-blue-600 text-white transition';
-        tabWarga.className = 'flex-1 py-3 font-bold rounded-lg bg-slate-200 text-slate-600 transition';
-        formAdmin.classList.remove('hidden');
-        formWarga.classList.add('hidden');
+    function showApp() {
+      document.getElementById('login-modal').classList.add('hidden');
+      document.getElementById('main-app').classList.remove('hidden');
+      
+      if(currentUser.type === 'admin') {
+        document.getElementById('area-admin').classList.remove('hidden');
+        document.getElementById('area-warga').classList.add('hidden');
+        document.getElementById('nav-admin').classList.remove('hidden');
+        document.getElementById('nav-warga').classList.add('hidden');
+        document.getElementById('header-subtitle').innerText = "PANEL PENGURUS";
+        renderAdminData();
       } else {
-        tabWarga.className = 'flex-1 py-3 font-bold rounded-lg bg-green-600 text-white transition';
-        tabAdmin.className = 'flex-1 py-3 font-bold rounded-lg bg-slate-200 text-slate-600 transition';
-        formWarga.classList.remove('hidden');
-        formAdmin.classList.add('hidden');
+        document.getElementById('area-warga').classList.remove('hidden');
+        document.getElementById('area-admin').classList.add('hidden');
+        document.getElementById('nav-warga').classList.remove('hidden');
+        document.getElementById('nav-admin').classList.add('hidden');
+        document.getElementById('header-subtitle').innerText = "PORTAL WARGA";
+        renderWargaDashboard();
       }
     }
 
-    function showKodeOrgStep() {
-      document.getElementById('step-kode-org').classList.remove('hidden');
-      document.getElementById('step-login').classList.add('hidden');
-      document.getElementById('dashboard').classList.add('hidden');
-      document.getElementById('session-info').classList.add('hidden');
+    function switchTab(tabId, role) {
+      document.querySelectorAll(`.${role==='warga'?'w-sec':'a-sec'}`).forEach(c => c.classList.remove('active'));
+      document.getElementById('view-'+tabId).classList.add('active');
+      // Update nav styles logic here if needed
     }
+
+    // --- DATA LOGIC (Multi-Tenant) ---
+    async function initAppData() {
+      showLoader(true);
+      // Fetch data HANYA untuk organization_id ini
+      const [w, p, pay, det, out, inc] = await Promise.all([
+        supabase.from('warga').select('*').eq('organization_id', currentOrgId).neq('status', 'INACTIVE'),
+        supabase.from('project').select('*').eq('organization_id', currentOrgId).eq('status', 'ACTIVE'),
+        supabase.from('pembayaran').select('*').eq('organization_id', currentOrgId),
+        supabase.from('pembayaran_detail').select('*').eq('organization_id', currentOrgId),
+        supabase.from('pengeluaran').select('*').eq('organization_id', currentOrgId),
+        supabase.from('dana_lain').select('*').eq('organization_id', currentOrgId)
+      ]);
+      
+      appData = { warga: w.data||[], project: p.data||[], pembayaran: pay.data||[], detail: det.data||[], pengeluaran: out.data||[], danaLain: inc.data||[] };
+      showLoader(false);
+      return true;
+    }
+
+    async function adminCreateWarga() {
+      const nama = document.getElementById('adm-wrg-nama').value;
+      const blok = document.getElementById('adm-wrg-blok').value;
+      if(!nama) return alert("Isi nama!");
+      
+      showLoader(true);
+      // Hash PIN default (1234)
+      const { data: hash } = await supabase.rpc('hash_password', { raw_pass: '1234' });
+      
+      const { error } = await supabase.from('warga').insert([{
+        id: generateId('WRG'),
+        organization_id: currentOrgId, // PENTING: Isolasi Data
+        nama: nama,
+        no_rumah: blok,
+        pin_hash: hash,
+        status: 'ACTIVE'
+      }]);
+      
+      if(!error) {
+        alert("Warga berhasil ditambahkan! PIN Default: 1234");
+        await initAppData();
+        renderAdminData();
+      } else {
+        alert("Error: " + error.message);
+      }
+      showLoader(false);
+    }
+
+    async function adminCreateProject() {
+      const nama = document.getElementById('adm-proj-nama').value;
+      const nom = document.getElementById('adm-proj-nominal').value;
+      if(!nama) return alert("Isi nama project!");
+
+      showLoader(true);
+      const { error } = await supabase.from('project').insert([{
+        id: generateId('PRJ'),
+        organization_id: currentOrgId,
+        nama_project: nama,
+        nominal_default: nom,
+        tipe: 'bulanan',
+        status: 'ACTIVE'
+      }]);
+      
+      if(!error) {
+        alert("Project ditambahkan");
+        await initAppData();
+        renderAdminData();
+      }
+      showLoader(false);
+    }
+
+    // --- RENDER FUNCTIONS ---
+    async function renderAdminData() {
+      await initAppData();
+      
+      // Render Warga List
+      let wHtml = '';
+      appData.warga.forEach(w => {
+        wHtml += `<div class="bg-slate-50 p-3 rounded-xl border flex justify-between"><span class="text-xs font-bold">${w.nama} (${w.no_rumah})</span><span class="text-[10px] text-green-600 font-bold">PIN: 1234</span></div>`;
+      });
+      document.getElementById('admin-warga-list').innerHTML = wHtml || '<p class="text-xs text-slate-400">Belum ada warga.</p>';
+
+      // Render Project List
+      let pHml = '';
+      appData.project.forEach(p => {
+        pHml += `<div class="bg-blue-50 p-3 rounded-xl border border-blue-100 flex justify-between"><span class="text-xs font-bold text-blue-800">${p.nama_project}</span><span class="text-xs font-bold text-blue-600">${formatIDR(p.nominal_default)}</span></div>`;
+      });
+      document.getElementById('admin-project-list').innerHTML = pHml || '<p class="text-xs text-slate-400">Belum ada project.</p>';
+
+      // Render Pending Payments
+      let pending = appData.pembayaran.filter(p => p.status === 'MENUNGGU VERIFIKASI');
+      let payHtml = '';
+      pending.forEach(p => {
+        const w = appData.warga.find(wr => wr.id === p.warga_id);
+        payHtml += `<div class="bg-white p-4 rounded-xl border shadow-sm">
+          <div class="flex justify-between mb-2"><span class="font-bold text-sm">${w?.nama || 'Unknown'}</span><span class="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">Pending</span></div>
+          <p class="text-lg font-black text-blue-600">${formatIDR(p.total_nominal)}</p>
+          <div class="flex gap-2 mt-3">
+            <button onclick="verifyPayment('${p.id}', 'DISETUJUI')" class="flex-1 bg-green-100 text-green-700 py-2 rounded-lg text-xs font-bold">Setujui</button>
+            <button onclick="verifyPayment('${p.id}', 'DITOLAK')" class="flex-1 bg-red-100 text-red-700 py-2 rounded-lg text-xs font-bold">Tolak</button>
+          </div>
+        </div>`;
+      });
+      document.getElementById('admin-pending-container').innerHTML = payHtml;
+      document.getElementById('empty-pending').classList.toggle('hidden', pending.length > 0);
+    }
+
+    async function renderWargaDashboard() {
+      await initAppData();
+      let totIn = appData.pembayaran.filter(p=>p.status==='DISETUJUI').reduce((s,p)=>s+Number(p.total_nominal), 0);
+      let totOut = appData.pengeluaran.reduce((s,p)=>s+Number(p.nominal), 0);
+      
+      document.getElementById('card-saldo').innerText = formatIDR(totIn - totOut);
+      document.getElementById('card-in').innerText = formatIDR(totIn);
+      document.getElementById('card-out').innerText = formatIDR(totOut);
+    }
+
+    async function verifyPayment(payId, status) {
+      showLoader(true);
+      await supabase.from('pembayaran').update({ status: status, verified_by: currentUser.name }).eq('id', payId);
+      await initAppData();
+      renderAdminData();
+      showLoader(false);
+    }
+
   </script>
 </body>
 </html>
