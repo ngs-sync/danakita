@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Super Admin - DanaKita</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <style>
+    body { background-color: #f1f5f9; font-family: ui-sans-serif, system-ui, sans-serif; }
+    .hidden { display: none !important; }
+    .loader { border: 3px solid #f3f3f3; border-top: 3px solid #1e293b; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body class="min-h-screen">
+
+  <!-- LOADING OVERLAY -->
+  <div id="loader" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center">
+    <div class="bg-white p-6 rounded-xl flex flex-col items-center gap-3">
+      <div class="loader"></div>
+      <p class="text-sm font-bold text-slate-700">Memproses...</p>
+    </div>
+  </div>
+
+  <!-- LOGIN SUPER ADMIN -->
+  <div id="login-section" class="min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
+      <div class="text-center mb-8">
+        <h1 class="text-2xl font-black text-slate-800 mb-2">🔐 Super Admin</h1>
+        <p class="text-slate-500 text-sm">DanaKita Management Panel</p>
+      </div>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-bold text-slate-700 mb-2">Email</label>
+          <input type="email" id="admin-email" placeholder="anda@danakita.app" 
+            class="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+        </div>
+        <div>
+          <label class="block text-sm font-bold text-slate-700 mb-2">Password</label>
+          <input type="password" id="admin-password" placeholder="••••••••" 
+            class="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+        </div>
+        <button onclick="handleSuperAdminLogin()" 
+          class="w-full bg-slate-800 text-white font-bold py-3 rounded-xl hover:bg-slate-900 transition">
+          Masuk
+        </button>
+        <p class="text-xs text-slate-400 text-center">
+          <a href="/" class="text-blue-600 hover:underline">← Kembali ke App Utama</a>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD SUPER ADMIN -->
+  <div id="dashboard-section" class="hidden">
+    <!-- Header -->
+    <header class="bg-white border-b sticky top-0 z-40">
+      <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+        <div>
+          <h1 class="text-xl font-black text-slate-800">🎛️ Super Admin Panel</h1>
+          <p class="text-xs text-slate-500">DanaKita Management System</p>
+        </div>
+        <div class="flex gap-3">
+          <button onclick="showSection('clients')" id="nav-clients" class="px-4 py-2 bg-blue-600 text-white rounded-lg font-bold text-sm hover:bg-blue-700">
+            Klien
+          </button>
+          <button onclick="showSection('audit')" id="nav-audit" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg font-bold text-sm hover:bg-slate-300">
+            Audit Log
+          </button>
+          <button onclick="handleLogout()" class="px-4 py-2 bg-red-500 text-white rounded-lg font-bold text-sm hover:bg-red-600">
+            Keluar
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8">
+      
+      <!-- SECTION: MANAGE CLIENTS -->
+      <div id="section-clients">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-2xl font-bold text-slate-800">Kelola Klien</h2>
+          <button onclick="showRegisterModal()" class="bg-green-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-green-700 transition flex items-center gap-2">
+            <span>+</span> Registrasi Klien Baru
+          </button>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+            <p class="text-xs text-slate-500 font-bold uppercase">Total Klien</p>
+            <p class="text-3xl font-black text-blue-600" id="stat-total">0</p>
+          </div>
+          <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+            <p class="text-xs text-slate-500 font-bold uppercase">Aktif</p>
+            <p class="text-3xl font-black text-green-600" id="stat-active">0</p>
+          </div>
+          <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+            <p class="text-xs text-slate-500 font-bold uppercase">Nonaktif</p>
+            <p class="text-3xl font-black text-red-600" id="stat-inactive">0</p>
+          </div>
+          <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+            <p class="text-xs text-slate-500 font-bold uppercase">Plan Pro</p>
+            <p class="text-3xl font-black text-purple-600" id="stat-pro">0</p>
+          </div>
+        </div>
+
+        <!-- Clients Table -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-slate-50 border-b border-slate-200">
+                <tr>
+                  <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase">Kode</th>
+                  <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase">Nama Organisasi</th>
+                  <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase">Plan</th>
+                  <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase">Status</th>
+                  <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase">Dibuat</th>
+                  <th class="px-6 py-4 text-right text-xs font-bold text-slate-600 uppercase">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="clients-table-body" class="divide-y divide-slate-200">
+                <!-- Dynamic content -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION: AUDIT LOG -->
+      <div id="section-audit" class="hidden">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-2xl font-bold text-slate-800">Audit Log</h2>
+          <button onclick="exportAuditLog()" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700 transition">
+            Export CSV
+          </button>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <div class="flex gap-4 mb-6">
+            <select id="audit-org-filter" onchange="loadAuditLogs()" class="flex-1 p-3 border border-slate-300 rounded-xl">
+              <option value="">Semua Organisasi</option>
+            </select>
+            <select id="audit-action-filter" onchange="loadAuditLogs()" class="flex-1 p-3 border border-slate-300 rounded-xl">
+              <option value="">Semua Aksi</option>
+              <option value="LOGIN">Login</option>
+              <option value="CREATE">Create</option>
+              <option value="UPDATE">Update</option>
+              <option value="DELETE">Delete</option>
+            </select>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-slate-50 border-b border-slate-200">
+                <tr>
+                  <th class="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase">Waktu</th>
+                  <th class="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase">Org</th>
+                  <th class="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase">Aktor</th>
+                  <th class="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase">Aksi</th>
+                  <th class="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase">Detail</th>
+                </tr>
+              </thead>
+              <tbody id="audit-table-body" class="divide-y divide-slate-200">
+                <!-- Dynamic content -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- MODAL: REGISTER NEW CLIENT -->
+  <div id="modal-register" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div class="p-6 border-b border-slate-200 flex justify-between items-center">
+        <h3 class="text-xl font-bold text-slate-800">Registrasi Klien Baru</h3>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+      </div>
+      
+      <div class="p-6 space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div class="col-span-2">
+            <label class="block text-sm font-bold text-slate-700 mb-2">Nama Organisasi <span class="text-red-500">*</span></label>
+            <input type="text" id="reg-nama" placeholder="Contoh: RT 005 Cipete Indah" 
+              class="w-full p-3 border border-slate-300 rounded-xl">
+          </div>
+          
+          <div class="col-span-2">
+            <label class="block text-sm font-bold text-slate-700 mb-2">Alamat</label>
+            <textarea id="reg-alamat" rows="2" placeholder="Alamat lengkap..." 
+              class="w-full p-3 border border-slate-300 rounded-xl"></textarea>
+          </div>
+
+          <div>
+            <label class="block text-sm font-bold text-slate-700 mb-2">Kontak Nama</label>
+            <input type="text" id="reg-kontak-nama" placeholder="Nama pengurus" 
+              class="w-full p-3 border border-slate-300 rounded-xl">
+          </div>
+
+          <div>
+            <label class="block text-sm font-bold text-slate-700 mb-2">Plan Tier</label>
+            <select id="reg-plan" class="w-full p-3 border border-slate-300 rounded-xl">
+              <option value="free">Free (≤50 warga)</option>
+              <option value="pro">Pro (Unlimited)</option>
+              <option value="enterprise">Enterprise</option>
+            </select>
+          </div>
+
+          <div class="col-span-2 bg-blue-50 p-4 rounded-xl border border-blue-200">
+            <h4 class="font-bold text-blue-800 mb-3">📋 Info Admin Pertama</h4>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-blue-700 mb-1">Username Admin</label>
+                <input type="text" id="reg-admin-username" placeholder="rt005admin" 
+                  class="w-full p-2 border border-blue-300 rounded-lg">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-blue-700 mb-1">Password Default</label>
+                <input type="text" id="reg-admin-password" placeholder="Rt005@2026" 
+                  class="w-full p-2 border border-blue-300 rounded-lg">
+              </div>
+            </div>
+            <p class="text-xs text-blue-600 mt-2">⚠️ Admin wajib ganti password saat login pertama</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-6 border-t border-slate-200 flex gap-3">
+        <button onclick="closeModal()" class="flex-1 px-6 py-3 border border-slate-300 rounded-xl font-bold text-slate-700 hover:bg-slate-50">
+          Batal
+        </button>
+        <button onclick="handleRegisterClient()" class="flex-1 px-6 py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700">
+          Registrasi
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: RESET PASSWORD -->
+  <div id="modal-reset" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+      <h3 class="text-xl font-bold text-slate-800 mb-4">Reset Password/PIN</h3>
+      <p id="reset-info" class="text-sm text-slate-600 mb-4"></p>
+      <input type="text" id="reset-new-value" placeholder="Password/PIN baru" 
+        class="w-full p-3 border border-slate-300 rounded-xl mb-4">
+      <div class="flex gap-3">
+        <button onclick="closeModal()" class="flex-1 px-4 py-2 border border-slate-300 rounded-lg font-bold">Batal</button>
+        <button onclick="confirmReset()" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-bold">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: SHOW CREDENTIALS -->
+  <div id="modal-credentials" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+      <div class="text-center mb-6">
+        <div class="text-5xl mb-3">✅</div>
+        <h3 class="text-xl font-bold text-slate-800">Klien Berhasil Didaftarkan!</h3>
+      </div>
+      
+      <div class="space-y-4 mb-6">
+        <div class="bg-slate-50 p-4 rounded-xl">
+          <p class="text-xs text-slate-500 font-bold mb-1">Kode Organisasi</p>
+          <p id="cred-code" class="text-lg font-mono font-bold text-blue-600 select-all"></p>
+        </div>
+        
+        <div class="bg-green-50 p-4 rounded-xl border border-green-200">
+          <p class="text-xs text-green-700 font-bold mb-2">📱 Credential Admin</p>
+          <div class="space-y-2 text-sm">
+            <p><span class="font-bold">Username:</span> <span id="cred-username" class="font-mono select-all"></span></p>
+            <p><span class="font-bold">Password:</span> <span id="cred-password" class="font-mono select-all"></span></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex gap-3">
+        <button onclick="copyCredentials()" class="flex-1 px-4 py-2 bg-slate-200 text-slate-700 rounded-lg font-bold hover:bg-slate-300">
+          📋 Copy Semua
+        </button>
+        <button onclick="closeModal()" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-bold">
+          Selesai
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =======================================================================
+    // KONFIGURASI SUPABASE
+    // =======================================================================
+    const SUPABASE_URL = 'https://tgcpyatrllswhlysqfer.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRnY3B5YXRybGxzd2hseXNxZmVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MjI2ODMsImV4cCI6MjA5MTM5ODY4M30.BHY6R2e62YvXz-N_2n_qHossbKxPZxUX0y1lrNKketg';
+    
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    let currentOrgs = [];
+    let resetTarget = null;
+
+    // =======================================================================
+    // AUTH SUPER ADMIN
+    // =======================================================================
+    
+    // ⚠️ GANTI DENGAN DATA ANDA YANG SEBENARNYA
+    const SUPER_ADMIN_EMAIL = 'arz.fom@gmail.com';
+    const SUPER_ADMIN_PASSWORD = 'meebee30';
+
+    async function handleSuperAdminLogin() {
+      const email = document.getElementById('admin-email').value;
+      const password = document.getElementById('admin-password').value;
+
+      if (email !== SUPER_ADMIN_EMAIL || password !== SUPER_ADMIN_PASSWORD) {
+        alert('❌ Email atau password salah!');
+        return;
+      }
+
+      // Simpan session super admin
+      sessionStorage.setItem('super_admin', 'true');
+      showDashboard();
+    }
+
+    function handleLogout() {
+      sessionStorage.removeItem('super_admin');
+      location.reload();
+    }
+
+    // Cek session saat load
+    window.addEventListener('DOMContentLoaded', () => {
+      if (sessionStorage.getItem('super_admin') === 'true') {
+        showDashboard();
+      }
+    });
+
+    // =======================================================================
+    // DASHBOARD FUNCTIONS
+    // =======================================================================
+
+    function showDashboard() {
+      document.getElementById('login-section').classList.add('hidden');
+      document.getElementById('dashboard-section').classList.remove('hidden');
+      loadClients();
+    }
+
+    function showSection(section) {
+      document.getElementById('section-clients').classList.add('hidden');
+      document.getElementById('section-audit').classList.add('hidden');
+      document.getElementById('nav-clients').classList.remove('bg-blue-600', 'text-white');
+      document.getElementById('nav-clients').classList.add('bg-slate-200', 'text-slate-700');
+      document.getElementById('nav-audit').classList.remove('bg-blue-600', 'text-white');
+      document.getElementById('nav-audit').classList.add('bg-slate-200', 'text-slate-700');
+
+      if (section === 'clients') {
+        document.getElementById('section-clients').classList.remove('hidden');
+        document.getElementById('nav-clients').classList.remove('bg-slate-200', 'text-slate-700');
+        document.getElementById('nav-clients').classList.add('bg-blue-600', 'text-white');
+        loadClients();
+      } else if (section === 'audit') {
+        document.getElementById('section-audit').classList.remove('hidden');
+        document.getElementById('nav-audit').classList.remove('bg-slate-200', 'text-slate-700');
+        document.getElementById('nav-audit').classList.add('bg-blue-600', 'text-white');
+        loadAuditLogs();
+      }
+    }
+
+    // =======================================================================
+    // CLIENT MANAGEMENT
+    // =======================================================================
+
+    async function loadClients() {
+      showLoader(true);
+      try {
+        const { data, error } = await supabase
+          .from('organizations')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        currentOrgs = data || [];
+        renderClientsTable();
+        updateStats();
+      } catch (e) {
+        alert('Error: ' + e.message);
+      } finally {
+        showLoader(false);
+      }
+    }
+
+    function renderClientsTable() {
+      const tbody = document.getElementById('clients-table-body');
+      tbody.innerHTML = '';
+
+      currentOrgs.forEach(org => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50';
+        tr.innerHTML = `
+          <td class="px-6 py-4 font-mono text-sm font-bold text-blue-600">${org.client_code}</td>
+          <td class="px-6 py-4">
+            <p class="font-bold text-slate-800">${org.nama}</p>
+            <p class="text-xs text-slate-500">${org.alamat || '-'}</p>
+          </td>
+          <td class="px-6 py-4">
+            <span class="px-3 py-1 rounded-full text-xs font-bold ${getPlanBadge(org.plan_tier)}">
+              ${org.plan_tier.toUpperCase()}
+            </span>
+          </td>
+          <td class="px-6 py-4">
+            <span class="px-3 py-1 rounded-full text-xs font-bold ${org.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">
+              ${org.is_active ? 'AKTIF' : 'NONAKTIF'}
+            </span>
+          </td>
+          <td class="px-6 py-4 text-sm text-slate-600">${new Date(org.created_at).toLocaleDateString('id-ID')}</td>
+          <td class="px-6 py-4 text-right space-x-2">
+            <button onclick="toggleOrgStatus('${org.id}', ${!org.is_active})" class="text-xs px-3 py-1 rounded-lg font-bold ${org.is_active ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}">
+              ${org.is_active ? 'Suspend' : 'Activate'}
+            </button>
+            <button onclick="showResetModal('${org.id}', 'admin')" class="text-xs px-3 py-1 bg-blue-100 text-blue-700 rounded-lg font-bold">
+              Reset Pass
+            </button>
+            <button onclick="exportOrgData('${org.id}')" class="text-xs px-3 py-1 bg-purple-100 text-purple-700 rounded-lg font-bold">
+              Export
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function updateStats() {
+      document.getElementById('stat-total').innerText = currentOrgs.length;
+      document.getElementById('stat-active').innerText = currentOrgs.filter(o => o.is_active).length;
+      document.getElementById('stat-inactive').innerText = currentOrgs.filter(o => !o.is_active).length;
+      document.getElementById('stat-pro').innerText = currentOrgs.filter(o => o.plan_tier === 'pro').length;
+    }
+
+    function getPlanBadge(plan) {
+      const badges = {
+        free: 'bg-slate-100 text-slate-700',
+        pro: 'bg-purple-100 text-purple-700',
+        enterprise: 'bg-gold-100 text-yellow-700'
+      };
+      return badges[plan] || badges.free;
+    }
+
+    // =======================================================================
+    // REGISTER NEW CLIENT
+    // =======================================================================
+
+    function showRegisterModal() {
+      // Generate default values
+      const defaultUsername = 'admin' + Math.floor(Math.random() * 1000);
+      const defaultPassword = 'Pass' + Math.floor(Math.random() * 10000) + '!';
+      
+      document.getElementById('reg-admin-username').value = defaultUsername;
+      document.getElementById('reg-admin-password').value = defaultPassword;
+      
+      document.getElementById('modal-register').classList.remove('hidden');
+    }
+
+    async function handleRegisterClient() {
+      const nama = document.getElementById('reg-nama').value.trim();
+      const alamat = document.getElementById('reg-alamat').value.trim();
+      const kontakNama = document.getElementById('reg-kontak-nama').value.trim();
+      const plan = document.getElementById('reg-plan').value;
+      const adminUsername = document.getElementById('reg-admin-username').value.trim();
+      const adminPassword = document.getElementById('reg-admin-password').value;
+
+      if (!nama || !adminUsername || !adminPassword) {
+        alert('Nama organisasi, username, dan password wajib diisi!');
+        return;
+      }
+
+      // Generate client code
+      const cleanName = nama.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 10);
+      const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const clientCode = `DKT-${cleanName}-${randomCode}`;
+
+      showLoader(true);
+      try {
+        // 1. Create organization
+        const { data: orgData, error: orgError } = await supabase
+          .from('organizations')
+          .insert([{
+            client_code: clientCode,
+            nama: nama,
+            alamat: alamat,
+            kontak_nama: kontakNama,
+            plan_tier: plan,
+            is_active: true
+          }])
+          .select()
+          .single();
+
+        if (orgError) throw orgError;
+
+        // 2. Hash password admin
+        const { data: hashData, error: hashError } = await supabase.rpc('hash_password', {
+          raw_pass: adminPassword
+        });
+
+        if (hashError) throw hashError;
+
+        // 3. Create admin record
+        const { error: adminError } = await supabase
+          .from('admin')
+          .insert([{
+            organization_id: orgData.id,
+            username: adminUsername,
+            password_hash: hashData,
+            nama_admin: kontakNama || 'Admin',
+            role: 'admin',
+            must_change_password: true,
+            is_active: true
+          }]);
+
+        if (adminError) throw adminError;
+
+        // 4. Show credentials
+        document.getElementById('cred-code').innerText = clientCode;
+        document.getElementById('cred-username').innerText = adminUsername;
+        document.getElementById('cred-password').innerText = adminPassword;
+        
+        closeModal();
+        document.getElementById('modal-credentials').classList.remove('hidden');
+        
+        // Reload clients
+        await loadClients();
+
+      } catch (e) {
+        alert('Error: ' + e.message);
+      } finally {
+        showLoader(false);
+      }
+    }
+
+    function copyCredentials() {
+      const code = document.getElementById('cred-code').innerText;
+      const user = document.getElementById('cred-username').innerText;
+      const pass = document.getElementById('cred-password').innerText;
+      
+      const text = `Kode Organisasi: ${code}\nUsername: ${user}\nPassword: ${pass}`;
+      navigator.clipboard.writeText(text).then(() => {
+        alert('✅ Credential berhasil dicopy!');
+      });
+    }
+
+    // =======================================================================
+    // ORG MANAGEMENT ACTIONS
+    // =======================================================================
+
+    async function toggleOrgStatus(orgId, newStatus) {
+      if (!confirm(`Yakin ingin ${newStatus ? 'aktifkan' : 'suspend'} organisasi ini?`)) return;
+
+      showLoader(true);
+      try {
+        const { error } = await supabase
+          .from('organizations')
+          .update({ is_active: newStatus })
+          .eq('id', orgId);
+
+        if (error) throw error;
+        await loadClients();
+      } catch (e) {
+        alert('Error: ' + e.message);
+      } finally {
+        showLoader(false);
+      }
+    }
+
+    function showResetModal(orgId, type) {
+      resetTarget = { orgId, type };
+      document.getElementById('reset-info').innerText = `Reset password untuk organisasi ${orgId}`;
+      document.getElementById('modal-reset').classList.remove('hidden');
+    }
+
+    async function confirmReset() {
+      const newValue = document.getElementById('reset-new-value').value;
+      if (!newValue) return alert('Password/PIN baru wajib diisi!');
+
+      showLoader(true);
+      try {
+        const { data: hashData } = await supabase.rpc('hash_password', { raw_pass: newValue });
+        
+        if (resetTarget.type === 'admin') {
+          await supabase.from('admin').update({ 
+            password_hash: hashData,
+            must_change_password: true
+          }).eq('organization_id', resetTarget.orgId);
+        }
+
+        alert('✅ Password berhasil direset!');
+        closeModal();
+      } catch (e) {
+        alert('Error: ' + e.message);
+      } finally {
+        showLoader(false);
+      }
+    }
+
+    // =======================================================================
+    // AUDIT LOG
+    // =======================================================================
+
+    async function loadAuditLogs() {
+      showLoader(true);
+      try {
+        let query = supabase.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(100);
+        
+        const orgFilter = document.getElementById('audit-org-filter').value;
+        const actionFilter = document.getElementById('audit-action-filter').value;
+
+        if (orgFilter) query = query.eq('organization_id', orgFilter);
+        if (actionFilter) query = query.ilike('action', `%${actionFilter}%`);
+
+        const { data, error } = await query;
+        if (error) throw error;
+
+        renderAuditTable(data);
+      } catch (e) {
+        alert('Error: ' + e.message);
+      } finally {
+        showLoader(false);
+      }
+    }
+
+    function renderAuditTable(data) {
+      const tbody = document.getElementById('audit-table-body');
+      tbody.innerHTML = '';
+
+      data.forEach(log => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50';
+        tr.innerHTML = `
+          <td class="px-4 py-3 text-sm text-slate-600">${new Date(log.created_at).toLocaleString('id-ID')}</td>
+          <td class="px-4 py-3 text-sm font-mono">${log.organization_id?.substring(0, 8) || '-'}</td>
+          <td class="px-4 py-3 text-sm">
+            <p class="font-bold">${log.actor_name || log.actor_id}</p>
+            <p class="text-xs text-slate-500">${log.actor_type}</p>
+          </td>
+          <td class="px-4 py-3"><span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-bold">${log.action}</span></td>
+          <td class="px-4 py-3 text-xs text-slate-600 max-w-xs truncate">${log.table_name} - ${log.record_id}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function exportAuditLog() {
+      alert('Fitur export CSV akan ditambahkan');
+    }
+
+    async function exportOrgData(orgId) {
+      showLoader(true);
+      try {
+        // Export warga
+        const { data: warga } = await supabase.from('warga').select('*').eq('organization_id', orgId);
+        
+        // Convert to CSV
+        const csv = convertToCSV(warga);
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `warga_${orgId}.csv`;
+        a.click();
+        
+      } catch (e) {
+        alert('Error: ' + e.message);
+      } finally {
+        showLoader(false);
+      }
+    }
+
+    function convertToCSV(data) {
+      if (!data || data.length === 0) return '';
+      const headers = Object.keys(data[0]);
+      const rows = data.map(row => headers.map(h => `"${row[h] || ''}"`).join(','));
+      return [headers.join(','), ...rows].join('\n');
+    }
+
+    // =======================================================================
+    // UTILITIES
+    // =======================================================================
+
+    function showLoader(show) {
+      document.getElementById('loader').classList.toggle('hidden', !show);
+    }
+
+    function closeModal() {
+      document.querySelectorAll('[id^="modal-"]').forEach(m => m.classList.add('hidden'));
+      document.getElementById('reset-new-value').value = '';
+    }
+  </script>
+</body>
+</html>
