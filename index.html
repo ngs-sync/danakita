@@ -7,6 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  
   <style>
     body { background-color: #f8fafc; font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; padding-bottom: 100px; }
     .tab-content { display: none; }
@@ -14,802 +15,648 @@
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     .nav-active { border-top: 3px solid #2563eb; color: #2563eb; font-weight: 800; }
     .nav-admin-active { border-top: 3px solid #1e293b; color: #1e293b; font-weight: 800; }
-    input[type="text"], input[type="number"], input[type="month"], select, input[type="password"], input[type="email"] {
-      width: 100%; padding: 12px; border: 1px solid #cbd5e1; background-color: #f8fafc;
-      box-shadow: inset 0 2px 4px rgba(0,0,0,0.06); border-radius: 12px;
-      outline: none; transition: all 0.2s; font-size: 14px;
+    
+    /* UPDATE UI FORM: Kotak isian jadi abu-abu muda dan mencekung, kalau diklik jadi putih menyala */
+    input[type="text"], input[type="number"], input[type="month"], select, input[type="password"] { 
+      @apply w-full p-3 border border-slate-300 bg-slate-50 shadow-inner rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition text-sm; 
     }
-    input:focus, select:focus { box-shadow: 0 0 0 2px #3b82f6; background: white; }
-    .btn-solid-blue   { background:#2563eb; color:white; font-weight:700; padding:12px 16px; border-radius:12px; box-shadow:0 4px 6px rgba(0,0,0,0.1); transition:all 0.2s; font-size:14px; width:100%; cursor:pointer; border:none; display:block; }
-    .btn-solid-red    { background:#dc2626; color:white; font-weight:700; padding:12px 16px; border-radius:12px; box-shadow:0 4px 6px rgba(0,0,0,0.1); transition:all 0.2s; font-size:14px; width:100%; cursor:pointer; border:none; display:block; }
-    .btn-solid-green  { background:#16a34a; color:white; font-weight:700; padding:12px 16px; border-radius:12px; box-shadow:0 4px 6px rgba(0,0,0,0.1); transition:all 0.2s; font-size:14px; width:100%; cursor:pointer; border:none; display:block; }
-    .btn-solid-slate  { background:#475569; color:white; font-weight:700; padding:8px 16px; border-radius:12px; box-shadow:0 4px 6px rgba(0,0,0,0.1); transition:all 0.2s; font-size:14px; width:auto; cursor:pointer; border:none; }
-    .form-grid { display:grid; grid-template-columns:100px 10px 1fr; align-items:center; gap:12px; font-size:14px; }
-    input[type="checkbox"] { width:20px; height:20px; accent-color:#2563eb; cursor:pointer; border-radius:4px; }
-    input[type="file"] { width:100%; padding:8px; border:1px solid #cbd5e1; background:#f8fafc; border-radius:12px; font-size:14px; }
+    
+    .btn-solid-blue { @apply bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow-md transition active:scale-95 text-sm w-full; }
+    .btn-solid-red { @apply bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-xl shadow-md transition active:scale-95 text-sm w-full; }
+    .btn-solid-green { @apply bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl shadow-md transition active:scale-95 text-sm w-full; }
+    .btn-solid-slate { @apply bg-slate-600 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded-xl shadow-md transition active:scale-95 text-sm w-full; }
+    
+    .form-grid { @apply grid grid-cols-[100px_10px_1fr] items-center gap-y-3 text-sm; }
+    input[type="checkbox"] { @apply w-5 h-5 text-blue-600 rounded border-slate-300 bg-slate-50 focus:ring-blue-500 cursor-pointer accent-blue-600; }
   </style>
 </head>
 <body>
 
-  <div id="sync-indicator" class="fixed top-2 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg z-[200] hidden">🔄 Menyinkronkan...</div>
-  <div id="loader" class="fixed inset-0 bg-white/90 backdrop-blur-sm z-[150] hidden items-center justify-center" style="display:none;">
-    <div style="display:flex;flex-direction:column;align-items:center;">
-      <div style="width:40px;height:40px;border:4px solid #e2e8f0;border-top-color:#2563eb;border-radius:50%;animation:spin 0.8s linear infinite;margin-bottom:8px;"></div>
-      <p style="font-size:11px;font-weight:700;color:#64748b;letter-spacing:0.1em;">MEMPROSES...</p>
-    </div>
+  <div id="sync-indicator" class="fixed top-2 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg z-[200] hidden">🔄 Menyinkronkan Database...</div>
+  <div id="loader" class="fixed inset-0 bg-white/90 backdrop-blur-sm z-[150] hidden items-center justify-center">
+    <div class="flex flex-col items-center"><div class="animate-spin rounded-full h-10 w-10 border-b-4 border-blue-600 mb-2"></div><p class="text-xs font-bold text-slate-600 tracking-widest uppercase">Memproses...</p></div>
   </div>
-  <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
 
-  <!-- MODAL LOGIN -->
-  <div id="login-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] items-center justify-center p-4" style="display:none;">
+  <div id="login-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] hidden items-center justify-center p-4">
     <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
-        <h2 style="font-size:18px;font-weight:900;color:#1e293b;">Login Pengurus</h2>
-        <button onclick="toggleModal(false)" style="font-size:24px;font-weight:700;color:#94a3b8;background:none;border:none;cursor:pointer;">&times;</button>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:16px;">
-        <input type="email" id="auth-email" placeholder="Email pengurus">
-        <input type="password" id="auth-pass" placeholder="Password">
-        <p id="login-error" style="color:#dc2626;font-size:12px;font-weight:700;display:none;"></p>
-        <button onclick="handleLogin()" class="btn-solid-blue">Masuk Panel Admin</button>
+      <div class="flex justify-between items-center mb-6"><h2 class="text-lg font-black text-slate-800">Login Pengurus</h2><button onclick="toggleModal(false)" class="text-slate-400 font-bold text-2xl hover:text-red-500">&times;</button></div>
+      <div class="space-y-4"><input type="text" id="auth-user" placeholder="Username"><input type="password" id="auth-pass" placeholder="Password"><button onclick="handleLogin()" class="btn-solid-blue">Masuk Panel Admin</button></div>
+    </div>
+  </div>
+
+  <div id="struk-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[120] hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div class="bg-blue-600 p-4 text-center relative"><h2 class="text-white font-black">Bukti Pembayaran</h2><button onclick="closeStrukModal()" class="absolute right-4 top-4 text-white font-bold text-xl hover:text-red-200 transition">&times;</button></div>
+      
+      <div class="p-6 overflow-y-auto flex-1 bg-slate-50" id="struk-content"></div>
+      
+      <div class="p-4 bg-white border-t flex gap-2">
+        <button id="btn-wa-struk" class="btn-solid-green flex items-center justify-center gap-1 flex-1 py-3 text-xs"><span class="text-base">💬</span> Kirim WA</button>
+        <button id="btn-pdf-struk" class="btn-solid-blue flex items-center justify-center gap-1 flex-1 py-3 text-xs"><span class="text-base">📄</span> Simpan PDF</button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL STRUK -->
-  <div id="struk-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[120] items-center justify-center p-4" style="display:none;">
-    <div class="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden" style="display:flex;flex-direction:column;max-height:90vh;">
-      <div style="background:#2563eb;padding:16px;text-align:center;position:relative;">
-        <h2 style="color:white;font-weight:900;">Bukti Pembayaran</h2>
-        <button onclick="closeStrukModal()" style="position:absolute;right:16px;top:16px;color:white;font-size:20px;font-weight:700;background:none;border:none;cursor:pointer;">&times;</button>
-      </div>
-      <div class="p-6" id="struk-content" style="overflow-y:auto;flex:1;background:#f8fafc;"></div>
-      <div style="padding:16px;background:white;border-top:1px solid #e2e8f0;display:flex;gap:8px;">
-        <button id="btn-wa-struk" class="btn-solid-green" style="flex:1;display:flex;align-items:center;justify-content:center;gap:4px;font-size:12px;">💬 Kirim WA</button>
-        <button id="btn-pdf-struk" class="btn-solid-blue" style="flex:1;display:flex;align-items:center;justify-content:center;gap:4px;font-size:12px;">📄 Simpan PDF</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- HEADER -->
-  <header id="main-header" class="bg-white border-b sticky top-0 z-50 p-4 shadow-sm" style="transition:background 0.3s;">
-    <div style="display:flex;justify-content:space-between;align-items:center;max-width:672px;margin:0 auto;">
-      <div>
-        <h1 style="font-size:20px;font-weight:900;color:#1e293b;" id="header-title">DANAKITA</h1>
-        <p style="font-size:10px;color:#94a3b8;font-weight:700;letter-spacing:0.15em;" id="header-subtitle">PORTAL WARGA</p>
-      </div>
-      <div style="display:flex;gap:8px;">
-        <button id="auth-btn" onclick="toggleModal(true)" style="background:#f1f5f9;padding:8px;border-radius:12px;border:1px solid #e2e8f0;cursor:pointer;font-size:18px;">👤</button>
-        <button id="logout-btn" onclick="handleLogout()" style="display:none;background:#fef2f2;color:#dc2626;font-weight:700;padding:8px 12px;border-radius:12px;font-size:12px;border:none;cursor:pointer;">Keluar</button>
+  <header id="main-header" class="bg-white border-b sticky top-0 z-50 p-4 shadow-sm transition-colors">
+    <div class="flex justify-between items-center max-w-2xl mx-auto">
+      <div><h1 class="text-xl font-black text-slate-800" id="header-title">DANAKITA</h1><p class="text-[10px] text-slate-500 font-bold tracking-widest" id="header-subtitle">PORTAL WARGA</p></div>
+      <div class="flex gap-2">
+        <button id="auth-btn" onclick="toggleModal(true)" class="bg-slate-100 p-2 rounded-xl border border-slate-200 hover:bg-slate-200 transition">👤</button>
+        <button id="logout-btn" onclick="handleLogout()" class="bg-red-50 text-red-600 font-bold px-3 py-2 rounded-xl hidden text-xs hover:bg-red-100 transition">Keluar</button>
       </div>
     </div>
   </header>
 
-  <main style="padding:16px;max-width:672px;margin:0 auto;">
-
-    <!-- AREA WARGA -->
+  <main class="p-4 max-w-2xl mx-auto space-y-4">
     <div id="area-warga">
-
-      <!-- DASHBOARD -->
       <div id="view-dashboard" class="tab-content active w-sec">
-        <div style="background:linear-gradient(135deg,#2563eb,#4338ca);padding:24px;border-radius:24px;color:white;box-shadow:0 10px 25px rgba(37,99,235,0.3);margin-bottom:20px;">
-          <p style="color:#bfdbfe;font-size:11px;font-weight:700;letter-spacing:0.15em;">SALDO KAS AKTIF</p>
-          <h2 id="card-saldo" style="font-size:36px;font-weight:900;margin:4px 0 24px;">Rp 0</h2>
-          <div style="display:flex;gap:12px;font-size:12px;">
-            <div style="flex:1;background:rgba(255,255,255,0.2);padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);">
-              <span style="display:block;font-size:9px;color:#bfdbfe;margin-bottom:4px;">TOTAL MASUK</span>
-              <span id="card-in" style="font-weight:700;font-size:14px;">Rp 0</span>
-            </div>
-            <div style="flex:1;background:rgba(255,255,255,0.2);padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);">
-              <span style="display:block;font-size:9px;color:#bfdbfe;margin-bottom:4px;">TOTAL KELUAR</span>
-              <span id="card-out" style="font-weight:700;font-size:14px;">Rp 0</span>
-            </div>
+        <div class="bg-gradient-to-br from-blue-600 to-indigo-700 p-6 rounded-3xl text-white shadow-xl mb-5"><p class="text-blue-200 text-xs font-bold uppercase tracking-widest">Saldo Kas Aktif</p><h2 id="card-saldo" class="text-4xl font-black mt-1 mb-6">Rp 0</h2>
+          <div class="flex gap-3 text-xs">
+            <div class="flex-1 bg-white/20 backdrop-blur-sm p-3 rounded-xl border border-white/10"><span class="block text-[9px] text-blue-200 mb-1">TOTAL MASUK</span><span id="card-in" class="font-bold text-sm">Rp 0</span></div>
+            <div class="flex-1 bg-white/20 backdrop-blur-sm p-3 rounded-xl border border-white/10"><span class="block text-[9px] text-blue-200 mb-1">TOTAL KELUAR</span><span id="card-out" class="font-bold text-sm">Rp 0</span></div>
           </div>
         </div>
-        <div style="background:white;padding:20px;border-radius:24px;box-shadow:0 1px 3px rgba(0,0,0,0.1);border:1px solid #e2e8f0;">
-          <h3 style="font-weight:900;font-size:11px;text-transform:uppercase;margin-bottom:16px;color:#64748b;letter-spacing:0.15em;">Progress Project</h3>
-          <div id="warga-project-progress" style="display:flex;flex-direction:column;gap:16px;"></div>
-        </div>
+        <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-200"><h3 class="font-black text-xs uppercase mb-4 text-slate-600 tracking-widest">Progress Project</h3><div id="warga-project-progress" class="space-y-4"></div></div>
       </div>
-
-      <!-- BAYAR IURAN -->
       <div id="view-iuran" class="tab-content w-sec">
-        <div style="background:white;padding:24px;border-radius:24px;box-shadow:0 1px 3px rgba(0,0,0,0.1);border:1px solid #e2e8f0;">
-          <div class="form-grid" style="margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid #e2e8f0;">
-            <label>Identitas</label><span>:</span><select id="warga-select" onchange="renderPaymentForm()"></select>
-            <label>Tahun</label><span>:</span>
-            <select id="pilih-tahun" onchange="renderPaymentForm()">
-              <option value="2024">2024</option>
-              <option value="2025">2025</option>
-              <option value="2026" selected>2026</option>
-              <option value="2027">2027</option>
-            </select>
-          </div>
-          <div id="project-container" style="display:flex;flex-direction:column;gap:20px;"></div>
-          <div id="payment-summary" style="display:none;margin-top:32px;padding-top:24px;border-top:1px solid #e2e8f0;">
-            <p style="text-align:center;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.15em;">TOTAL TAGIHAN DIPILIH</p>
-            <h2 id="total-payment-display" style="font-size:36px;font-weight:900;text-align:center;color:#2563eb;margin:8px 0;">Rp 0</h2>
-            <div class="form-grid" style="margin-top:24px;">
-              <label>Metode</label><span>:</span>
-              <select id="metode-pembayaran" onchange="toggleBukti(this.value)">
-                <option value="TRANSFER">Transfer Bank</option>
-                <option value="CASH">Titip Tunai</option>
-              </select>
-              <label id="lbl-bukti">Bukti Trf</label><span id="spn-bukti">:</span>
-              <input type="file" id="iuran-bukti" accept="image/*">
-            </div>
-            <button onclick="submitPembayaran()" class="btn-solid-blue" style="margin-top:24px;padding:16px;font-size:16px;">Kirim Pembayaran</button>
+        <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
+          <div class="form-grid mb-6 border-b pb-6"><label>Identitas</label><span>:</span><select id="warga-select" onchange="renderPaymentForm()"></select><label>Tahun</label><span>:</span><select id="pilih-tahun" onchange="renderPaymentForm()"><option value="2024">2024</option><option value="2025">2025</option><option value="2026" selected>2026</option><option value="2027">2027</option></select></div>
+          <div id="project-container" class="space-y-5"></div>
+          <div id="payment-summary" class="hidden mt-8 pt-6 border-t border-slate-200"><p class="text-center text-xs font-bold text-slate-400 uppercase tracking-widest">TOTAL TAGIHAN DIPILIH</p><h2 class="text-4xl font-black text-center text-blue-600 my-2" id="total-payment-display">Rp 0</h2>
+            <div class="form-grid mt-6"><label>Metode</label><span>:</span><select id="metode-pembayaran" onchange="toggleBukti(this.value)"><option value="TRANSFER">Transfer Bank</option><option value="CASH">Titip Tunai</option></select><label id="lbl-bukti">Bukti Trf</label><span id="spn-bukti">:</span><input type="file" id="iuran-bukti" accept="image/*" class="w-full p-2 border border-slate-300 bg-slate-50 shadow-inner rounded-xl text-sm"></div>
+            <button onclick="submitPembayaran()" class="btn-solid-blue mt-6 py-4 text-lg">Kirim Pembayaran</button>
           </div>
         </div>
       </div>
+      <div id="view-transaksi" class="tab-content w-sec"><div class="bg-white p-6 rounded-3xl"><div class="mb-5"><select id="history-warga-select" onchange="renderWargaHistoryGrouped(this.value)"></select></div><h3 class="font-black text-sm uppercase text-slate-800 mb-5 tracking-widest border-b pb-3">Kartu Iuran / Riwayat Saya</h3><div id="history-grouped-container" class="space-y-4"></div></div></div>
+    </div>
 
-      <!-- RIWAYAT -->
-      <div id="view-transaksi" class="tab-content w-sec">
-        <div style="background:white;padding:24px;border-radius:24px;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
-          <div style="margin-bottom:20px;"><select id="history-warga-select" onchange="renderWargaHistoryGrouped(this.value)"></select></div>
-          <h3 style="font-weight:900;font-size:13px;text-transform:uppercase;color:#1e293b;margin-bottom:20px;letter-spacing:0.1em;border-bottom:1px solid #e2e8f0;padding-bottom:12px;">Kartu Iuran / Riwayat Saya</h3>
-          <div id="history-grouped-container" style="display:flex;flex-direction:column;gap:16px;"></div>
-        </div>
-      </div>
-
-    </div><!-- end area-warga -->
-
-    <!-- AREA ADMIN -->
-    <div id="area-admin" style="display:none;padding-bottom:40px;">
-
-      <!-- VERIFIKASI -->
-      <div id="view-admin-verify" class="tab-content active a-sec">
-        <div style="display:flex;gap:8px;background:#e2e8f0;padding:4px;border-radius:12px;margin-bottom:20px;">
-          <button id="btn-tab-pending" onclick="toggleVerifikasi('PENDING')" style="flex:1;background:white;color:#2563eb;font-weight:900;font-size:11px;padding:12px;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.1);border:none;cursor:pointer;">Menunggu</button>
-          <button id="btn-tab-processed" onclick="toggleVerifikasi('PROCESSED')" style="flex:1;color:#64748b;font-weight:900;font-size:11px;padding:12px;border-radius:10px;border:none;cursor:pointer;background:transparent;">Selesai</button>
-        </div>
-        <div id="admin-pending-container" style="display:flex;flex-direction:column;gap:16px;"></div>
-        <div id="admin-processed-container" style="display:flex;flex-direction:column;gap:16px;display:none;"></div>
-      </div>
-
-      <!-- MASTER DATA -->
-      <div id="view-admin-master" class="tab-content a-sec" style="display:flex;flex-direction:column;gap:24px;">
-        <div style="background:white;padding:24px;border-radius:24px;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
-          <h3 style="font-weight:900;color:#1e293b;margin-bottom:20px;font-size:13px;text-transform:uppercase;letter-spacing:0.1em;border-bottom:1px solid #e2e8f0;padding-bottom:12px;">👥 Kelola Warga</h3>
-          <div class="form-grid">
-            <label>Nama</label><span>:</span><input type="text" id="adm-wrg-nama">
-            <label>Blok</label><span>:</span><input type="text" id="adm-wrg-blok">
-            <label>WA</label><span>:</span><input type="text" id="adm-wrg-wa" placeholder="08123...">
-          </div>
-          <div style="margin-top:16px;"><button onclick="adminCreateWarga()" class="btn-solid-blue">+ Simpan Warga</button></div>
-          <h4 style="font-weight:900;color:#64748b;font-size:10px;text-transform:uppercase;letter-spacing:0.15em;margin-top:24px;margin-bottom:12px;border-top:1px dashed #e2e8f0;padding-top:16px;">Daftar Warga Aktif</h4>
-          <div id="admin-warga-list" style="display:flex;flex-direction:column;gap:8px;max-height:240px;overflow-y:auto;padding-right:8px;"></div>
-        </div>
-        <div style="background:white;padding:24px;border-radius:24px;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
-          <h3 style="font-weight:900;color:#1e293b;margin-bottom:20px;font-size:13px;text-transform:uppercase;letter-spacing:0.1em;border-bottom:1px solid #e2e8f0;padding-bottom:12px;">📁 Buka Project / Pos Kas</h3>
-          <div class="form-grid">
-            <label>Project</label><span>:</span><input type="text" id="adm-proj-nama">
-            <label>Tipe</label><span>:</span>
-            <select id="adm-proj-tipe">
-              <option value="bulanan">Bulanan</option>
-              <option value="sekali">Sekali</option>
-              <option value="non_iuran">Kas Saja</option>
-            </select>
-            <label>Mulai</label><span>:</span><input type="month" id="adm-proj-start">
-            <label>Nominal</label><span>:</span><input type="number" id="adm-proj-nominal">
-            <label>Target</label><span>:</span><input type="number" id="adm-proj-target">
-          </div>
-          <div style="margin-top:16px;"><button onclick="adminCreateProject()" class="btn-solid-blue">+ Terbitkan</button></div>
-          <div id="admin-project-list" style="margin-top:24px;display:flex;flex-direction:column;gap:8px;"></div>
-        </div>
-      </div>
-
-      <!-- BUKU KAS -->
-      <div id="view-admin-kas" class="tab-content a-sec" style="display:flex;flex-direction:column;gap:24px;">
-        <div style="display:flex;gap:8px;background:#e2e8f0;padding:4px;border-radius:12px;">
-          <button id="btn-tab-out" onclick="toggleFormKas('OUT')" style="flex:1;background:white;color:#dc2626;font-weight:900;font-size:11px;padding:12px;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.1);border:none;cursor:pointer;">Keluar</button>
-          <button id="btn-tab-in" onclick="toggleFormKas('IN')" style="flex:1;color:#64748b;font-weight:900;font-size:11px;padding:12px;border:none;cursor:pointer;background:transparent;">Masuk</button>
-        </div>
-        <div id="form-kas-out" style="background:white;padding:24px;border-radius:24px;border-top:4px solid #dc2626;">
-          <div class="form-grid" style="margin-bottom:20px;">
-            <label>Dari</label><span>:</span><select id="adm-out-kategori" onchange="toggleOutLainnya(this.value,'OUT')"></select>
-            <label id="lbl-out-lain" style="display:none;">Nama</label><span id="spn-out-lain" style="display:none;">:</span>
-            <input type="text" id="adm-out-kategori-lain" style="display:none;" placeholder="Nama pos lainnya">
-          </div>
-          <div id="pengeluaran-items-container" style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px;"></div>
-          <button onclick="addPengeluaranItem()" class="btn-solid-slate">+ Tambah Item</button>
-          <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #e2e8f0;margin-top:20px;padding-top:16px;margin-bottom:16px;">
-            <span style="font-weight:700;color:#94a3b8;text-transform:uppercase;font-size:12px;">Total Keluar:</span>
-            <span id="adm-out-total-display" style="font-weight:900;color:#dc2626;font-size:20px;">Rp 0</span>
-          </div>
-          <button onclick="adminCreatePengeluaran()" class="btn-solid-red">Simpan</button>
-        </div>
-        <div id="form-kas-in" style="display:none;background:white;padding:24px;border-radius:24px;border-top:4px solid #16a34a;">
-          <div class="form-grid">
-            <label>Sumber</label><span>:</span><input type="text" id="adm-in-sumber">
-            <label>Alokasi</label><span>:</span><select id="adm-in-kategori" onchange="toggleOutLainnya(this.value,'IN')"></select>
-            <label id="lbl-in-lain" style="display:none;">Nama</label><span id="spn-in-lain" style="display:none;">:</span>
-            <input type="text" id="adm-in-kategori-lain" style="display:none;" placeholder="Nama pos lainnya">
-            <label>Ket.</label><span>:</span><input type="text" id="adm-in-ket">
-            <label>Nominal</label><span>:</span><input type="number" id="adm-in-nom">
-          </div>
-          <button onclick="adminCreateDanaLain()" class="btn-solid-green" style="margin-top:16px;">Simpan</button>
-        </div>
-        <div id="admin-kas-list" style="display:flex;flex-direction:column;gap:12px;"></div>
-      </div>
-
-      <!-- LAPORAN -->
-      <div id="view-admin-laporan" class="tab-content a-sec" style="display:flex;flex-direction:column;gap:24px;">
-        <div style="background:white;padding:24px;border-radius:24px;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
-          <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e2e8f0;padding-bottom:12px;margin-bottom:16px;">
-            <h3 style="font-weight:900;color:#1e293b;font-size:13px;text-transform:uppercase;letter-spacing:0.1em;">Buku Kas (LPJ)</h3>
-            <button onclick="downloadLaporanExcel()" style="background:#dcfce7;color:#15803d;padding:8px 12px;border-radius:8px;font-size:12px;font-weight:700;border:none;cursor:pointer;">⬇️ Excel</button>
-          </div>
-          <div id="laporan-bukukas" style="max-height:500px;overflow-y:auto;"></div>
-        </div>
-        <div style="background:white;padding:24px;border-radius:24px;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
-          <h3 style="font-weight:900;color:#1e293b;font-size:13px;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:16px;border-bottom:1px solid #e2e8f0;padding-bottom:12px;">Rekap Iuran Warga</h3>
-          <div id="laporan-rekap-warga"></div>
-        </div>
-      </div>
-
-    </div><!-- end area-admin -->
-
+    <div id="area-admin" class="hidden pb-10">
+      <div id="view-admin-verify" class="tab-content active a-sec"><div class="flex gap-2 bg-slate-200 p-1 rounded-xl mb-5"><button id="btn-tab-pending" onclick="toggleVerifikasi('PENDING')" class="flex-1 bg-white text-blue-600 font-black text-xs py-3 rounded-lg shadow-sm">Menunggu</button><button id="btn-tab-processed" onclick="toggleVerifikasi('PROCESSED')" class="flex-1 text-slate-500 font-black text-xs py-3 rounded-lg">Selesai</button></div><div id="admin-pending-container" class="space-y-4"></div><div id="admin-processed-container" class="space-y-4 hidden"></div></div>
+      <div id="view-admin-master" class="tab-content a-sec space-y-6"><div class="bg-white p-6 rounded-3xl"><h3 class="font-black text-slate-800 mb-5 text-sm uppercase tracking-widest border-b pb-3">👥 Kelola Warga</h3><div class="form-grid"><label>Nama</label><span>:</span><input type="text" id="adm-wrg-nama"><label>Blok</label><span>:</span><input type="text" id="adm-wrg-blok"><label>WA</label><span>:</span><input type="text" id="adm-wrg-wa" placeholder="Contoh: 081234..."></div><div class="mt-4"><button onclick="adminCreateWarga()" class="btn-solid-blue">+ Simpan Warga</button></div><h4 class="font-black text-slate-600 text-[10px] uppercase tracking-widest mt-6 mb-3 border-t pt-4 border-dashed">Daftar Warga Aktif</h4><div id="admin-warga-list" class="space-y-2 max-h-60 overflow-y-auto pr-2"></div></div><div class="bg-white p-6 rounded-3xl"><h3 class="font-black text-slate-800 mb-5 text-sm uppercase tracking-widest border-b pb-3">📁 Buka Project / Pos Kas</h3><div class="form-grid"><label>Project</label><span>:</span><input type="text" id="adm-proj-nama"><label>Tipe</label><span>:</span><select id="adm-proj-tipe"><option value="bulanan">Bulanan</option><option value="sekali">Sekali</option><option value="non_iuran">Kas Saja</option></select><label>Mulai</label><span>:</span><input type="month" id="adm-proj-start"><label>Nominal</label><span>:</span><input type="number" id="adm-proj-nominal"><label>Target</label><span>:</span><input type="number" id="adm-proj-target"></div><div class="mt-4"><button onclick="adminCreateProject()" class="btn-solid-blue">+ Terbitkan</button></div><div id="admin-project-list" class="space-y-2 mt-6"></div></div></div>
+      <div id="view-admin-kas" class="tab-content a-sec space-y-6"><div class="flex gap-2 bg-slate-200 p-1"><button id="btn-tab-out" onclick="toggleFormKas('OUT')" class="flex-1 bg-white text-red-600 font-black text-xs py-3 rounded-lg shadow-sm">Keluar</button><button id="btn-tab-in" onclick="toggleFormKas('IN')" class="flex-1 text-slate-500 font-black text-xs py-3 rounded-lg">Masuk</button></div><div id="form-kas-out" class="bg-white p-6 rounded-3xl border-t-4 border-red-500"><div class="form-grid mb-5"><label>Ambil Dari</label><span>:</span><select id="adm-out-kategori" onchange="toggleOutLainnya(this.value, 'OUT')"></select><input type="text" id="adm-out-kategori-lain" class="hidden"></div><div id="pengeluaran-items-container" class="space-y-3 mb-4"></div><button onclick="addPengeluaranItem()" class="btn-solid-slate py-2 text-xs w-auto px-4">+ Tambah Item</button><div class="flex justify-between items-center border-t border-slate-200 mt-5 pt-4 mb-4"><span class="font-bold text-slate-500 uppercase text-xs">Total Keluar:</span><span class="font-black text-red-600 text-xl" id="adm-out-total-display">Rp 0</span></div><button onclick="adminCreatePengeluaran()" class="btn-solid-red mt-4">Simpan</button></div><div id="form-kas-in" class="bg-white p-6 rounded-3xl border-t-4 border-green-500 hidden"><div class="form-grid"><label>Sumber</label><span>:</span><input type="text" id="adm-in-sumber"><label>Alokasi</label><span>:</span><select id="adm-in-kategori" onchange="toggleOutLainnya(this.value, 'IN')"></select><input type="text" id="adm-in-kategori-lain" class="hidden"><label>Ket.</label><span>:</span><input type="text" id="adm-in-ket"><label>Nominal</label><span>:</span><input type="number" id="adm-in-nom"></div><button onclick="adminCreateDanaLain()" class="btn-solid-green mt-4">Simpan</button></div><div id="admin-kas-list" class="space-y-3"></div></div>
+      <div id="view-admin-laporan" class="tab-content a-sec space-y-6"><div class="bg-white p-6 rounded-3xl"><div class="flex justify-between items-center border-b pb-3 mb-4"><h3 class="font-black text-slate-800 text-sm uppercase tracking-widest">Buku Kas (LPJ)</h3><button onclick="downloadLaporanExcel()" class="bg-green-100 text-green-700 px-3 py-2 rounded-lg text-xs font-bold hover:bg-green-200 transition">⬇️ Excel</button></div><div id="laporan-bukukas" class="max-h-[500px] overflow-y-auto"></div></div><div class="bg-white p-6 rounded-3xl"><h3 class="font-black text-slate-800 text-sm uppercase tracking-widest mb-4 border-b pb-3">Rekap Iuran Warga</h3><div id="laporan-rekap-warga"></div></div></div>
+    </div>
   </main>
 
-  <!-- NAV WARGA -->
-  <nav id="nav-warga" style="position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid #e2e8f0;display:flex;justify-content:space-around;padding:8px 0 24px;z-index:40;">
-    <button onclick="switchTab('dashboard','warga',this)" class="w-nav nav-active" style="flex:1;display:flex;flex-direction:column;align-items:center;padding:8px;color:#94a3b8;background:none;border:none;cursor:pointer;">
-      <span style="font-size:24px;margin-bottom:4px;">🏠</span><span style="font-size:10px;font-weight:900;text-transform:uppercase;">Beranda</span>
-    </button>
-    <button onclick="switchTab('iuran','warga',this)" class="w-nav" style="flex:1;display:flex;flex-direction:column;align-items:center;padding:8px;color:#94a3b8;background:none;border:none;cursor:pointer;">
-      <span style="font-size:24px;margin-bottom:4px;">💰</span><span style="font-size:10px;font-weight:900;text-transform:uppercase;">Bayar</span>
-    </button>
-    <button onclick="switchTab('transaksi','warga',this)" class="w-nav" style="flex:1;display:flex;flex-direction:column;align-items:center;padding:8px;color:#94a3b8;background:none;border:none;cursor:pointer;">
-      <span style="font-size:24px;margin-bottom:4px;">📋</span><span style="font-size:10px;font-weight:900;text-transform:uppercase;">Riwayat</span>
-    </button>
-  </nav>
-
-  <!-- NAV ADMIN -->
-  <nav id="nav-admin" style="position:fixed;bottom:0;left:0;right:0;background:#0f172a;border-top:1px solid #334155;display:flex;justify-content:space-around;padding:8px 0 24px;z-index:40;display:none;">
-    <button onclick="switchTab('admin-verify','admin',this)" class="a-nav nav-admin-active" style="flex:1;display:flex;flex-direction:column;align-items:center;padding:8px;color:#94a3b8;background:none;border:none;cursor:pointer;">
-      <span style="font-size:20px;margin-bottom:4px;">✅</span><span style="font-size:9px;font-weight:700;color:white;text-transform:uppercase;">Verifikasi</span>
-    </button>
-    <button onclick="switchTab('admin-master','admin',this)" class="a-nav" style="flex:1;display:flex;flex-direction:column;align-items:center;padding:8px;color:#94a3b8;background:none;border:none;cursor:pointer;">
-      <span style="font-size:20px;margin-bottom:4px;">👥</span><span style="font-size:9px;font-weight:700;color:white;text-transform:uppercase;">Master</span>
-    </button>
-    <button onclick="switchTab('admin-kas','admin',this)" class="a-nav" style="flex:1;display:flex;flex-direction:column;align-items:center;padding:8px;color:#94a3b8;background:none;border:none;cursor:pointer;">
-      <span style="font-size:20px;margin-bottom:4px;">💸</span><span style="font-size:9px;font-weight:700;color:white;text-transform:uppercase;">Buku Kas</span>
-    </button>
-    <button onclick="switchTab('admin-laporan','admin',this)" class="a-nav" style="flex:1;display:flex;flex-direction:column;align-items:center;padding:8px;color:#94a3b8;background:none;border:none;cursor:pointer;">
-      <span style="font-size:20px;margin-bottom:4px;">📊</span><span style="font-size:9px;font-weight:700;color:white;text-transform:uppercase;">Laporan</span>
-    </button>
-  </nav>
+  <nav id="nav-warga" class="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around p-2 pb-6 z-40"><button onclick="switchTab('dashboard', 'warga')" class="w-nav flex-1 nav-active flex flex-col items-center p-2 text-slate-400"><span class="text-2xl mb-1">🏠</span><span class="text-[10px] font-black uppercase">Beranda</span></button><button onclick="switchTab('iuran', 'warga')" class="w-nav flex-1 flex flex-col items-center p-2 text-slate-400"><span class="text-2xl mb-1">💰</span><span class="text-[10px] font-black uppercase">Bayar</span></button><button onclick="switchTab('transaksi', 'warga')" class="w-nav flex-1 flex flex-col items-center p-2 text-slate-400"><span class="text-2xl mb-1">📋</span><span class="text-[10px] font-black uppercase">Riwayat</span></button></nav>
+  <nav id="nav-admin" class="fixed bottom-0 left-0 right-0 bg-slate-900 border-t flex justify-around p-2 pb-6 z-40 hidden text-white"><button onclick="switchTab('admin-verify', 'admin')" class="a-nav flex-1 nav-admin-active flex flex-col items-center p-2 text-slate-500"><span class="text-xl mb-1">✅</span><span class="text-[9px] font-bold text-white uppercase">Verifikasi</span></button><button onclick="switchTab('admin-master', 'admin')" class="a-nav flex-1 flex flex-col items-center p-2 text-slate-500"><span class="text-xl mb-1">👥</span><span class="text-[9px] font-bold text-white uppercase">Master</span></button><button onclick="switchTab('admin-kas', 'admin')" class="a-nav flex-1 flex flex-col items-center p-2 text-slate-500"><span class="text-xl mb-1">💸</span><span class="text-[9px] font-bold text-white uppercase">Buku Kas</span></button><button onclick="switchTab('admin-laporan', 'admin')" class="a-nav flex-1 flex flex-col items-center p-2 text-slate-500"><span class="text-xl mb-1">📊</span><span class="text-[9px] font-bold text-white uppercase">Laporan</span></button></nav>
 
   <script>
-    // =======================================================
-    // ⚠️  EDIT HANYA 2 BARIS INI:
-    // =======================================================
-    const SUPABASE_URL = 'PUBLIC_SUPABASE_URL_PLACEHOLDER';
-    const SUPABASE_KEY = 'PUBLIC_SUPABASE_ANON_KEY_PLACEHOLDER';
-    // =======================================================
-
+    // =======================================================================
+    // KONFIGURASI SUPABASE KUNCI MILIK ANDA
+    // =======================================================================
+    const SUPABASE_URL = 'https://tgcpyatrllswhlysqfer.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRnY3B5YXRybGxzd2hseXNxZmVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MjI2ODMsImV4cCI6MjA5MTM5ODY4M30.BHY6R2e62YvXz-N_2n_qHossbKxPZxUX0y1lrNKketg';
+    
     const supaClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    // =======================================================================
 
-    let appData = { warga:[], project:[], pembayaran:[], detail:[], pengeluaran:[], danaLain:[] };
-    let currentUser    = null;
-    let currentProfile = null;
-    let selectedCart   = {};
-    let pengeluaranItems = [{ ket:'', nom:'' }];
-    let globalKasArr   = [];
+    let appData = { warga: [], project: [], pembayaran: [], detail: [], pengeluaran: [], danaLain: [] };
+    let selectedCart = {}; 
+    let pengeluaranItems = [{ ket: '', nom: '' }]; 
+    let adminNameSession = sessionStorage.getItem('adminName') || null;
 
-    // ── INIT ──────────────────────────────────────────────
-    window.onload = async () => {
-      const { data:{ session } } = await supaClient.auth.getSession();
-      if (session) {
-        currentUser = session.user;
-        await loadUserProfile();
-      }
-      await initApp();
-    };
-
-    supaClient.auth.onAuthStateChange(async (_event, session) => {
-      currentUser = session?.user || null;
-      if (currentUser) await loadUserProfile();
-      else currentProfile = null;
-    });
-
-    async function loadUserProfile() {
-      const { data } = await supaClient
-        .from('user_profiles')
-        .select('cluster_id, role, nama')
-        .eq('id', currentUser.id)
-        .single();
-      currentProfile = data;
+    // FUNGSI UMUM & UTILITY
+    window.onload = () => { initApp(); };
+    
+    function renderAll() { 
+        populateWargaDropdown(); 
+        renderDashboard(); 
+        checkSession(); 
+        if(document.getElementById('warga-select').value) renderPaymentForm(); 
+        if(document.getElementById('history-warga-select')) renderWargaHistoryGrouped(document.getElementById('history-warga-select').value); 
     }
 
+    function formatIDR(num) { return 'Rp ' + Number(num||0).toLocaleString('id-ID'); }
+    function showLoader(show) { document.getElementById('loader').classList.toggle('hidden', !show); document.getElementById('loader').classList.toggle('flex', show); }
+    
+    function formatBulanID(periode) { 
+        if(periode === 'SEKALI') return 'Sekali Bayar'; 
+        let parts = periode.split('-'); 
+        if(parts.length<2) return periode; 
+        const m = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember']; 
+        return `${m[parseInt(parts[1])-1]} ${parts[0]}`; 
+    }
+    
+    function generateId(prefix) { return prefix + '-' + new Date().getTime() + '-' + Math.floor(Math.random() * 1000); }
+    
+    // FORMATTER WA PINTAR: Ubah awalan '0' atau '+' jadi '62' 
+    function formatWAUrl(nomor) {
+        if(!nomor) return '';
+        let cleaned = nomor.replace(/\D/g, ''); // Hapus strip, spasi, dll
+        if(cleaned.startsWith('0')) cleaned = '62' + cleaned.substring(1);
+        return cleaned;
+    }
+
+    // FUNGSI UI TOGGLES
+    function toggleModal(show) { document.getElementById('login-modal').classList.toggle('hidden', !show); document.getElementById('login-modal').classList.toggle('flex', show); }
+    function closeStrukModal() { document.getElementById('struk-modal').classList.add('hidden'); document.getElementById('struk-modal').classList.remove('flex'); }
+    function checkSession() { setUIAdmin(!!adminNameSession); }
+    
+    function switchTab(tabId, role) { 
+        document.querySelectorAll(`.${role==='warga'?'w-sec':'a-sec'}`).forEach(c => c.classList.remove('active')); 
+        document.getElementById('view-' + tabId).classList.add('active'); 
+        document.querySelectorAll(`.${role==='warga'?'w-nav':'a-nav'}`).forEach(b => b.classList.remove(role==='warga'?'nav-active':'nav-admin-active')); 
+        event.currentTarget.classList.add(role==='warga'?'nav-active':'nav-admin-active'); 
+        window.scrollTo(0,0); 
+    }
+    
+    function setUIAdmin(isAdmin) { 
+        document.getElementById('area-warga').classList.toggle('hidden', isAdmin); 
+        document.getElementById('area-admin').classList.toggle('hidden', !isAdmin); 
+        document.getElementById('nav-warga').classList.toggle('hidden', isAdmin); 
+        document.getElementById('nav-admin').classList.toggle('hidden', !isAdmin); 
+        document.getElementById('auth-btn').classList.toggle('hidden', isAdmin); 
+        document.getElementById('logout-btn').classList.toggle('hidden', !isAdmin); 
+        
+        const header = document.getElementById('main-header'); 
+        if(isAdmin) { 
+            header.classList.replace('bg-white', 'bg-slate-900'); 
+            document.getElementById('header-title').classList.replace('text-slate-800', 'text-white'); 
+            document.getElementById('header-subtitle').innerText = "PANEL PENGURUS"; 
+            renderAdminData(); 
+            renderLaporanAdmin(); 
+            document.querySelectorAll('.a-sec').forEach(c => c.classList.remove('active'));
+            document.getElementById('view-admin-verify').classList.add('active');
+            document.querySelectorAll('.a-nav').forEach(b => b.classList.remove('nav-admin-active'));
+            document.querySelector('.a-nav').classList.add('nav-admin-active');
+        } else { 
+            header.classList.replace('bg-slate-900', 'bg-white'); 
+            document.getElementById('header-title').classList.replace('text-white', 'text-slate-800'); 
+            document.getElementById('header-subtitle').innerText = "PORTAL WARGA"; 
+            document.querySelectorAll('.w-sec').forEach(c => c.classList.remove('active'));
+            document.getElementById('view-dashboard').classList.add('active');
+            document.querySelectorAll('.w-nav').forEach(b => b.classList.remove('nav-active'));
+            document.querySelector('.w-nav').classList.add('nav-active');
+        } 
+    }
+
+    function toggleVerifikasi(type) { 
+        document.getElementById('admin-pending-container').classList.toggle('hidden', type !== 'PENDING'); 
+        document.getElementById('admin-processed-container').classList.toggle('hidden', type !== 'PROCESSED'); 
+        document.getElementById('btn-tab-pending').className = type === 'PENDING' ? 'flex-1 bg-white text-blue-600 font-black text-xs py-3 rounded-lg shadow-sm uppercase tracking-widest transition' : 'flex-1 text-slate-500 font-black text-xs py-3 rounded-lg uppercase tracking-widest transition';
+        document.getElementById('btn-tab-processed').className = type === 'PROCESSED' ? 'flex-1 bg-white text-blue-600 font-black text-xs py-3 rounded-lg shadow-sm uppercase tracking-widest transition' : 'flex-1 text-slate-500 font-black text-xs py-3 rounded-lg uppercase tracking-widest transition';
+    }
+
+    function toggleFormKas(type) { 
+        document.getElementById('form-kas-out').classList.toggle('hidden', type!=='OUT'); 
+        document.getElementById('form-kas-in').classList.toggle('hidden', type!=='IN'); 
+        document.getElementById('btn-tab-out').className = type==='OUT' ? 'flex-1 bg-white text-red-600 font-black text-xs py-3 rounded-lg shadow-sm uppercase tracking-widest transition' : 'flex-1 text-slate-500 font-black text-xs py-3 rounded-lg uppercase tracking-widest transition';
+        document.getElementById('btn-tab-in').className = type==='IN' ? 'flex-1 bg-white text-green-600 font-black text-xs py-3 rounded-lg shadow-sm uppercase tracking-widest transition' : 'flex-1 text-slate-500 font-black text-xs py-3 rounded-lg uppercase tracking-widest transition';
+    }
+
+    function toggleOutLainnya(v, type) { 
+        let idStr = type === 'OUT' ? 'out' : 'in'; 
+        document.getElementById(`adm-${idStr}-kategori-lain`).classList.toggle('hidden', v!=='LAINNYA'); 
+    }
+
+    // --- SUPABASE API CALLS ---
     async function initApp() {
       showLoader(true);
       try {
         const [w, p, pay, det, out, inc] = await Promise.all([
-          supaClient.from('warga').select('id,nama,no_rumah,no_wa,status').eq('status','ACTIVE'),
-          supaClient.from('project').select('id,nama_project,tipe,nominal_default,target,status,start_periode').eq('status','ACTIVE'),
-          supaClient.from('pembayaran').select('id,tanggal,warga_id,total_nominal,metode,bukti_url,status,verified_by,verified_at'),
-          supaClient.from('pembayaran_detail').select('id,pembayaran_id,project_id,periode,nominal'),
-          supaClient.from('pengeluaran').select('id,tanggal,kategori_project,keterangan,nominal'),
-          supaClient.from('dana_lain').select('id,tanggal,sumber,kategori_project,keterangan,nominal')
+          supaClient.from('warga').select('*').neq('status', 'INACTIVE'),
+          supaClient.from('project').select('*').eq('status', 'ACTIVE'),
+          supaClient.from('pembayaran').select('*'),
+          supaClient.from('pembayaran_detail').select('*'),
+          supaClient.from('pengeluaran').select('*'),
+          supaClient.from('dana_lain').select('*')
         ]);
+        
         appData = {
-          warga: w.data||[], project: p.data||[], pembayaran: pay.data||[],
-          detail: det.data||[], pengeluaran: out.data||[], danaLain: inc.data||[]
+           warga: w.data || [], project: p.data || [], pembayaran: pay.data || [],
+           detail: det.data || [], pengeluaran: out.data || [], danaLain: inc.data || []
         };
         renderAll();
-      } catch(e) {
-        alert('Gagal load data: ' + e.message);
+      } catch (e) {
+        alert("Gagal konek ke Database: " + e.message);
       } finally {
         showLoader(false);
       }
     }
 
-    function renderAll() {
-      populateWargaDropdown();
-      renderDashboard();
-      const isAdmin = currentProfile?.role === 'admin';
-      setUIAdmin(isAdmin);
-      if (isAdmin) { renderAdminData(); renderLaporanAdmin(); }
-    }
-
-    // ── AUTH ──────────────────────────────────────────────
     async function handleLogin() {
-      const email = document.getElementById('auth-email').value.trim();
-      const pass  = document.getElementById('auth-pass').value;
-      const errEl = document.getElementById('login-error');
-      errEl.style.display = 'none';
-      if (!email || !pass) { errEl.textContent='Isi email dan password!'; errEl.style.display='block'; return; }
-
+      const u = document.getElementById('auth-user').value;
+      const p = document.getElementById('auth-pass').value; 
+      if(!u || !p) return; 
+      
       showLoader(true);
-      const { data, error } = await supaClient.auth.signInWithPassword({ email, password:pass });
+      const { data, error } = await supaClient.from('admin').select('*').eq('username', u).eq('password', p).single();
       showLoader(false);
-
-      if (error) { errEl.textContent='Login gagal: ' + error.message; errEl.style.display='block'; return; }
-
-      currentUser = data.user;
-      await loadUserProfile();
-      toggleModal(false);
-      renderAll();
-    }
-
-    async function handleLogout() {
-      await supaClient.auth.signOut();
-      currentUser = null; currentProfile = null;
-      setUIAdmin(false);
-    }
-
-    // ── UTILS ─────────────────────────────────────────────
-    function formatIDR(num) { return 'Rp ' + Number(num||0).toLocaleString('id-ID'); }
-    function generateId(prefix) { return prefix+'-'+Date.now()+'-'+Math.floor(Math.random()*1000); }
-    function showLoader(show) {
-      document.getElementById('loader').style.display = show ? 'flex' : 'none';
-    }
-    function formatBulanID(periode) {
-      if(periode==='SEKALI') return 'Sekali Bayar';
-      const parts = periode.split('-');
-      if(parts.length<2) return periode;
-      const m=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-      return `${m[parseInt(parts[1])-1]} ${parts[0]}`;
-    }
-    function formatWAUrl(nomor) {
-      if(!nomor) return '';
-      let c = nomor.replace(/\D/g,'');
-      if(c.startsWith('0')) c = '62'+c.substring(1);
-      return c;
-    }
-
-    // ── UI TOGGLES ────────────────────────────────────────
-    function toggleModal(show) {
-      document.getElementById('login-modal').style.display = show ? 'flex' : 'none';
-    }
-    function closeStrukModal() {
-      document.getElementById('struk-modal').style.display = 'none';
-    }
-    function switchTab(tabId, role, btn) {
-      const cls = role==='warga' ? 'w-sec' : 'a-sec';
-      const nav = role==='warga' ? 'w-nav' : 'a-nav';
-      const act = role==='warga' ? 'nav-active' : 'nav-admin-active';
-      document.querySelectorAll('.'+cls).forEach(c=>c.classList.remove('active'));
-      document.getElementById('view-'+tabId).classList.add('active');
-      document.querySelectorAll('.'+nav).forEach(b=>b.classList.remove(act));
-      if(btn) btn.classList.add(act);
-      window.scrollTo(0,0);
-    }
-    function setUIAdmin(isAdmin) {
-      document.getElementById('area-warga').style.display = isAdmin ? 'none' : 'block';
-      document.getElementById('area-admin').style.display = isAdmin ? 'block' : 'none';
-      document.getElementById('nav-warga').style.display  = isAdmin ? 'none' : 'flex';
-      document.getElementById('nav-admin').style.display  = isAdmin ? 'flex' : 'none';
-      document.getElementById('auth-btn').style.display   = isAdmin ? 'none' : 'block';
-      document.getElementById('logout-btn').style.display = isAdmin ? 'block' : 'none';
-      const header = document.getElementById('main-header');
-      const title  = document.getElementById('header-title');
-      const sub    = document.getElementById('header-subtitle');
-      if(isAdmin) {
-        header.style.background = '#0f172a';
-        title.style.color = 'white';
-        sub.textContent = 'PANEL PENGURUS';
-        document.querySelectorAll('.a-sec').forEach(c=>c.classList.remove('active'));
-        document.getElementById('view-admin-verify').classList.add('active');
-      } else {
-        header.style.background = 'white';
-        title.style.color = '#1e293b';
-        sub.textContent = 'PORTAL WARGA';
-        document.querySelectorAll('.w-sec').forEach(c=>c.classList.remove('active'));
-        document.getElementById('view-dashboard').classList.add('active');
+      
+      if (data) { 
+          sessionStorage.setItem('adminName', data.nama_admin); 
+          adminNameSession = data.nama_admin; 
+          toggleModal(false); 
+          setUIAdmin(true); 
+      } else { 
+          alert('Username atau Password Salah!'); 
       }
     }
-    function toggleVerifikasi(type) {
-      document.getElementById('admin-pending-container').style.display   = type==='PENDING'   ? 'flex' : 'none';
-      document.getElementById('admin-processed-container').style.display = type==='PROCESSED' ? 'flex' : 'none';
-      document.getElementById('admin-pending-container').style.flexDirection   = 'column';
-      document.getElementById('admin-processed-container').style.flexDirection = 'column';
-      const pBtn = document.getElementById('btn-tab-pending');
-      const rBtn = document.getElementById('btn-tab-processed');
-      if(type==='PENDING') {
-        pBtn.style.cssText='flex:1;background:white;color:#2563eb;font-weight:900;font-size:11px;padding:12px;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.1);border:none;cursor:pointer;';
-        rBtn.style.cssText='flex:1;color:#64748b;font-weight:900;font-size:11px;padding:12px;border:none;cursor:pointer;background:transparent;';
-      } else {
-        rBtn.style.cssText='flex:1;background:white;color:#2563eb;font-weight:900;font-size:11px;padding:12px;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.1);border:none;cursor:pointer;';
-        pBtn.style.cssText='flex:1;color:#64748b;font-weight:900;font-size:11px;padding:12px;border:none;cursor:pointer;background:transparent;';
-      }
-    }
-    function toggleFormKas(type) {
-      document.getElementById('form-kas-out').style.display = type==='OUT' ? 'block' : 'none';
-      document.getElementById('form-kas-in').style.display  = type==='IN'  ? 'block' : 'none';
-      const oBtn = document.getElementById('btn-tab-out');
-      const iBtn = document.getElementById('btn-tab-in');
-      if(type==='OUT') {
-        oBtn.style.cssText='flex:1;background:white;color:#dc2626;font-weight:900;font-size:11px;padding:12px;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.1);border:none;cursor:pointer;';
-        iBtn.style.cssText='flex:1;color:#64748b;font-weight:900;font-size:11px;padding:12px;border:none;cursor:pointer;background:transparent;';
-      } else {
-        iBtn.style.cssText='flex:1;background:white;color:#16a34a;font-weight:900;font-size:11px;padding:12px;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.1);border:none;cursor:pointer;';
-        oBtn.style.cssText='flex:1;color:#64748b;font-weight:900;font-size:11px;padding:12px;border:none;cursor:pointer;background:transparent;';
-      }
-    }
-    function toggleOutLainnya(v, type) {
-      const isLain = v==='LAINNYA';
-      if(type==='OUT') {
-        document.getElementById('adm-out-kategori-lain').style.display = isLain ? 'block' : 'none';
-        document.getElementById('lbl-out-lain').style.display = isLain ? 'block' : 'none';
-        document.getElementById('spn-out-lain').style.display = isLain ? 'block' : 'none';
-      } else {
-        document.getElementById('adm-in-kategori-lain').style.display = isLain ? 'block' : 'none';
-        document.getElementById('lbl-in-lain').style.display = isLain ? 'block' : 'none';
-        document.getElementById('spn-in-lain').style.display = isLain ? 'block' : 'none';
-      }
-    }
-    function toggleBukti(v) {
-      const show = v==='TRANSFER';
-      document.getElementById('lbl-bukti').style.display = show ? '' : 'none';
-      document.getElementById('spn-bukti').style.display = show ? '' : 'none';
-      document.getElementById('iuran-bukti').style.display = show ? '' : 'none';
+
+    function handleLogout() { 
+        sessionStorage.removeItem('adminName'); 
+        adminNameSession = null; 
+        setUIAdmin(false); 
     }
 
-    // ── RENDER WARGA ──────────────────────────────────────
+    // --- RENDER WARGA ---
     function populateWargaDropdown() {
+      const curVal = document.getElementById('warga-select').value;
+      const curHistVal = document.getElementById('history-warga-select')?.value;
+      
       let opt = '<option value="">-- Pilih Identitas --</option>';
-      appData.warga.forEach(w => opt+=`<option value="${w.id}">${w.nama} (${w.no_rumah})</option>`);
-      document.getElementById('warga-select').innerHTML = opt;
-      document.getElementById('history-warga-select').innerHTML = opt;
+      (appData.warga||[]).forEach(w => opt += `<option value="${w.id}">${w.nama} (${w.no_rumah})</option>`);
+      
+      document.getElementById('warga-select').innerHTML = opt; 
+      if(document.getElementById('history-warga-select')) {
+          document.getElementById('history-warga-select').innerHTML = opt;
+      }
+      
+      if(curVal) document.getElementById('warga-select').value = curVal; 
+      if(curHistVal && document.getElementById('history-warga-select')) document.getElementById('history-warga-select').value = curHistVal;
     }
 
     function renderDashboard() {
-      let totIn=0; const paidIds=new Set();
-      appData.pembayaran.filter(p=>p.status==='DISETUJUI').forEach(p=>{ totIn+=Number(p.total_nominal); paidIds.add(p.id); });
-      appData.danaLain.forEach(d=>{ totIn+=Number(d.nominal); });
-      const totOut = appData.pengeluaran.reduce((s,d)=>s+Number(d.nominal),0);
-      document.getElementById('card-saldo').innerText = formatIDR(totIn-totOut);
-      document.getElementById('card-in').innerText    = formatIDR(totIn);
-      document.getElementById('card-out').innerText   = formatIDR(totOut);
-
-      let phtml='';
-      appData.project.forEach(proj=>{
-        if(proj.tipe==='non_iuran') return;
-        let tw = appData.detail.filter(d=>paidIds.has(d.pembayaran_id)&&d.project_id===proj.id).reduce((s,d)=>s+Number(d.nominal),0);
-        let tl = appData.danaLain.filter(d=>d.kategori_project===proj.id).reduce((s,d)=>s+Number(d.nominal),0);
-        let t=tw+tl, perc=proj.target>0?Math.min(Math.round((t/proj.target)*100),100):0;
-        phtml+=`<div style="margin-bottom:16px;"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:900;color:#334155;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em;"><span>${proj.nama_project}</span><span style="color:#2563eb;">${perc}%</span></div><div style="width:100%;background:#f1f5f9;border-radius:9999px;height:12px;overflow:hidden;border:1px solid #e2e8f0;"><div style="background:#2563eb;height:12px;border-radius:9999px;width:${perc}%;transition:width 0.5s;"></div></div><p style="font-size:10px;color:#94a3b8;margin-top:8px;text-align:right;font-weight:700;letter-spacing:0.05em;">${formatIDR(t)}${proj.target>0?' / '+formatIDR(proj.target):''}</p></div>`;
+      let totIn = 0, paidIds = new Set();
+      (appData.pembayaran||[]).filter(p=>p.status==='DISETUJUI').forEach(p => { totIn += Number(p.total_nominal); paidIds.add(p.id); });
+      (appData.danaLain||[]).forEach(d => { totIn += Number(d.nominal); }); 
+      
+      let totOut = (appData.pengeluaran||[]).reduce((sum, d) => sum + Number(d.nominal), 0);
+      
+      document.getElementById('card-saldo').innerText = formatIDR(totIn - totOut); 
+      document.getElementById('card-in').innerText = formatIDR(totIn); 
+      document.getElementById('card-out').innerText = formatIDR(totOut);
+      
+      let phtml = '';
+      (appData.project||[]).forEach(proj => {
+        if(proj.tipe === 'non_iuran') return; 
+        
+        let terkumpulWarga = (appData.detail||[]).filter(d => d.project_id === proj.id && paidIds.has(d.pembayaran_id)).reduce((sum, d) => sum + Number(d.nominal), 0);
+        let terkumpulLain = (appData.danaLain||[]).filter(d => d.kategori_project === proj.id).reduce((sum, d) => sum + Number(d.nominal), 0);
+        let terkumpul = terkumpulWarga + terkumpulLain; 
+        let perc = Number(proj.target) > 0 ? Math.min(Math.round((terkumpul / proj.target) * 100), 100) : 0;
+        
+        phtml += `<div class="mb-4"><div class="flex justify-between text-xs font-black text-slate-700 mb-2 uppercase tracking-widest"><span>${proj.nama_project}</span><span class="text-blue-600">${perc}%</span></div><div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden border border-slate-200"><div class="bg-blue-600 h-3 rounded-full transition-all" style="width:${perc}%"></div></div><p class="text-[10px] text-slate-500 mt-2 text-right font-bold tracking-wider">${formatIDR(terkumpul)} ${proj.target>0 ? '/ '+formatIDR(proj.target) : ''}</p></div>`;
       });
-      document.getElementById('warga-project-progress').innerHTML = phtml||'<p style="font-size:12px;color:#94a3b8;">Belum ada project aktif.</p>';
+      document.getElementById('warga-project-progress').innerHTML = phtml || '<p class="text-xs text-slate-400">Belum ada project aktif.</p>';
     }
 
     function renderPaymentForm() {
-      const wId=document.getElementById('warga-select').value;
-      const yr=document.getElementById('pilih-tahun').value;
-      selectedCart={}; calcTotal();
-      document.getElementById('project-container').innerHTML='';
+      const wId = document.getElementById('warga-select').value;
+      const selectedYear = document.getElementById('pilih-tahun').value;
+      const container = document.getElementById('project-container');
+      
+      selectedCart = {}; 
+      calcTotal(); 
+      container.innerHTML = ''; 
       if(!wId) return;
-      const months=['01','02','03','04','05','06','07','08','09','10','11','12'];
-      const mName=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-      let userPaid={};
-      appData.pembayaran.filter(p=>p.warga_id===wId&&p.status!=='DITOLAK').forEach(p=>{
-        appData.detail.filter(d=>d.pembayaran_id===p.id).forEach(d=>{
-          if(!userPaid[d.project_id]) userPaid[d.project_id]=[];
-          userPaid[d.project_id].push(d.periode);
-        });
+      
+      const months = ['01','02','03','04','05','06','07','08','09','10','11','12']; 
+      const mName = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+      
+      let userPaid = {}; 
+      (appData.pembayaran||[]).filter(p => p.warga_id === wId && p.status !== 'DITOLAK').forEach(p => { 
+          (appData.detail||[]).filter(d => d.pembayaran_id === p.id).forEach(d => { 
+              if(!userPaid[d.project_id]) userPaid[d.project_id]=[]; 
+              userPaid[d.project_id].push(d.periode); 
+          }); 
       });
-      appData.project.forEach(p=>{
-        if(p.tipe==='non_iuran') return;
-        let html='';
-        if(p.tipe==='bulanan') {
-          let listHtml=''; const sp=p.start_periode||'2000-01';
-          months.forEach((m,i)=>{
-            const pStr=`${yr}-${m}`;
-            const isPaid=userPaid[p.id]&&userPaid[p.id].includes(pStr);
-            const isBefore=pStr<sp;
-            if(!isPaid&&!isBefore) listHtml+=`<label style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid #e2e8f0;border-radius:12px;margin-bottom:8px;cursor:pointer;background:white;box-shadow:0 1px 3px rgba(0,0,0,0.05);"><input type="checkbox" value="${pStr}" onchange="toggleCheckbox('${p.id}',this,${p.nominal_default},'${pStr}')"><span style="font-size:14px;font-weight:700;color:#334155;flex:1;display:flex;justify-content:space-between;"><span>${mName[i]} ${yr}</span><span style="color:#2563eb;">${formatIDR(p.nominal_default)}</span></span></label>`;
+
+      (appData.project||[]).forEach(p => {
+        if(p.tipe === 'non_iuran') return; 
+        
+        let html = '';
+        if (p.tipe === 'bulanan') {
+          let listHtml = ''; 
+          let startPeriode = p.start_periode || '2000-01'; 
+          
+          months.forEach((m, i) => {
+            let pStr = `${selectedYear}-${m}`; 
+            let isPaid = userPaid[p.id] && userPaid[p.id].includes(pStr); 
+            let isBeforeStart = pStr < startPeriode; 
+            
+            if (!isPaid && !isBeforeStart) {
+                listHtml += `<label class="flex items-center gap-3 p-3 border border-slate-200 rounded-xl mb-2 cursor-pointer bg-white shadow-sm"><input type="checkbox" value="${pStr}" onchange="toggleCheckbox('${p.id}', this, ${p.nominal_default}, '${pStr}')"><span class="text-sm font-bold text-slate-700 w-full flex justify-between"><span>${mName[i]} ${selectedYear}</span> <span class="text-blue-600">${formatIDR(p.nominal_default)}</span></span></label>`;
+            }
           });
-          html=listHtml||'<div style="padding:12px;background:#f0fdf4;color:#16a34a;font-size:12px;font-weight:700;text-align:center;border-radius:12px;">✅ Lunas / Tidak Ada Tagihan</div>';
+          html = `<div class="mt-4">${listHtml || '<div class="p-3 bg-green-50 text-green-600 text-xs font-bold text-center rounded-xl">✅ Lunas / Tidak Ada Tagihan</div>'}</div>`;
         } else {
-          const isPaid=userPaid[p.id]&&userPaid[p.id].includes('SEKALI');
-          html=isPaid?'<div style="padding:12px;background:#f0fdf4;color:#16a34a;font-size:12px;font-weight:700;text-align:center;border-radius:12px;">✅ SUDAH LUNAS</div>':`<label style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid #e2e8f0;border-radius:12px;cursor:pointer;background:white;box-shadow:0 1px 3px rgba(0,0,0,0.05);"><input type="checkbox" value="SEKALI" onchange="toggleCheckbox('${p.id}',this,${p.nominal_default},'SEKALI')"><span style="font-size:14px;font-weight:700;color:#334155;flex:1;display:flex;justify-content:space-between;"><span>Sekali Bayar</span><span style="color:#2563eb;">${formatIDR(p.nominal_default)}</span></span></label>`;
+          let isPaid = userPaid[p.id] && userPaid[p.id].includes('SEKALI');
+          html = `<div class="mt-4">${isPaid ? '<div class="p-3 bg-green-50 text-green-600 text-xs font-bold text-center rounded-xl">✅ SUDAH LUNAS</div>' : `<label class="flex items-center gap-3 p-3 border border-slate-200 rounded-xl cursor-pointer bg-white shadow-sm"><input type="checkbox" value="SEKALI" onchange="toggleCheckbox('${p.id}', this, ${p.nominal_default}, 'SEKALI')"><span class="text-sm font-bold text-slate-700 w-full flex justify-between"><span>Sekali Bayar</span> <span class="text-blue-600">${formatIDR(p.nominal_default)}</span></span></label>`}</div>`;
         }
-        const div=document.createElement('div');
-        div.style.cssText='border:1px solid #e2e8f0;border-radius:24px;padding:20px;background:#f8fafc;';
-        div.innerHTML=`<div style="font-weight:900;font-size:13px;color:#1e293b;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px;">${p.nama_project}</div>${html}`;
-        document.getElementById('project-container').appendChild(div);
+        container.innerHTML += `<div class="border border-slate-200 rounded-3xl p-5 bg-slate-50"><div class="font-black text-sm text-slate-800 uppercase tracking-widest">${p.nama_project}</div>${html}</div>`;
       });
     }
 
     function toggleCheckbox(pid, el, price, period) {
-      if(!selectedCart[pid]) selectedCart[pid]={months:[],nominal:0,base:price};
-      const cart=selectedCart[pid];
-      if(el.checked) { if(!cart.months.includes(period)) cart.months.push(period); }
-      else cart.months=cart.months.filter(m=>m!==period);
-      cart.nominal=cart.months.length*price;
+      if(!selectedCart[pid]) selectedCart[pid] = { months:[], nominal:0, base: price}; 
+      let cart = selectedCart[pid];
+      
+      if(el.checked) { 
+          if(!cart.months.includes(period)) cart.months.push(period); 
+      } else { 
+          cart.months = cart.months.filter(m => m !== period); 
+      }
+      cart.nominal = cart.months.length * price; 
       calcTotal();
     }
-    function calcTotal() {
-      let tot=0; for(let k in selectedCart) tot+=selectedCart[k].nominal;
-      document.getElementById('total-payment-display').innerText=formatIDR(tot);
-      document.getElementById('payment-summary').style.display=tot===0?'none':'block';
+    
+    function calcTotal() { 
+        let tot = 0; 
+        for(let k in selectedCart) tot += selectedCart[k].nominal; 
+        document.getElementById('total-payment-display').innerText = formatIDR(tot); 
+        document.getElementById('payment-summary').classList.toggle('hidden', tot === 0); 
     }
-
+    
+    function toggleBukti(v) { 
+        document.getElementById('lbl-bukti').classList.toggle('hidden', v!=='TRANSFER'); 
+        document.getElementById('spn-bukti').classList.toggle('hidden', v!=='TRANSFER'); 
+        document.getElementById('iuran-bukti').classList.toggle('hidden', v!=='TRANSFER'); 
+    }
+    
     function renderWargaHistoryGrouped(wId) {
-      const container=document.getElementById('history-grouped-container');
-      if(!wId){container.innerHTML='';return;}
-      let historyMap={};
-      appData.pembayaran.filter(p=>p.warga_id===wId&&p.status==='DISETUJUI').forEach(p=>{
-        appData.detail.filter(d=>d.pembayaran_id===p.id).forEach(d=>{
-          if(!historyMap[d.project_id]) historyMap[d.project_id]=[];
-          historyMap[d.project_id].push(d.periode);
-        });
+      const container = document.getElementById('history-grouped-container'); 
+      if(!wId) return;
+      
+      let historyMap = {}; 
+      (appData.pembayaran||[]).filter(p => p.warga_id === wId && p.status === 'DISETUJUI').forEach(p => { 
+          (appData.detail||[]).filter(d => d.pembayaran_id === p.id).forEach(d => { 
+              if(!historyMap[d.project_id]) historyMap[d.project_id] = []; 
+              historyMap[d.project_id].push(d.periode); 
+          }); 
       });
-      let html='';
-      appData.project.forEach(p=>{
-        if(p.tipe==='non_iuran'||!historyMap[p.id]||historyMap[p.id].length===0) return;
-        const listHtml=historyMap[p.id].sort().map(m=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:14px;color:#334155;"><span style="color:#16a34a;font-weight:900;">✅</span><span>${formatBulanID(m)}</span></div>`).join('');
-        html+=`<div style="border:1px solid #e2e8f0;padding:20px;border-radius:24px;margin-bottom:16px;background:#f8fafc;"><h4 style="font-weight:900;font-size:13px;color:#1e293b;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px;border-bottom:1px dashed #e2e8f0;padding-bottom:8px;">${p.nama_project}</h4>${listHtml}</div>`;
+      
+      let html = '';
+      (appData.project||[]).forEach(p => {
+        if(p.tipe === 'non_iuran' || !historyMap[p.id] || historyMap[p.id].length === 0) return;
+        let listHtml = historyMap[p.id].sort().map(m => `<div class="flex items-center gap-2 mb-2 text-sm text-slate-700"><span class="text-green-500 font-black">✅</span> <span>${formatBulanID(m)}</span></div>`).join('');
+        html += `<div class="border border-slate-200 p-5 rounded-3xl mb-4 bg-slate-50"><h4 class="font-black text-sm text-slate-800 uppercase tracking-widest mb-3 border-b border-dashed pb-2">${p.nama_project}</h4>${listHtml}</div>`;
       });
-      container.innerHTML=html||'<p style="font-size:12px;color:#94a3b8;font-weight:700;letter-spacing:0.1em;text-align:center;margin-top:16px;">BELUM ADA RIWAYAT LUNAS</p>';
+      container.innerHTML = html || '<p class="text-xs text-slate-400 font-bold tracking-widest text-center mt-4">BELUM ADA RIWAYAT LUNAS</p>';
     }
 
-    // ── RENDER ADMIN ──────────────────────────────────────
+    // --- RENDER ADMIN ---
     function renderAdminData() {
-      // Warga list
-      let wHtml='';
-      appData.warga.forEach(w=>{
-        wHtml+=`<div style="background:#f8fafc;padding:12px;border-radius:12px;border:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;"><p style="font-size:12px;font-weight:700;color:#334155;">${w.nama} <span style="font-size:10px;color:#94a3b8;">(${w.no_rumah})</span></p><button onclick="if(confirm('Hapus warga ini?')) adminDeleteWarga('${w.id}')" style="color:#dc2626;background:#fef2f2;padding:6px 12px;border-radius:8px;border:none;cursor:pointer;font-size:12px;">🗑️</button></div>`;
-      });
-      document.getElementById('admin-warga-list').innerHTML=wHtml||'<p style="font-size:12px;color:#94a3b8;">Kosong</p>';
-
-      // Pembayaran
-      let pendingHtml='', processedHtml='';
-      [...appData.pembayaran].reverse().forEach(p=>{
-        const wNama=appData.warga.find(w=>w.id===p.warga_id)?.nama||'Unknown';
-        const detArr=appData.detail.filter(d=>d.pembayaran_id===p.id);
-        let detGroup={};
-        detArr.forEach(d=>{
-          const pName=appData.project.find(pj=>pj.id===d.project_id)?.nama_project||'Project';
-          if(!detGroup[pName]) detGroup[pName]=[];
-          detGroup[pName].push(formatBulanID(d.periode));
+      let wHtml = ''; 
+      (appData.warga||[]).forEach(w => { 
+          wHtml += `<div class="bg-slate-50 p-3 rounded-xl border border-slate-200 flex justify-between items-center"><p class="text-xs font-bold text-slate-700">${w.nama} <span class="text-[10px] text-slate-400">(${w.no_rumah})</span></p><button onclick="if(confirm('Hapus warga ini?')) adminDeleteWarga('${w.id}')" class="text-red-500 hover:bg-red-100 px-3 py-1 rounded-lg">🗑️ Hapus</button></div>`; 
+      }); 
+      document.getElementById('admin-warga-list').innerHTML = wHtml || '<p class="text-xs text-slate-400">Kosong</p>';
+      
+      let pendingHtml = ''; 
+      let processedHtml = '';
+      
+      (appData.pembayaran||[]).reverse().forEach(p => {
+        let wNama = (appData.warga||[]).find(w=>w.id===p.warga_id)?.nama || 'Unknown'; 
+        let detArr = (appData.detail||[]).filter(d=>d.pembayaran_id===p.id);
+        let detGroup = {}; 
+        
+        detArr.forEach(d => { 
+            let pName = (appData.project||[]).find(pj=>pj.id===d.project_id)?.nama_project || 'Project'; 
+            if(!detGroup[pName]) detGroup[pName] = []; 
+            detGroup[pName].push(formatBulanID(d.periode)); 
         });
-        const rincianText=Object.keys(detGroup).map(k=>`• ${k} (${detGroup[k].join(', ')})`).join('<br>');
-        const verifiedText=p.status!=='MENUNGGU VERIFIKASI'?`<p style="font-size:10px;color:#94a3b8;margin-top:8px;border-top:1px dashed #e2e8f0;padding-top:8px;">Diproses: <b style="color:#334155;">${p.verified_by||'-'}</b></p>`:'';
-        let statusColor=p.status==='DISETUJUI'?'#16a34a':p.status==='DITOLAK'?'#dc2626':'#d97706';
-        let statusBg=p.status==='DISETUJUI'?'#f0fdf4':p.status==='DITOLAK'?'#fef2f2':'#fffbeb';
-        const actions=p.status==='MENUNGGU VERIFIKASI'
-          ?`<div style="display:flex;gap:8px;margin-top:16px;"><button onclick="adminVerifyPembayaran('${p.id}','DISETUJUI')" class="btn-solid-green">Setujui</button><button onclick="adminVerifyPembayaran('${p.id}','DITOLAK')" class="btn-solid-red">Tolak</button></div>`
-          :(p.status==='DISETUJUI'?`<div style="margin-top:16px;"><button onclick="showStrukModalById('${p.id}')" class="btn-solid-blue" style="font-size:12px;letter-spacing:0.05em;">📄 Buka Struk</button></div>`:'');
-        const cardHtml=`<div style="background:white;padding:20px;border-radius:24px;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,0.05);"><div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px;"><p style="font-weight:900;color:#1e293b;font-size:14px;">${wNama}</p><span style="font-size:9px;font-weight:900;letter-spacing:0.1em;border:1px solid;padding:4px 8px;border-radius:6px;color:${statusColor};background:${statusBg};">${p.status}</span></div><p style="font-weight:900;color:#2563eb;font-size:18px;margin-bottom:8px;">${formatIDR(p.total_nominal)}</p><p style="font-size:10px;color:#94a3b8;font-weight:700;line-height:1.6;">${p.metode} | ${new Date(p.tanggal).toLocaleDateString()}<br><b style="color:#334155;">Rincian:</b> ${rincianText}</p>${p.bukti_url&&!p.bukti_url.includes('Error')?`<a href="${p.bukti_url}" target="_blank" style="font-size:10px;font-weight:900;color:#2563eb;text-decoration:underline;margin-top:8px;display:block;letter-spacing:0.1em;text-transform:uppercase;">Lihat Bukti Foto</a>`:''} ${verifiedText}${actions}</div>`;
-        if(p.status==='MENUNGGU VERIFIKASI') pendingHtml+=cardHtml;
-        else processedHtml+=cardHtml;
+        
+        let rincianText = Object.keys(detGroup).map(k => `• ${k} (${detGroup[k].join(', ')})`).join('<br>');
+        let verifiedText = p.status !== 'MENUNGGU VERIFIKASI' ? `<p class="text-[10px] text-slate-500 mt-2 border-t border-dashed pt-2">Diproses oleh: <span class="font-bold text-slate-700">${p.verified_by || '-'}</span></p>` : '';
+        
+        let actions = p.status === 'MENUNGGU VERIFIKASI' 
+            ? `<div class="flex gap-2 mt-4"><button onclick="adminVerifyPembayaran('${p.id}', 'DISETUJUI')" class="btn-solid-green">Setujui</button><button onclick="adminVerifyPembayaran('${p.id}', 'DITOLAK')" class="btn-solid-red">Tolak</button></div>` 
+            : (p.status === 'DISETUJUI' ? `<div class="mt-4"><button onclick="showStrukModalById('${p.id}')" class="btn-solid-blue uppercase tracking-widest text-xs">📄 Buka Struk</button></div>` : '');
+        
+        let cardHtml = `<div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm mb-4"><div class="flex justify-between items-start mb-2"><p class="font-black text-slate-800 text-sm tracking-wider">${wNama}</p><span class="text-[9px] font-black tracking-widest uppercase border px-2 py-1 rounded-md ${p.status==='DISETUJUI'?'text-green-600 bg-green-50':p.status==='DITOLAK'?'text-red-600 bg-red-50':'text-yellow-600 bg-yellow-50'}">${p.status}</span></div><p class="font-black text-blue-600 text-lg mb-2">${formatIDR(p.total_nominal)}</p><p class="text-[10px] text-slate-500 font-bold mt-1 leading-relaxed">${p.metode} | ${new Date(p.tanggal).toLocaleDateString()} <br> <span class="block mt-1 font-bold text-slate-700">Rincian:</span> ${rincianText}</p>${p.bukti_url && !p.bukti_url.includes('Error') ? `<a href="${p.bukti_url}" target="_blank" class="text-[10px] font-black text-blue-500 underline mt-2 block tracking-widest uppercase">Lihat Bukti Foto</a>`:''}${verifiedText}${actions}</div>`;
+        
+        if (p.status === 'MENUNGGU VERIFIKASI') pendingHtml += cardHtml; 
+        else processedHtml += cardHtml;
       });
-      document.getElementById('admin-pending-container').innerHTML=pendingHtml||'<p style="font-size:12px;color:#94a3b8;text-align:center;margin-top:16px;">KOSONG</p>';
-      document.getElementById('admin-processed-container').innerHTML=processedHtml||'<p style="font-size:12px;color:#94a3b8;text-align:center;margin-top:16px;">KOSONG</p>';
+      
+      document.getElementById('admin-pending-container').innerHTML = pendingHtml || '<p class="text-xs text-slate-400 text-center mt-4">KOSONG</p>'; 
+      document.getElementById('admin-processed-container').innerHTML = processedHtml || '<p class="text-xs text-slate-400 text-center mt-4">KOSONG</p>';
 
-      // Project list + dropdown kas
-      let phtml=''; let outOpt='<option value="">-- Pilih --</option>'; let inOpt='<option value="">-- Pilih --</option>';
-      appData.project.forEach(p=>{
-        phtml+=`<div style="background:#f8fafc;padding:16px;border-radius:16px;border:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><div><p style="font-weight:700;font-size:14px;color:#1e293b;">${p.nama_project}</p><p style="font-size:10px;color:#94a3b8;font-weight:700;margin-top:4px;text-transform:uppercase;letter-spacing:0.05em;">${p.tipe==='non_iuran'?'Pos Kas Saja':p.tipe} | ${formatIDR(p.nominal_default)}</p></div><button onclick="if(confirm('Tutup project?')) adminCloseProject('${p.id}')" class="btn-solid-red" style="width:auto;padding:8px 12px;font-size:10px;">Tutup</button></div>`;
-        outOpt+=`<option value="${p.id}">${p.nama_project}</option>`;
-        inOpt+=`<option value="${p.id}">${p.nama_project}</option>`;
+      let phtml = ''; let outOpt = '<option value="">-- Pilih --</option>'; let inOpt = '<option value="">-- Pilih --</option>';
+      (appData.project||[]).forEach(p => { 
+          phtml += `<div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex justify-between items-center mb-2"><div><p class="font-bold text-sm text-slate-800">${p.nama_project}</p><p class="text-[10px] text-slate-500 font-bold mt-1 tracking-widest uppercase">${p.tipe==='non_iuran'?'Pos Kas Saja':p.tipe} | ${formatIDR(p.nominal_default)}</p></div><button onclick="if(confirm('Tutup project?')) adminCloseProject('${p.id}')" class="btn-solid-red !w-auto px-3 py-2 text-[10px]">Tutup</button></div>`; 
+          outOpt += `<option value="${p.id}">${p.nama_project}</option>`; 
+          inOpt += `<option value="${p.id}">${p.nama_project}</option>`; 
       });
-      document.getElementById('admin-project-list').innerHTML=phtml;
-      outOpt+='<option value="LAINNYA">Lainnya</option>';
-      inOpt+='<option value="LAINNYA">Lainnya</option>';
-      document.getElementById('adm-out-kategori').innerHTML=outOpt;
-      document.getElementById('adm-in-kategori').innerHTML=inOpt;
+      
+      document.getElementById('admin-project-list').innerHTML = phtml; 
+      outOpt += '<option value="LAINNYA">Lainnya</option>'; 
+      inOpt += '<option value="LAINNYA">Lainnya</option>'; 
+      document.getElementById('adm-out-kategori').innerHTML = outOpt; 
+      document.getElementById('adm-in-kategori').innerHTML = inOpt;
+      
       renderPengeluaranItems();
 
-      // Kas list
-      let kasList=[];
-      appData.pengeluaran.forEach(o=>{
-        const pName=o.kategori_project==='LAINNYA'?'LAINNYA':(appData.project.find(p=>p.id===o.kategori_project)?.nama_project||'PROJECT');
-        kasList.push({tgl:new Date(o.tanggal),html:`<div style="background:#f8fafc;padding:16px;border-radius:16px;border:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:start;margin-bottom:12px;"><div style="width:83%;"><span style="font-size:9px;font-weight:900;background:#fee2e2;color:#dc2626;padding:4px 8px;border-radius:6px;margin-bottom:8px;display:inline-block;letter-spacing:0.05em;text-transform:uppercase;">KELUAR: ${pName}</span><p style="font-size:10px;font-weight:700;color:#64748b;line-height:1.5;margin-bottom:8px;">${o.keterangan.replace(/\n/g,'<br>')}</p><p style="font-size:9px;color:#94a3b8;">${new Date(o.tanggal).toLocaleDateString()}</p><p style="font-size:14px;font-weight:900;color:#dc2626;margin-top:4px;">- ${formatIDR(o.nominal)}</p></div><button onclick="if(confirm('Hapus?')) adminDeleteKas('${o.id}','OUT')" style="color:#94a3b8;background:white;padding:8px;border-radius:8px;border:1px solid #e2e8f0;font-size:18px;cursor:pointer;line-height:1;">&times;</button></div>`});
+      let kasList = [];
+      (appData.pengeluaran||[]).forEach(o => { 
+          let pName = o.kategori_project==='LAINNYA' ? 'LAINNYA' : (appData.project.find(p=>p.id===o.kategori_project)?.nama_project || 'PROJECT'); 
+          kasList.push({ tgl: new Date(o.tanggal), html: `<div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex justify-between items-start mb-3"><div class="w-5/6"><span class="text-[9px] font-black bg-red-100 text-red-600 px-2 py-1 rounded mb-2 inline-block uppercase tracking-widest">KELUAR: ${pName}</span><p class="text-[10px] font-bold text-slate-600 leading-relaxed mb-2">${o.keterangan.replace(/\n/g, '<br>')}</p><p class="text-[9px] text-slate-400 mt-1">${new Date(o.tanggal).toLocaleDateString()}</p><p class="text-sm font-black text-red-600 mt-1">- ${formatIDR(o.nominal)}</p></div><button onclick="if(confirm('Hapus pengeluaran?')) adminDeleteKas('${o.id}', 'OUT')" class="text-slate-400 hover:text-red-500 bg-white p-2 rounded-lg border shadow-sm text-lg leading-none">&times;</button></div>`}); 
       });
-      appData.danaLain.forEach(d=>{
-        const pName=d.kategori_project==='LAINNYA'?'LAINNYA':(appData.project.find(p=>p.id===d.kategori_project)?.nama_project||'PROJECT');
-        kasList.push({tgl:new Date(d.tanggal),html:`<div style="background:#f8fafc;padding:16px;border-radius:16px;border:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:start;margin-bottom:12px;"><div style="width:83%;"><span style="font-size:9px;font-weight:900;background:#dcfce7;color:#16a34a;padding:4px 8px;border-radius:6px;margin-bottom:8px;display:inline-block;letter-spacing:0.05em;text-transform:uppercase;">MASUK: ${pName}</span><p style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:4px;">${d.sumber}</p><p style="font-size:10px;font-weight:700;color:#64748b;margin-bottom:8px;">${d.keterangan}</p><p style="font-size:9px;color:#94a3b8;">${new Date(d.tanggal).toLocaleDateString()}</p><p style="font-size:14px;font-weight:900;color:#16a34a;margin-top:4px;">+ ${formatIDR(d.nominal)}</p></div><button onclick="if(confirm('Hapus?')) adminDeleteKas('${d.id}','IN')" style="color:#94a3b8;background:white;padding:8px;border-radius:8px;border:1px solid #e2e8f0;font-size:18px;cursor:pointer;line-height:1;">&times;</button></div>`});
+      (appData.danaLain||[]).forEach(d => { 
+          let pName = d.kategori_project==='LAINNYA' ? 'LAINNYA' : (appData.project.find(p=>p.id===d.kategori_project)?.nama_project || 'PROJECT'); 
+          kasList.push({ tgl: new Date(d.tanggal), html: `<div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex justify-between items-start mb-3"><div class="w-5/6"><span class="text-[9px] font-black bg-green-100 text-green-600 px-2 py-1 rounded mb-2 inline-block uppercase tracking-widest">MASUK: ${pName}</span><p class="text-xs font-bold text-slate-800 leading-relaxed mb-1">${d.sumber}</p><p class="text-[10px] font-bold text-slate-500 leading-relaxed mb-2">${d.keterangan}</p><p class="text-[9px] text-slate-400 mt-1">${new Date(d.tanggal).toLocaleDateString()}</p><p class="text-sm font-black text-green-600 mt-1">+ ${formatIDR(d.nominal)}</p></div><button onclick="if(confirm('Hapus pemasukan?')) adminDeleteKas('${d.id}', 'IN')" class="text-slate-400 hover:text-red-500 bg-white p-2 rounded-lg border shadow-sm text-lg leading-none">&times;</button></div>`}); 
       });
-      kasList.sort((a,b)=>b.tgl-a.tgl);
-      document.getElementById('admin-kas-list').innerHTML=kasList.map(k=>k.html).join('');
+      
+      kasList.sort((a,b) => b.tgl - a.tgl); 
+      document.getElementById('admin-kas-list').innerHTML = kasList.map(k=>k.html).join('');
     }
 
+    let globalKasArr = []; 
     function renderLaporanAdmin() {
-      globalKasArr=[];
-      appData.pembayaran.filter(p=>p.status==='DISETUJUI').forEach(p=>globalKasArr.push({type:'IN',tgl:new Date(p.tanggal),nominal:p.total_nominal,ket:'Iuran Warga ('+(appData.warga.find(w=>w.id===p.warga_id)?.nama||'Unk')+')'}));
-      appData.danaLain.forEach(d=>{const pName=d.kategori_project==='LAINNYA'?'':(' ('+(appData.project.find(p=>p.id===d.kategori_project)?.nama_project||'')+')');globalKasArr.push({type:'IN',tgl:new Date(d.tanggal),nominal:d.nominal,ket:`Donasi: ${d.sumber} - ${d.keterangan}${pName}`});});
-      appData.pengeluaran.forEach(o=>{const pName=o.kategori_project==='LAINNYA'?'':(' ('+(appData.project.find(p=>p.id===o.kategori_project)?.nama_project||'')+')');const sk=o.keterangan.split('\n')[0];globalKasArr.push({type:'OUT',tgl:new Date(o.tanggal),nominal:o.nominal,ket:sk+(o.keterangan.includes('\n')?' ...':'')+pName});});
-      globalKasArr.sort((a,b)=>b.tgl-a.tgl);
+      globalKasArr = [];
+      (appData.pembayaran||[]).filter(p=>p.status==='DISETUJUI').forEach(p => globalKasArr.push({ type: 'IN', tgl: new Date(p.tanggal), nominal: p.total_nominal, ket: 'Iuran Warga ('+ (appData.warga.find(w=>w.id===p.warga_id)?.nama||'Unk') +')' }));
+      (appData.danaLain||[]).forEach(d => { let pName = d.kategori_project==='LAINNYA'?'':(' ('+(appData.project.find(p=>p.id===d.kategori_project)?.nama_project||'')+')'); globalKasArr.push({ type: 'IN', tgl: new Date(d.tanggal), nominal: d.nominal, ket: `Donasi: ${d.sumber} - ${d.keterangan}${pName}` }); });
+      (appData.pengeluaran||[]).forEach(o => { let pName = o.kategori_project==='LAINNYA'?'':(' ('+(appData.project.find(p=>p.id===o.kategori_project)?.nama_project||'')+')'); let shortKet = o.keterangan.split('\n')[0]; globalKasArr.push({ type: 'OUT', tgl: new Date(o.tanggal), nominal: o.nominal, ket: shortKet + (o.keterangan.includes('\n')?' ...':'') + pName }); });
+      globalKasArr.sort((a,b) => b.tgl - a.tgl);
+      
+      let kasHtml = ''; 
+      globalKasArr.forEach(k => { kasHtml += `<div class="flex justify-between items-center border-b border-dashed border-slate-200 py-3"><div class="w-2/3"><p class="text-[10px] font-bold text-slate-400">${k.tgl.toLocaleDateString()}</p><p class="text-xs font-bold text-slate-700 leading-tight mt-1">${k.ket}</p></div><div class="w-1/3 text-right"><p class="font-black text-sm ${k.type==='IN'?'text-green-600':'text-red-600'}">${k.type==='IN'?'+':'-'} ${formatIDR(k.nominal)}</p></div></div>`; });
+      document.getElementById('laporan-bukukas').innerHTML = kasHtml || '<p class="text-xs text-slate-400 text-center">Kosong.</p>';
 
-      let kasHtml='';
-      globalKasArr.forEach(k=>{kasHtml+=`<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px dashed #e2e8f0;padding:12px 0;"><div style="width:66%;"><p style="font-size:10px;font-weight:700;color:#94a3b8;">${k.tgl.toLocaleDateString()}</p><p style="font-size:12px;font-weight:700;color:#334155;line-height:1.4;margin-top:4px;">${k.ket}</p></div><div style="width:33%;text-align:right;"><p style="font-weight:900;font-size:14px;color:${k.type==='IN'?'#16a34a':'#dc2626'};">${k.type==='IN'?'+':'-'} ${formatIDR(k.nominal)}</p></div></div>`;});
-      document.getElementById('laporan-bukukas').innerHTML=kasHtml||'<p style="font-size:12px;color:#94a3b8;text-align:center;">Kosong.</p>';
-
-      let rekap={};
-      appData.pembayaran.filter(p=>p.status==='DISETUJUI').forEach(p=>{
-        const wNama=appData.warga.find(w=>w.id===p.warga_id)?.nama||'Unknown';
-        if(!rekap[wNama]) rekap[wNama]={};
-        appData.detail.filter(d=>d.pembayaran_id===p.id).forEach(d=>{
-          const pNama=appData.project.find(pj=>pj.id===d.project_id)?.nama_project||'';
-          if(!rekap[wNama][d.project_id]) rekap[wNama][d.project_id]={nama:pNama,bulan:[]};
-          rekap[wNama][d.project_id].bulan.push(formatBulanID(d.periode));
-        });
+      let rekap = {};
+      (appData.pembayaran||[]).filter(p=>p.status==='DISETUJUI').forEach(p => { 
+          let wNama = appData.warga.find(w=>w.id===p.warga_id)?.nama || 'Unknown'; 
+          if(!rekap[wNama]) rekap[wNama] = {}; 
+          (appData.detail||[]).filter(d=>d.pembayaran_id===p.id).forEach(d => { 
+              let pId = d.project_id; 
+              let pNama = appData.project.find(pj=>pj.id===pId)?.nama_project || ''; 
+              if(!rekap[wNama][pId]) rekap[wNama][pId] = { nama: pNama, bulan: [] }; 
+              rekap[wNama][pId].bulan.push(formatBulanID(d.periode)); 
+          }); 
       });
-      let rekHtml='';
-      for(const w in rekap){rekHtml+=`<div style="background:#f8fafc;padding:20px;border-radius:24px;margin-bottom:16px;border:1px solid #e2e8f0;"><p style="font-weight:900;font-size:14px;color:#1e293b;letter-spacing:0.05em;margin-bottom:16px;border-bottom:1px solid #e2e8f0;padding-bottom:8px;">${w}</p>`;for(const pid in rekap[w]){rekHtml+=`<div style="margin-bottom:12px;"><span style="font-size:10px;font-weight:900;color:#2563eb;text-transform:uppercase;letter-spacing:0.05em;">${rekap[w][pid].nama}</span><p style="font-size:12px;color:#64748b;font-weight:700;line-height:1.5;margin-top:4px;">✅ ${rekap[w][pid].bulan.sort().join(', ')}</p></div>`;}rekHtml+=`</div>`;}
-      document.getElementById('laporan-rekap-warga').innerHTML=rekHtml||'<p style="font-size:12px;color:#94a3b8;text-align:center;">Kosong.</p>';
+      
+      let rekHtml = ''; 
+      for(let w in rekap) { 
+          rekHtml += `<div class="bg-slate-50 p-5 rounded-3xl mb-4 border border-slate-100"><p class="font-black text-sm text-slate-800 tracking-wider mb-4 border-b pb-2">${w}</p>`; 
+          for(let pid in rekap[w]) { 
+              rekHtml += `<div class="mb-3"><span class="text-[10px] font-black text-blue-600 uppercase tracking-widest">${rekap[w][pid].nama}</span><p class="text-xs text-slate-600 font-bold leading-relaxed mt-1">✅ ${rekap[w][pid].bulan.sort().join(', ')}</p></div>`; 
+          } 
+          rekHtml += `</div>`; 
+      }
+      document.getElementById('laporan-rekap-warga').innerHTML = rekHtml || '<p class="text-xs text-slate-400 text-center">Kosong.</p>';
     }
 
     function renderPengeluaranItems() {
-      let html=''; let total=0;
-      pengeluaranItems.forEach((it,i)=>{
-        total+=Number(it.nom||0);
-        html+=`<div style="display:flex;gap:8px;align-items:center;"><div style="flex:1;"><input type="text" placeholder="Rincian barang/keperluan" value="${it.ket}" onchange="pengeluaranItems[${i}].ket=this.value"></div><div style="width:120px;"><input type="number" placeholder="Nominal" value="${it.nom}" onchange="pengeluaranItems[${i}].nom=this.value;renderPengeluaranItems()"></div>${i>0?`<button onclick="removePengeluaranItem(${i})" style="color:#dc2626;font-weight:700;padding:0 12px;font-size:20px;background:none;border:none;cursor:pointer;">&times;</button>`:'<div style="width:36px;"></div>'}</div>`;
+      let html = ''; let total = 0;
+      pengeluaranItems.forEach((it, i) => { 
+          total += Number(it.nom||0); 
+          html += `<div class="flex gap-2 items-center"><div class="flex-1"><input type="text" placeholder="Rincian Barang" value="${it.ket}" onchange="pengeluaranItems[${i}].ket=this.value"></div><div class="w-1/3"><input type="number" placeholder="Rp" value="${it.nom}" onchange="pengeluaranItems[${i}].nom=this.value; renderPengeluaranItems()"></div>${i>0 ? `<button onclick="removePengeluaranItem(${i})" class="text-red-500 font-bold px-3 hover:bg-red-50 rounded-lg text-xl">&times;</button>`: `<div class="w-8"></div>`}</div>`; 
       });
-      document.getElementById('pengeluaran-items-container').innerHTML=html;
-      document.getElementById('adm-out-total-display').innerText=formatIDR(total);
+      document.getElementById('pengeluaran-items-container').innerHTML = html; 
+      document.getElementById('adm-out-total-display').innerText = formatIDR(total);
     }
-    function addPengeluaranItem() { pengeluaranItems.push({ket:'',nom:''}); renderPengeluaranItems(); }
-    function removePengeluaranItem(idx) { pengeluaranItems.splice(idx,1); renderPengeluaranItems(); }
+    
+    function addPengeluaranItem() { pengeluaranItems.push({ket:'', nom:''}); renderPengeluaranItems(); }
+    function removePengeluaranItem(idx) { pengeluaranItems.splice(idx, 1); renderPengeluaranItems(); }
 
     function downloadLaporanExcel() {
-      if(!globalKasArr.length) return alert('Kosong!');
-      let csv='Tanggal,Tipe,Keterangan,Uang Masuk,Uang Keluar\n';
-      globalKasArr.forEach(k=>{csv+=`${k.tgl.toLocaleDateString('id-ID')},${k.type},"${k.ket.replace(/"/g,'""')}",${k.type==='IN'?k.nominal:0},${k.type==='OUT'?k.nominal:0}\n`;});
-      const link=document.createElement('a');
-      link.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
-      link.download='BukuKas_DanaKita.csv';
-      document.body.appendChild(link); link.click(); document.body.removeChild(link);
-    }
-
-    // ── STRUK ─────────────────────────────────────────────
-    function showStrukModalById(paymentId) {
-      const payment=appData.pembayaran.find(p=>p.id===paymentId);
-      if(!payment) return alert('Data tidak ditemukan');
-      const wargaObj=appData.warga.find(w=>w.id===payment.warga_id);
-      const wargaNama=wargaObj?.nama||'Unknown';
-      const noWa=formatWAUrl(wargaObj?.no_wa);
-      const detailArr=appData.detail.filter(d=>d.pembayaran_id===paymentId);
-      const date=new Date(payment.tanggal).toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
-      let html=`<div style="padding:16px;"><div style="text-align:center;margin-bottom:20px;"><p style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.15em;">TANDA TERIMA IURAN</p><h3 style="font-weight:900;font-size:24px;color:#1e293b;letter-spacing:0.05em;margin-top:4px;">LUNAS ✅</h3></div><table style="width:100%;font-size:12px;color:#64748b;margin-bottom:16px;"><tr><td style="padding:4px 0;">Tanggal</td><td style="text-align:right;font-weight:700;">${date}</td></tr><tr><td style="padding:4px 0;">Nama Warga</td><td style="text-align:right;font-weight:700;color:#1e293b;">${wargaNama}</td></tr><tr><td style="padding:4px 0;">ID Transaksi</td><td style="text-align:right;font-size:10px;color:#94a3b8;">${payment.id}</td></tr></table><div style="border-top:1px dashed #cbd5e1;border-bottom:1px dashed #cbd5e1;padding:12px 0;margin-bottom:16px;"><p style="font-size:10px;font-weight:900;color:#94a3b8;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:8px;">Rincian Pembayaran:</p>`;
-      let waText=`*BUKTI PEMBAYARAN IURAN*\n*ID:* ${payment.id}\n\nTerima kasih Bapak/Ibu *${wargaNama}*, pembayaran Anda telah kami terima:\n\n`;
-      detailArr.forEach(d=>{
-        const pName=appData.project.find(p=>p.id===d.project_id)?.nama_project||'Project';
-        const bln=formatBulanID(d.periode);
-        html+=`<div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:#334155;margin-bottom:8px;"><span>• ${pName}<br><span style="font-size:10px;font-weight:400;color:#94a3b8;">${bln}</span></span><span>${formatIDR(d.nominal)}</span></div>`;
-        waText+=`- ${pName} (${bln}): ${formatIDR(d.nominal)}\n`;
+      if(globalKasArr.length === 0) return alert('Kosong!'); 
+      let csv = "Tanggal,Tipe,Keterangan,Uang Masuk,Uang Keluar\n";
+      globalKasArr.forEach(k => { 
+          csv += `${k.tgl.toLocaleDateString('id-ID')},${k.type},"${k.ket.replace(/"/g, '""')}",${k.type==='IN'?k.nominal:0},${k.type==='OUT'?k.nominal:0}\n`; 
       });
-      html+=`</div><div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:12px;font-weight:900;color:#94a3b8;text-transform:uppercase;letter-spacing:0.1em;">Total Bayar</span><span style="font-size:20px;font-weight:900;color:#2563eb;">${formatIDR(payment.total_nominal)}</span></div></div>`;
-      waText+=`\n*TOTAL: ${formatIDR(payment.total_nominal)}*\nStatus: LUNAS ✅\nTanggal: ${date}\n\n_DanaKita_`;
-      document.getElementById('struk-content').innerHTML=html;
-      document.getElementById('struk-modal').style.display='flex';
-      document.getElementById('btn-wa-struk').onclick=()=>{
-        if(!noWa) return alert('Warga ini tidak memiliki nomor WA!');
-        window.open(`https://wa.me/${noWa}?text=${encodeURIComponent(waText)}`, '_blank');
+      const link = document.createElement("a"); 
+      link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' })); 
+      link.download = "BukuKas_DanaKita.csv"; 
+      document.body.appendChild(link); 
+      link.click(); 
+      document.body.removeChild(link);
+    }
+
+    // --- CETAK STRUK DIGITAL (DIRECT WA & PDF) ---
+    function showStrukModalById(paymentId) {
+      const payment = appData.pembayaran.find(p => p.id === paymentId);
+      if(!payment) return alert("Data tidak ditemukan");
+      
+      const wargaObj = appData.warga.find(w => w.id === payment.warga_id);
+      const wargaNama = wargaObj?.nama || 'Unknown';
+      const noWaLengkap = formatWAUrl(wargaObj?.no_wa); 
+      
+      const detailArr = appData.detail.filter(d => d.pembayaran_id === paymentId);
+      const date = new Date(payment.tanggal).toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
+      
+      let html = `<div class="p-4" style="background-color: #f8fafc;"><div class="text-center mb-5"><p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">TANDA TERIMA IURAN</p><h3 class="font-black text-2xl text-slate-800 tracking-wider mt-1">LUNAS ✅</h3></div><table class="w-full text-xs text-slate-600 mb-4"><tr><td class="py-1">Tanggal</td><td class="text-right font-bold">${date}</td></tr><tr><td class="py-1">Nama Warga</td><td class="text-right font-bold text-slate-800">${wargaNama}</td></tr><tr><td class="py-1">ID Transaksi</td><td class="text-right text-[10px] text-slate-400">${payment.id}</td></tr></table><div class="border-t border-b border-dashed border-slate-300 py-3 mb-4"><p class="text-[10px] font-black text-slate-400 tracking-widest uppercase mb-2">Rincian Pembayaran:</p>`;
+      
+      let waText = `*BUKTI PEMBAYARAN IURAN*\n*ID TRANSAKSI:* ${payment.id}\n\nTerima kasih Bapak/Ibu *${wargaNama}*, pembayaran Anda telah kami terima:\n\n`;
+      
+      detailArr.forEach(d => { 
+          let pName = appData.project.find(p => p.id === d.project_id)?.nama_project || 'Project'; 
+          let namaBulan = formatBulanID(d.periode); 
+          html += `<div class="flex justify-between text-xs font-bold text-slate-700 mb-2"><span>• ${pName} <br><span class="text-[10px] font-normal text-slate-400">${namaBulan}</span></span><span>${formatIDR(d.nominal)}</span></div>`; 
+          waText += `- ${pName} (${namaBulan}): ${formatIDR(d.nominal)}\n`; 
+      });
+      
+      html += `</div><div class="flex justify-between items-center"><span class="text-xs font-black text-slate-400 uppercase tracking-widest">Total Bayar</span><span class="text-xl font-black text-blue-600">${formatIDR(payment.total_nominal)}</span></div></div>`;
+      waText += `\n*TOTAL: ${formatIDR(payment.total_nominal)}*\nStatus: LUNAS ✅\nTanggal: ${date}\n\n_Sistem DanaKita._`;
+      
+      document.getElementById('struk-content').innerHTML = html; 
+      document.getElementById('struk-modal').classList.remove('hidden'); 
+      document.getElementById('struk-modal').classList.add('flex');
+      
+      document.getElementById('btn-wa-struk').onclick = () => {
+          if (!noWaLengkap) return alert("Warga ini tidak memiliki data No. WA di sistem!");
+          const waUrl = `https://wa.me/${noWaLengkap}?text=${encodeURIComponent(waText)}`;
+          window.open(waUrl, '_blank');
       };
-      document.getElementById('btn-pdf-struk').onclick=()=>{
-        showLoader(true);
-        html2pdf().set({margin:0.5,filename:`Struk_${wargaNama.replace(/\s+/g,'')}.pdf`,image:{type:'jpeg',quality:0.98},html2canvas:{scale:2},jsPDF:{unit:'in',format:'A5',orientation:'portrait'}}).from(document.getElementById('struk-content')).save().then(()=>showLoader(false));
+      
+      document.getElementById('btn-pdf-struk').onclick = () => {
+          showLoader(true);
+          const element = document.getElementById('struk-content');
+          const opt = {
+              margin:       0.5,
+              filename:     `Struk_${wargaNama.replace(/\s+/g, '')}_${paymentId}.pdf`,
+              image:        { type: 'jpeg', quality: 0.98 },
+              html2canvas:  { scale: 2 },
+              jsPDF:        { unit: 'in', format: 'A5', orientation: 'portrait' }
+          };
+          html2pdf().set(opt).from(element).save().then(() => showLoader(false));
       };
     }
 
-    // ── SUPABASE WRITE ────────────────────────────────────
+    // --- SUPABASE WRITE ACTIONS ---
     async function submitPembayaran() {
-      const wId=document.getElementById('warga-select').value;
-      const metode=document.getElementById('metode-pembayaran').value;
-      const fileInput=document.getElementById('iuran-bukti');
-      if(metode==='TRANSFER'&&fileInput.files.length===0) return alert('Pilih foto bukti transfer!');
-      let dets=[],tot=0;
-      for(const p in selectedCart){selectedCart[p].months.forEach(m=>{dets.push({project_id:p,periode:m,nominal:selectedCart[p].base});tot+=selectedCart[p].base;});}
-      if(!dets.length) return alert('Pilih minimal 1 pembayaran!');
+      const wId = document.getElementById('warga-select').value, metode = document.getElementById('metode-pembayaran').value, fileInput = document.getElementById('iuran-bukti');
+      if(metode === 'TRANSFER' && fileInput.files.length === 0) return alert('Pilih foto bukti transfer!');
+      
+      let dets = [], tot = 0;
+      for(let p in selectedCart) { selectedCart[p].months.forEach(m => { dets.push({ project_id:p, periode:m, nominal:selectedCart[p].base }); tot+=selectedCart[p].base; }); }
+      if(dets.length===0) return alert("Pilih minimal 1 pembayaran!");
+      
       showLoader(true);
       try {
-        const cid=currentProfile?.cluster_id||null;
-        const pid=generateId('PAY');
-        let fileUrl='';
-        if(metode==='TRANSFER'&&fileInput.files.length>0){
-          const file=fileInput.files[0];
-          const fname=`${pid}.${file.name.split('.').pop()}`;
-          const {error:ue}=await supaClient.storage.from('bukti_transfer').upload(fname,file);
-          if(ue) throw ue;
-          const {data:ud}=supaClient.storage.from('bukti_transfer').getPublicUrl(fname);
-          fileUrl=ud.publicUrl;
+        const pembayaranId = generateId('PAY');
+        let fileUrl = '';
+        
+        if(metode === 'TRANSFER' && fileInput.files.length > 0) {
+          const file = fileInput.files[0];
+          const fileName = `${pembayaranId}.${file.name.split('.').pop()}`;
+          const { error: uploadError } = await supaClient.storage.from('bukti_transfer').upload(fileName, file);
+          if (uploadError) throw uploadError;
+          const { data } = supaClient.storage.from('bukti_transfer').getPublicUrl(fileName);
+          fileUrl = data.publicUrl;
         }
-        const {error:e1}=await supaClient.from('pembayaran').insert([{id:pid,tanggal:new Date().toISOString(),warga_id:wId,total_nominal:tot,metode,bukti_url:fileUrl,status:'MENUNGGU VERIFIKASI',verified_by:'',verified_at:null,cluster_id:cid}]);
-        if(e1) throw e1;
-        const {error:e2}=await supaClient.from('pembayaran_detail').insert(dets.map(d=>({id:generateId('DET'),pembayaran_id:pid,project_id:d.project_id,periode:d.periode,nominal:d.nominal,cluster_id:cid})));
-        if(e2) throw e2;
-        alert('Pembayaran berhasil dikirim! Tunggu verifikasi pengurus.');
-        await initApp();
-      } catch(e){alert('Gagal: '+e.message);}
+
+        const { error: err1 } = await supaClient.from('pembayaran').insert([{ id: pembayaranId, tanggal: new Date().toISOString(), warga_id: wId, total_nominal: tot, metode: metode, bukti_url: fileUrl, status: 'MENUNGGU VERIFIKASI', verified_by: '', verified_at: null }]);
+        if (err1) throw err1;
+
+        const detailsData = dets.map(d => ({ id: generateId('DET'), pembayaran_id: pembayaranId, project_id: d.project_id, periode: d.periode, nominal: d.nominal }));
+        const { error: err2 } = await supaClient.from('pembayaran_detail').insert(detailsData);
+        if (err2) throw err2;
+
+        alert("Pembayaran Terkirim!");
+        initApp();
+      } catch (e) { alert("Error: " + e.message); }
       showLoader(false);
     }
 
     async function adminCreateWarga() {
-      if(!currentProfile) return alert('Anda harus login sebagai admin!');
-      const payload={id:generateId('WRG'),nama:document.getElementById('adm-wrg-nama').value,no_rumah:document.getElementById('adm-wrg-blok').value,no_wa:document.getElementById('adm-wrg-wa').value,status:'ACTIVE',cluster_id:currentProfile.cluster_id};
-      if(!payload.nama) return alert('Isi Nama!');
-      showLoader(true); await supaClient.from('warga').insert([payload]); await initApp();
+      const payload = { id: generateId('WRG'), nama: document.getElementById('adm-wrg-nama').value, no_rumah: document.getElementById('adm-wrg-blok').value, no_wa: document.getElementById('adm-wrg-wa').value, status: 'ACTIVE' };
+      if(!payload.nama) return alert("Isi Nama!");
+      showLoader(true); await supaClient.from('warga').insert([payload]); initApp();
     }
-    async function adminDeleteWarga(id) {
-      showLoader(true); await supaClient.from('warga').update({status:'INACTIVE'}).eq('id',id); await initApp();
+    
+    async function adminDeleteWarga(idWarga) {
+      showLoader(true); await supaClient.from('warga').update({ status: 'INACTIVE' }).eq('id', idWarga); initApp();
     }
+
     async function adminCreateProject() {
-      if(!currentProfile) return alert('Anda harus login sebagai admin!');
-      const payload={id:generateId('PRJ'),nama_project:document.getElementById('adm-proj-nama').value,tipe:document.getElementById('adm-proj-tipe').value,nominal_default:document.getElementById('adm-proj-nominal').value,target:document.getElementById('adm-proj-target').value||0,start_periode:document.getElementById('adm-proj-start').value||'',status:'ACTIVE',cluster_id:currentProfile.cluster_id};
-      if(!payload.nama_project) return alert('Isi nama project!');
-      showLoader(true); await supaClient.from('project').insert([payload]); await initApp();
+      const payload = { id: generateId('PRJ'), nama_project: document.getElementById('adm-proj-nama').value, tipe: document.getElementById('adm-proj-tipe').value, nominal_default: document.getElementById('adm-proj-nominal').value, target: document.getElementById('adm-proj-target').value||0, start_periode: document.getElementById('adm-proj-start').value || '', status: 'ACTIVE' };
+      if(!payload.nama_project) return alert("Isi form!");
+      showLoader(true); await supaClient.from('project').insert([payload]); initApp();
     }
-    async function adminCloseProject(id) {
-      showLoader(true); await supaClient.from('project').update({status:'INACTIVE'}).eq('id',id); await initApp();
+
+    async function adminCloseProject(projectId) {
+      showLoader(true); await supaClient.from('project').update({ status: 'INACTIVE' }).eq('id', projectId); initApp();
     }
+
     async function adminVerifyPembayaran(id, status) {
-      showLoader(true); await supaClient.from('pembayaran').update({status,verified_by:currentProfile?.nama||'Admin',verified_at:new Date().toISOString()}).eq('id',id); await initApp();
+      showLoader(true); await supaClient.from('pembayaran').update({ status: status, verified_by: adminNameSession, verified_at: new Date().toISOString() }).eq('id', id); initApp();
     }
+
     async function adminCreatePengeluaran() {
-      if(!currentProfile) return alert('Anda harus login sebagai admin!');
-      const kat=document.getElementById('adm-out-kategori').value;
-      const katFinal=kat==='LAINNYA'?document.getElementById('adm-out-kategori-lain').value:kat;
-      if(!katFinal) return alert('Pilih sumber dana!');
-      const valid=pengeluaranItems.filter(it=>it.ket.trim()!==''&&Number(it.nom)>0);
-      if(!valid.length) return alert('Isi minimal 1 rincian!');
-      const totNom=valid.reduce((s,it)=>s+Number(it.nom),0);
-      const ketText=valid.map((it,i)=>`${i+1}. ${it.ket} (Rp ${Number(it.nom).toLocaleString('id-ID')})`).join('\n');
+      const kat = document.getElementById('adm-out-kategori').value, katFinal = kat === 'LAINNYA' ? document.getElementById('adm-out-kategori-lain').value : kat;
+      if(!katFinal) return alert("Pilih sumber dana!");
+      const validItems = pengeluaranItems.filter(it => it.ket.trim() !== '' && Number(it.nom) > 0);
+      if(validItems.length === 0) return alert("Isi minimal 1 rincian belanja dengan nominal!");
+      let totNom = validItems.reduce((s, it) => s + Number(it.nom), 0);
+      let ketText = validItems.map((it, idx) => `${idx+1}. ${it.ket} (Rp ${Number(it.nom).toLocaleString('id-ID')})`).join('\n');
+      
       showLoader(true);
-      await supaClient.from('pengeluaran').insert([{id:generateId('OUT'),tanggal:new Date().toISOString(),kategori_project:katFinal,keterangan:ketText,nominal:totNom,cluster_id:currentProfile.cluster_id}]);
-      pengeluaranItems=[{ket:'',nom:''}]; await initApp();
+      await supaClient.from('pengeluaran').insert([{ id: generateId('OUT'), tanggal: new Date().toISOString(), kategori_project: katFinal, keterangan: ketText, nominal: totNom }]);
+      pengeluaranItems = [{ket:'', nom:''}]; initApp();
     }
+
     async function adminCreateDanaLain() {
-      if(!currentProfile) return alert('Anda harus login sebagai admin!');
-      const s=document.getElementById('adm-in-sumber').value;
-      const k=document.getElementById('adm-in-kategori').value;
-      const kFinal=k==='LAINNYA'?document.getElementById('adm-in-kategori-lain').value:k;
-      const ket=document.getElementById('adm-in-ket').value;
-      const nom=document.getElementById('adm-in-nom').value;
-      if(!s||!kFinal||!nom) return alert('Lengkapi form!');
-      showLoader(true);
-      await supaClient.from('dana_lain').insert([{id:generateId('DON'),tanggal:new Date().toISOString(),sumber:s,kategori_project:kFinal,keterangan:ket,nominal:nom,cluster_id:currentProfile.cluster_id}]);
-      await initApp();
+      const s = document.getElementById('adm-in-sumber').value, k = document.getElementById('adm-in-kategori').value, kFinal = k === 'LAINNYA' ? document.getElementById('adm-in-kategori-lain').value : k, ket = document.getElementById('adm-in-ket').value, nom = document.getElementById('adm-in-nom').value;
+      if(!s || !kFinal || !nom) return alert("Lengkapi form!"); 
+      showLoader(true); await supaClient.from('dana_lain').insert([{ id: generateId('DON'), tanggal: new Date().toISOString(), sumber: s, kategori_project: kFinal, keterangan: ket, nominal: nom }]); initApp();
     }
-    async function adminDeleteKas(id, tipe) {
-      showLoader(true);
-      await supaClient.from(tipe==='OUT'?'pengeluaran':'dana_lain').delete().eq('id',id);
-      await initApp();
+
+    async function adminDeleteKas(idKas, tipe) {
+      showLoader(true); await supaClient.from(tipe === 'OUT' ? 'pengeluaran' : 'dana_lain').delete().eq('id', idKas); initApp();
     }
   </script>
 </body>
