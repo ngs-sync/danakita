@@ -2,357 +2,611 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DanaKita</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>DanaKita - Portal Kas Komunitas</title>
+  
+  <!-- CDNs -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  
+  <style>
+    body { background-color: #f8fafc; font-family: ui-sans-serif, system-ui, sans-serif; padding-bottom: 100px; }
+    .tab-content { display: none; }
+    .active { display: block; animation: fadeIn 0.2s; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .nav-active { border-top: 3px solid #2563eb; color: #2563eb; font-weight: 800; }
+    .nav-admin-active { border-top: 3px solid #1e293b; color: #1e293b; font-weight: 800; }
+    input, select { @apply w-full p-3 border border-slate-300 bg-slate-50 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition text-sm; }
+    .btn-blue { @apply bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow-md transition active:scale-95 text-sm w-full; }
+    .btn-green { @apply bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl shadow-md transition active:scale-95 text-sm w-full; }
+    .btn-red { @apply bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-xl shadow-md transition active:scale-95 text-sm w-full; }
+    .btn-slate { @apply bg-slate-600 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded-xl shadow-md transition active:scale-95 text-sm; }
+    .form-grid { @apply grid grid-cols-[90px_10px_1fr] items-center gap-y-3 text-sm; }
+  </style>
 </head>
-<body class="bg-slate-50 min-h-screen">
+<body>
 
   <!-- LOADER -->
-  <div id="loader" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center">
-    <div class="bg-white p-6 rounded-xl"><div class="animate-spin h-10 w-10 border-4 border-blue-600 border-t-transparent rounded-full"></div></div>
+  <div id="loader" class="fixed inset-0 bg-black/40 z-50 hidden flex items-center justify-center">
+    <div class="bg-white p-4 rounded-xl shadow-lg"><div class="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto"></div></div>
   </div>
 
   <!-- LOGIN MODAL -->
   <div id="loginModal" class="fixed inset-0 bg-black/60 z-40 flex items-center justify-center p-4">
-    <!-- Step 1: Kode -->
-    <div id="stepKode" class="bg-white rounded-2xl p-6 w-full max-w-sm">
+    <div id="stepKode" class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
       <h2 class="text-xl font-bold mb-4">🔑 Kode Organisasi</h2>
-      <input type="text" id="inputKode" placeholder="DKT-XXXXX" class="w-full p-3 border rounded-xl mb-4 uppercase text-center font-mono">
-      <button onclick="fnValidateKode()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold">Lanjutkan</button>
-      <a href="/super-admin.html" class="block text-center text-xs text-blue-600 mt-4">Super Admin</a>
+      <input type="text" id="inputKode" placeholder="DKT-XXXXX" class="mb-4 uppercase text-center font-mono text-lg tracking-wider">
+      <button onclick="fnValidateKode()" class="btn-blue">Lanjutkan</button>
+      <a href="/super-admin.html" class="block text-center text-xs text-blue-600 mt-4">Masuk Super Admin</a>
     </div>
 
-    <!-- Step 2: Login -->
-    <div id="stepLogin" class="bg-white rounded-2xl p-6 w-full max-w-sm hidden">
+    <div id="stepLogin" class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl hidden">
       <h2 class="text-xl font-bold mb-4" id="orgNameDisplay">Login</h2>
-      
       <div class="flex gap-2 mb-4 bg-slate-100 p-1 rounded-xl">
-        <button onclick="fnSwitchTab('admin')" id="tabAdmin" class="flex-1 py-2 rounded-lg text-sm font-bold bg-white shadow text-blue-600">Admin</button>
+        <button onclick="fnSwitchTab('admin')" id="tabAdmin" class="flex-1 py-2 rounded-lg text-sm font-bold bg-white shadow text-blue-600">Pengurus</button>
         <button onclick="fnSwitchTab('warga')" id="tabWarga" class="flex-1 py-2 rounded-lg text-sm font-bold text-slate-500">Warga</button>
       </div>
-
       <div id="formAdmin">
-        <input type="text" id="inpUser" placeholder="Username" class="w-full p-3 border rounded-xl mb-3">
-        <input type="password" id="inpPass" placeholder="Password" class="w-full p-3 border rounded-xl mb-4">
-        <button onclick="fnLoginAdmin()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold">Masuk</button>
+        <input type="text" id="inpUser" placeholder="Username" class="mb-3">
+        <input type="password" id="inpPass" placeholder="Password" class="mb-4">
+        <button onclick="fnLoginAdmin()" class="btn-blue">Masuk</button>
       </div>
-
       <div id="formWarga" class="hidden">
-        <input type="text" id="inpRumah" placeholder="No. Rumah" class="w-full p-3 border rounded-xl mb-3">
-        <input type="password" id="inpPin" placeholder="PIN" maxlength="6" class="w-full p-3 border rounded-xl mb-4">
-        <button onclick="fnLoginWarga()" class="w-full bg-green-600 text-white py-3 rounded-xl font-bold">Masuk</button>
+        <input type="text" id="inpRumah" placeholder="No. Rumah" class="mb-3">
+        <input type="password" id="inpPin" placeholder="PIN" maxlength="6" class="mb-4">
+        <button onclick="fnLoginWarga()" class="btn-green">Masuk</button>
       </div>
-
       <button onclick="fnBackToKode()" class="w-full mt-4 text-sm text-slate-500">← Ganti Kode</button>
     </div>
   </div>
 
   <!-- MAIN APP -->
   <div id="mainApp" class="hidden">
-    <header class="bg-white border-b p-4 sticky top-0 z-30">
+    <header class="bg-white border-b p-4 sticky top-0 z-30 shadow-sm">
       <div class="max-w-2xl mx-auto flex justify-between items-center">
-        <h1 class="text-xl font-black text-blue-600">DANAKITA</h1>
-        <button onclick="fnLogout()" class="bg-red-50 text-red-600 px-4 py-2 rounded-lg text-sm font-bold">Keluar</button>
+        <div><h1 class="text-xl font-black text-blue-600">DANAKITA</h1><p class="text-[10px] text-slate-500 font-bold tracking-widest" id="headerSubtitle">PORTAL</p></div>
+        <button onclick="fnLogout()" class="bg-red-50 text-red-600 px-3 py-2 rounded-lg text-xs font-bold">Keluar</button>
       </div>
     </header>
 
-    <main class="max-w-2xl mx-auto p-4">
-      <!-- Admin Dashboard -->
-      <div id="adminView" class="hidden space-y-4">
-        <div class="bg-white p-6 rounded-xl shadow-sm border">
-          <h3 class="font-bold mb-4">👥 Tambah Warga</h3>
-          <input type="text" id="admNama" placeholder="Nama" class="w-full p-3 border rounded-xl mb-3">
-          <input type="text" id="admRumah" placeholder="No. Rumah" class="w-full p-3 border rounded-xl mb-4">
-          <button onclick="fnTambahWarga()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold">Simpan</button>
-          <div id="listWarga" class="mt-6 space-y-2"></div>
+    <main class="p-4 max-w-2xl mx-auto space-y-4">
+      
+      <!-- ===== AREA WARGA ===== -->
+      <div id="areaWarga" class="hidden">
+        <!-- Dashboard Warga -->
+        <div id="viewWargaDash" class="tab-content active w-sec">
+          <div class="bg-gradient-to-br from-blue-600 to-indigo-700 p-6 rounded-3xl text-white shadow-xl mb-5">
+            <p class="text-blue-200 text-xs font-bold uppercase tracking-widest">Saldo Kas Aktif</p>
+            <h2 id="saldoDisplay" class="text-4xl font-black mt-1 mb-4">Rp 0</h2>
+            <div class="flex gap-3 text-xs">
+              <div class="flex-1 bg-white/20 p-3 rounded-xl"><span class="block text-[9px] text-blue-200">MASUK</span><span id="totalIn" class="font-bold">Rp 0</span></div>
+              <div class="flex-1 bg-white/20 p-3 rounded-xl"><span class="block text-[9px] text-blue-200">KELUAR</span><span id="totalOut" class="font-bold">Rp 0</span></div>
+            </div>
+          </div>
+          <div class="bg-white p-5 rounded-3xl shadow-sm border"><h3 class="font-black text-xs uppercase mb-3 text-slate-600">Progress Project</h3><div id="progressContainer" class="space-y-4"></div></div>
         </div>
 
-        <div class="bg-white p-6 rounded-xl shadow-sm border">
-          <h3 class="font-bold mb-4">📁 Tambah Project</h3>
-          <input type="text" id="admProj" placeholder="Nama Project" class="w-full p-3 border rounded-xl mb-3">
-          <input type="number" id="admNom" placeholder="Nominal" class="w-full p-3 border rounded-xl mb-4">
-          <button onclick="fnTambahProject()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold">Simpan</button>
-          <div id="listProj" class="mt-6 space-y-2"></div>
+        <!-- Bayar Iuran -->
+        <div id="viewWargaBayar" class="tab-content w-sec">
+          <div class="bg-white p-6 rounded-3xl shadow-sm border">
+            <h3 class="font-black text-sm uppercase mb-4">💰 Bayar Iuran</h3>
+            <div id="iuranContainer" class="space-y-4 mb-6"></div>
+            <div id="summaryBayar" class="hidden border-t pt-4 mt-4">
+              <p class="text-center text-xs font-bold text-slate-400 uppercase">TOTAL TAGIHAN</p>
+              <h2 id="totalBayarDisplay" class="text-3xl font-black text-center text-blue-600 my-2">Rp 0</h2>
+              <div class="form-grid mt-4"><label>Metode</label><span>:</span><select id="metodeBayar"><option value="TRANSFER">Transfer</option><option value="CASH">Tunai</option></select></div>
+              <button onclick="fnSubmitPembayaran()" class="btn-blue mt-4">Kirim Pembayaran</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Riwayat -->
+        <div id="viewWargaRiwayat" class="tab-content w-sec">
+          <div class="bg-white p-6 rounded-3xl shadow-sm border"><h3 class="font-black text-sm uppercase mb-4">📜 Riwayat Pembayaran</h3><div id="riwayatContainer" class="space-y-3"></div></div>
         </div>
       </div>
 
-      <!-- Warga Dashboard -->
-      <div id="wargaView" class="hidden">
-        <div class="bg-gradient-to-br from-blue-600 to-indigo-700 p-6 rounded-2xl text-white text-center">
-          <p class="text-blue-200 text-sm">Saldo Kas</p>
-          <h2 class="text-4xl font-black mt-2" id="saldoDisplay">Rp 0</h2>
+      <!-- ===== AREA ADMIN ===== -->
+      <div id="areaAdmin" class="hidden pb-10">
+        <!-- Verifikasi -->
+        <div id="viewAdminVerify" class="tab-content active a-sec">
+          <div class="bg-white p-6 rounded-3xl border-t-4 border-blue-500 shadow-sm mb-4">
+            <h3 class="font-black text-slate-800 mb-4">✅ Verifikasi Pembayaran</h3>
+            <div id="pendingList" class="space-y-3"></div>
+            <p id="emptyPending" class="text-center text-xs text-slate-400 py-4 hidden">Tidak ada pembayaran menunggu.</p>
+          </div>
+        </div>
+
+        <!-- Master Data -->
+        <div id="viewAdminMaster" class="tab-content a-sec space-y-4">
+          <div class="bg-white p-6 rounded-3xl shadow-sm border">
+            <h3 class="font-black text-slate-800 mb-4 text-sm uppercase">👥 Kelola Warga</h3>
+            <div class="form-grid mb-3"><label>Nama</label><span>:</span><input type="text" id="admNama"><label>Blok</label><span>:</span><input type="text" id="admRumah"><label>WA</label><span>:</span><input type="text" id="admWa"></div>
+            <button onclick="fnTambahWarga()" class="btn-blue">+ Simpan Warga</button>
+            <div id="listWarga" class="mt-4 space-y-2 max-h-40 overflow-y-auto"></div>
+          </div>
+          <div class="bg-white p-6 rounded-3xl shadow-sm border">
+            <h3 class="font-black text-slate-800 mb-4 text-sm uppercase">📁 Kelola Project</h3>
+            <div class="form-grid mb-3"><label>Nama</label><span>:</span><input type="text" id="admProj"><label>Nominal</label><span>:</span><input type="number" id="admNom"></div>
+            <button onclick="fnTambahProject()" class="btn-blue">+ Terbitkan</button>
+            <div id="listProj" class="mt-4 space-y-2"></div>
+          </div>
+        </div>
+
+        <!-- Buku Kas -->
+        <div id="viewAdminKas" class="tab-content a-sec space-y-4">
+          <div class="bg-white p-6 rounded-3xl shadow-sm border">
+            <div class="flex gap-2 mb-4"><button onclick="fnToggleKasForm('IN')" class="flex-1 py-2 bg-green-100 text-green-700 rounded-lg font-bold text-xs">Pemasukan</button><button onclick="fnToggleKasForm('OUT')" class="flex-1 py-2 bg-red-100 text-red-700 rounded-lg font-bold text-xs">Pengeluaran</button></div>
+            <div id="formKasIn" class="hidden space-y-3">
+              <input type="text" id="kasInSumber" placeholder="Sumber (Contoh: Donasi Budi)">
+              <input type="number" id="kasInNom" placeholder="Nominal">
+              <button onclick="fnTambahKas('IN')" class="btn-green">Simpan Pemasukan</button>
+            </div>
+            <div id="formKasOut" class="hidden space-y-3">
+              <input type="text" id="kasOutKet" placeholder="Keterangan Belanja">
+              <input type="number" id="kasOutNom" placeholder="Nominal">
+              <button onclick="fnTambahKas('OUT')" class="btn-red">Simpan Pengeluaran</button>
+            </div>
+          </div>
+          <div class="bg-white p-6 rounded-3xl shadow-sm border"><h3 class="font-black text-sm uppercase mb-4">📒 Mutasi Kas</h3><div id="kasList" class="space-y-2 max-h-60 overflow-y-auto"></div></div>
+        </div>
+
+        <!-- Laporan -->
+        <div id="viewAdminLaporan" class="tab-content a-sec space-y-4">
+          <div class="bg-white p-6 rounded-3xl shadow-sm border">
+            <div class="flex justify-between items-center mb-4"><h3 class="font-black text-sm uppercase">📊 Grafik Arus Kas</h3><button onclick="fnExportCSV()" class="btn-slate !w-auto !py-2">⬇️ Export CSV</button></div>
+            <div class="h-48"><canvas id="kasChart"></canvas></div>
+          </div>
+          <div class="bg-white p-6 rounded-3xl shadow-sm border"><h3 class="font-black text-sm uppercase mb-4">📋 Rekap Transaksi</h3><div id="rekapList" class="space-y-2 text-xs"></div></div>
         </div>
       </div>
     </main>
 
-    <!-- Navigation -->
-    <nav id="navAdmin" class="fixed bottom-0 left-0 right-0 bg-slate-900 text-white p-4 hidden">
-      <div class="max-w-2xl mx-auto text-center text-sm">Panel Pengurus</div>
+    <!-- NAVIGASI -->
+    <nav id="navWarga" class="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around p-2 pb-6 z-40 hidden">
+      <button onclick="fnSwitchWargaTab('viewWargaDash')" class="w-nav flex-1 nav-active flex flex-col items-center p-2 text-slate-400"><span class="text-2xl mb-1">🏠</span><span class="text-[10px] font-black uppercase">Beranda</span></button>
+      <button onclick="fnSwitchWargaTab('viewWargaBayar')" class="w-nav flex-1 flex flex-col items-center p-2 text-slate-400"><span class="text-2xl mb-1">💰</span><span class="text-[10px] font-black uppercase">Bayar</span></button>
+      <button onclick="fnSwitchWargaTab('viewWargaRiwayat')" class="w-nav flex-1 flex flex-col items-center p-2 text-slate-400"><span class="text-2xl mb-1">📋</span><span class="text-[10px] font-black uppercase">Riwayat</span></button>
     </nav>
+
+    <nav id="navAdmin" class="fixed bottom-0 left-0 right-0 bg-slate-900 border-t flex justify-around p-2 pb-6 z-40 hidden text-white">
+      <button onclick="fnSwitchAdminTab('viewAdminVerify')" class="a-nav flex-1 nav-admin-active flex flex-col items-center p-2 text-slate-500"><span class="text-xl mb-1">✅</span><span class="text-[9px] font-bold uppercase">Verifikasi</span></button>
+      <button onclick="fnSwitchAdminTab('viewAdminMaster')" class="a-nav flex-1 flex flex-col items-center p-2 text-slate-500"><span class="text-xl mb-1">👥</span><span class="text-[9px] font-bold uppercase">Master</span></button>
+      <button onclick="fnSwitchAdminTab('viewAdminKas')" class="a-nav flex-1 flex flex-col items-center p-2 text-slate-500"><span class="text-xl mb-1">💸</span><span class="text-[9px] font-bold uppercase">Kas</span></button>
+      <button onclick="fnSwitchAdminTab('viewAdminLaporan')" class="a-nav flex-1 flex flex-col items-center p-2 text-slate-500"><span class="text-xl mb-1">📊</span><span class="text-[9px] font-bold uppercase">Laporan</span></button>
+    </nav>
+  </div>
+
+  <!-- MODAL STRUK -->
+  <div id="strukModal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl w-full max-w-sm overflow-hidden">
+      <div class="bg-blue-600 p-3 text-center"><h3 class="text-white font-black">BUKTI PEMBAYARAN</h3></div>
+      <div id="strukContent" class="p-6 bg-slate-50"></div>
+      <div class="p-4 bg-white border-t flex gap-2">
+        <button onclick="fnKirimWA()" class="btn-green flex-1 py-2 text-xs">💬 Kirim WA</button>
+        <button onclick="fnDownloadPDF()" class="btn-blue flex-1 py-2 text-xs">📄 Simpan PDF</button>
+        <button onclick="document.getElementById('strukModal').classList.add('hidden')" class="btn-slate flex-1 py-2 text-xs">Tutup</button>
+      </div>
+    </div>
   </div>
 
   <script>
     // ==========================================
-    // INIT SUPABASE (Global, sekali saja)
+    // CONFIG & INIT
     // ==========================================
     window.dk = window.dk || {};
-    if (!window.dk.supabase) {
-      window.dk.supabase = window.supabase.createClient(
+    if (!window.dk.db) {
+      window.dk.db = window.supabase.createClient(
         'https://tgcpyatrllswhlysqfer.supabase.co',
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRnY3B5YXRybGxzd2hseXNxZmVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MjI2ODMsImV4cCI6MjA5MTM5ODY4M30.BHY6R2e62YvXz-N_2n_qHossbKxPZxUX0y1lrNKketg'
       );
     }
-    const db = window.dk.supabase;
+    const db = window.dk.db;
+    window.dk.state = { orgId: null, user: null, data: { warga:[], project:[], pembayaran:[], detail:[], pengeluaran:[], danaLain:[] }, selectedCart: {} };
+    let kasChartInstance = null;
+    let currentStrukData = null;
 
-    // State Global
-    window.dk.state = {
-      orgId: null,
-      user: null
-    };
+    window.addEventListener('DOMContentLoaded', () => {
+      const s = JSON.parse(localStorage.getItem('dk_session'));
+      if (s && s.exp > Date.now()) {
+        window.dk.state.orgId = s.orgId;
+        window.dk.state.user = s.user;
+        fnShowApp();
+      }
+    });
 
     // ==========================================
-    // FUNGSI-FUNGSI GLOBAL (Expose ke window)
+    // AUTH & UI HELPERS
     // ==========================================
-
-    // 1. Validasi Kode Organisasi
     window.fnValidateKode = async function() {
       const kode = document.getElementById('inputKode').value.trim().toUpperCase();
       if (!kode) return alert('Masukkan kode!');
-
-      document.getElementById('loader').classList.remove('hidden');
+      showLoader(true);
       const { data, error } = await db.from('organizations').select('id, nama').eq('client_code', kode).single();
-      document.getElementById('loader').classList.add('hidden');
-
+      showLoader(false);
       if (data && !error) {
         window.dk.state.orgId = data.id;
         document.getElementById('orgNameDisplay').innerText = data.nama;
         document.getElementById('stepKode').classList.add('hidden');
         document.getElementById('stepLogin').classList.remove('hidden');
-      } else {
-        alert('Kode tidak valid!');
-      }
+      } else alert('Kode tidak valid!');
     };
 
-    // 2. Kembali ke input kode
     window.fnBackToKode = function() {
       document.getElementById('stepLogin').classList.add('hidden');
       document.getElementById('stepKode').classList.remove('hidden');
     };
 
-    // 3. Switch Tab Admin/Warga
     window.fnSwitchTab = function(type) {
-      const formAdmin = document.getElementById('formAdmin');
-      const formWarga = document.getElementById('formWarga');
-      const tabAdmin = document.getElementById('tabAdmin');
-      const tabWarga = document.getElementById('tabWarga');
-
-      if (type === 'admin') {
-        formAdmin.classList.remove('hidden');
-        formWarga.classList.add('hidden');
-        tabAdmin.className = 'flex-1 py-2 rounded-lg text-sm font-bold bg-white shadow text-blue-600';
-        tabWarga.className = 'flex-1 py-2 rounded-lg text-sm font-bold text-slate-500';
-      } else {
-        formWarga.classList.remove('hidden');
-        formAdmin.classList.add('hidden');
-        tabWarga.className = 'flex-1 py-2 rounded-lg text-sm font-bold bg-white shadow text-green-600';
-        tabAdmin.className = 'flex-1 py-2 rounded-lg text-sm font-bold text-slate-500';
-      }
+      const fAdm = document.getElementById('formAdmin'), fWrg = document.getElementById('formWarga');
+      const tAdm = document.getElementById('tabAdmin'), tWrg = document.getElementById('tabWarga');
+      if(type==='admin') { fAdm.classList.remove('hidden'); fWrg.classList.add('hidden'); tAdm.className='flex-1 py-2 rounded-lg text-sm font-bold bg-white shadow text-blue-600'; tWrg.className='flex-1 py-2 rounded-lg text-sm font-bold text-slate-500'; }
+      else { fWrg.classList.remove('hidden'); fAdm.classList.add('hidden'); tWrg.className='flex-1 py-2 rounded-lg text-sm font-bold bg-white shadow text-green-600'; tAdm.className='flex-1 py-2 rounded-lg text-sm font-bold text-slate-500'; }
     };
 
-    // 4. Login Admin
     window.fnLoginAdmin = async function() {
-      const user = document.getElementById('inpUser').value.trim();
-      const pass = document.getElementById('inpPass').value;
-
-      if (!user || !pass) return alert('Isi username & password!');
-
-      document.getElementById('loader').classList.remove('hidden');
-      const { data, error } = await db.rpc('rpc_login_admin', {
-        p_username: user,
-        p_password: pass,
-        p_org_id: window.dk.state.orgId
-      });
-      document.getElementById('loader').classList.add('hidden');
-
-      if (data && data.success) {
-        window.dk.state.user = { type: 'admin', id: data.data.id, name: data.data.nama_admin };
-        fnShowApp();
-      } else {
-        alert('Login gagal: ' + (data?.msg || 'Credential salah'));
-      }
+      const u = document.getElementById('inpUser').value.trim(), p = document.getElementById('inpPass').value;
+      if(!u || !p) return alert('Isi credential!');
+      showLoader(true);
+      const { data } = await db.rpc('rpc_login_admin', { p_username: u, p_password: p, p_org_id: window.dk.state.orgId });
+      showLoader(false);
+      if(data?.success) { window.dk.state.user = { type:'admin', id:data.data.id, name:data.data.nama_admin }; fnShowApp(); } else alert('Login gagal: ' + (data?.msg||'Credential salah'));
     };
 
-    // 5. Login Warga
     window.fnLoginWarga = async function() {
-      const rumah = document.getElementById('inpRumah').value.trim();
-      const pin = document.getElementById('inpPin').value;
-
-      if (!rumah || !pin) return alert('Isi No. Rumah & PIN!');
-
-      document.getElementById('loader').classList.remove('hidden');
-      const { data, error } = await db.rpc('rpc_login_warga', {
-        p_no_rumah: rumah,
-        p_pin: pin,
-        p_org_id: window.dk.state.orgId
-      });
-      document.getElementById('loader').classList.add('hidden');
-
-      if (data && data.success) {
-        window.dk.state.user = { type: 'warga', id: data.data.id, name: data.data.nama };
-        fnShowApp();
-      } else {
-        alert('Login gagal: ' + (data?.msg || 'Credential salah'));
-      }
+      const r = document.getElementById('inpRumah').value.trim(), p = document.getElementById('inpPin').value;
+      if(!r || !p) return alert('Isi credential!');
+      showLoader(true);
+      const { data } = await db.rpc('rpc_login_warga', { p_no_rumah: r, p_pin: p, p_org_id: window.dk.state.orgId });
+      showLoader(false);
+      if(data?.success) { window.dk.state.user = { type:'warga', id:data.data.id, name:data.data.nama, noRumah:data.data.no_rumah }; fnShowApp(); } else alert('Login gagal: ' + (data?.msg||'Credential salah'));
     };
 
-    // 6. Tampilkan Aplikasi
-    window.fnShowApp = function() {
-      // Simpan session
-      localStorage.setItem('dk_session', JSON.stringify({
-        orgId: window.dk.state.orgId,
-        user: window.dk.state.user,
-        exp: Date.now() + 86400000
-      }));
-
-      // Hide modal, show app
-      document.getElementById('loginModal').classList.add('hidden');
-      document.getElementById('mainApp').classList.remove('hidden');
-
-      if (window.dk.state.user.type === 'admin') {
-        document.getElementById('adminView').classList.remove('hidden');
-        document.getElementById('wargaView').classList.add('hidden');
-        document.getElementById('navAdmin').classList.remove('hidden');
-        fnLoadAdminData();
-      } else {
-        document.getElementById('wargaView').classList.remove('hidden');
-        document.getElementById('adminView').classList.add('hidden');
-        fnLoadWargaData();
-      }
-    };
-
-    // 7. Logout
     window.fnLogout = function() {
       localStorage.removeItem('dk_session');
-      window.dk.state = { orgId: null, user: null };
+      window.dk.state = { orgId: null, user: null, data: { warga:[], project:[], pembayaran:[], detail:[], pengeluaran:[], danaLain:[] }, selectedCart: {} };
       location.reload();
     };
 
-    // 8. Tambah Warga (Admin)
+    function fnShowApp() {
+      localStorage.setItem('dk_session', JSON.stringify({ orgId: window.dk.state.orgId, user: window.dk.state.user, exp: Date.now() + 86400000 }));
+      document.getElementById('loginModal').classList.add('hidden');
+      document.getElementById('mainApp').classList.remove('hidden');
+      
+      if(window.dk.state.user.type === 'admin') {
+        document.getElementById('areaAdmin').classList.remove('hidden');
+        document.getElementById('areaWarga').classList.add('hidden');
+        document.getElementById('navAdmin').classList.remove('hidden');
+        document.getElementById('navWarga').classList.add('hidden');
+        document.getElementById('headerSubtitle').innerText = "PANEL PENGURUS";
+        fnLoadData().then(() => { fnRenderAdminVerify(); fnRenderMaster(); fnRenderKas(); fnRenderLaporan(); });
+      } else {
+        document.getElementById('areaWarga').classList.remove('hidden');
+        document.getElementById('areaAdmin').classList.add('hidden');
+        document.getElementById('navWarga').classList.remove('hidden');
+        document.getElementById('navAdmin').classList.add('hidden');
+        document.getElementById('headerSubtitle').innerText = "PORTAL WARGA";
+        fnLoadData().then(() => { fnRenderWargaDash(); fnRenderIuran(); fnRenderRiwayat(); });
+      }
+    }
+
+    function showLoader(show) { document.getElementById('loader').classList.toggle('hidden', !show); }
+    function formatRp(n) { return 'Rp ' + Number(n||0).toLocaleString('id-ID'); }
+    function genId(p) { return p + '-' + Date.now() + '-' + Math.floor(Math.random()*100); }
+
+    // ==========================================
+    // DATA LOADING
+    // ==========================================
+    window.fnLoadData = async function() {
+      showLoader(true);
+      const orgId = window.dk.state.orgId;
+      const [w, p, pay, det, out, inc] = await Promise.all([
+        db.from('warga').select('*').eq('organization_id', orgId).neq('status', 'INACTIVE'),
+        db.from('project').select('*').eq('organization_id', orgId).eq('status', 'ACTIVE'),
+        db.from('pembayaran').select('*').eq('organization_id', orgId),
+        db.from('pembayaran_detail').select('*').eq('organization_id', orgId),
+        db.from('pengeluaran').select('*').eq('organization_id', orgId),
+        db.from('dana_lain').select('*').eq('organization_id', orgId)
+      ]);
+      window.dk.state.data = { warga: w.data||[], project: p.data||[], pembayaran: pay.data||[], detail: det.data||[], pengeluaran: out.data||[], danaLain: inc.data||[] };
+      showLoader(false);
+    };
+
+    // ==========================================
+    // ADMIN FEATURES
+    // ==========================================
+    window.fnSwitchAdminTab = function(tabId) {
+      document.querySelectorAll('.a-sec').forEach(c => c.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      document.querySelectorAll('.a-nav').forEach(b => b.classList.remove('nav-admin-active'));
+      event.currentTarget.classList.add('nav-admin-active');
+      if(tabId==='viewAdminVerify') fnRenderAdminVerify();
+      if(tabId==='viewAdminMaster') fnRenderMaster();
+      if(tabId==='viewAdminKas') fnRenderKas();
+      if(tabId==='viewAdminLaporan') fnRenderLaporan();
+    };
+
+    window.fnRenderAdminVerify = function() {
+      const pending = window.dk.state.data.pembayaran.filter(p => p.status === 'MENUNGGU VERIFIKASI');
+      const container = document.getElementById('pendingList');
+      container.innerHTML = '';
+      if(pending.length === 0) { document.getElementById('emptyPending').classList.remove('hidden'); return; }
+      document.getElementById('emptyPending').classList.add('hidden');
+      
+      pending.forEach(p => {
+        const w = window.dk.state.data.warga.find(x => x.id === p.warga_id);
+        const det = window.dk.state.data.detail.filter(d => d.pembayaran_id === p.id);
+        let rincian = det.map(d => {
+          const proj = window.dk.state.data.project.find(x => x.id === d.project_id);
+          return `${proj?.nama_project || 'Project'} (${d.periode})`;
+        }).join(', ');
+        
+        container.innerHTML += `
+          <div class="bg-white p-4 rounded-xl border shadow-sm">
+            <div class="flex justify-between mb-1"><span class="font-bold text-sm">${w?.nama || 'Unknown'}</span><span class="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">Pending</span></div>
+            <p class="text-lg font-black text-blue-600">${formatRp(p.total_nominal)}</p>
+            <p class="text-[10px] text-slate-500 mb-2">${p.metode} | ${new Date(p.tanggal).toLocaleDateString('id-ID')}</p>
+            <p class="text-xs text-slate-600 mb-3 bg-slate-50 p-2 rounded">${rincian}</p>
+            <div class="flex gap-2">
+              <button onclick="fnVerify('${p.id}', 'DISETUJUI')" class="flex-1 bg-green-100 text-green-700 py-2 rounded-lg text-xs font-bold">Setujui</button>
+              <button onclick="fnVerify('${p.id}', 'DITOLAK')" class="flex-1 bg-red-100 text-red-700 py-2 rounded-lg text-xs font-bold">Tolak</button>
+            </div>
+          </div>`;
+      });
+    };
+
+    window.fnVerify = async function(pid, status) {
+      showLoader(true);
+      await db.from('pembayaran').update({ status: status, verified_by: window.dk.state.user.name, verified_at: new Date().toISOString() }).eq('id', pid);
+      await fnLoadData();
+      fnRenderAdminVerify();
+      showLoader(false);
+    };
+
+    window.fnRenderMaster = function() {
+      const wList = document.getElementById('listWarga');
+      wList.innerHTML = window.dk.state.data.warga.map(w => `<div class="bg-slate-50 p-2 rounded text-xs flex justify-between"><span>${w.nama} (${w.no_rumah})</span><span class="text-green-600">PIN: 1234</span></div>`).join('') || '<p class="text-xs text-slate-400">Belum ada warga</p>';
+      
+      const pList = document.getElementById('listProj');
+      pList.innerHTML = window.dk.state.data.project.map(p => `<div class="bg-blue-50 p-2 rounded text-xs flex justify-between"><span>${p.nama_project}</span><span>${formatRp(p.nominal_default)}</span></div>`).join('') || '<p class="text-xs text-slate-400">Belum ada project</p>';
+    };
+
     window.fnTambahWarga = async function() {
-      const nama = document.getElementById('admNama').value.trim();
-      const rumah = document.getElementById('admRumah').value.trim();
-
-      if (!nama) return alert('Isi nama!');
-
-      document.getElementById('loader').classList.remove('hidden');
-      
-      // Hash PIN default (1234)
-      const { data: hashData } = await db.rpc('hash_password', { raw_pass: '1234' });
-      
-      const { error } = await db.from('warga').insert([{
-        id: 'WRG-' + Date.now(),
-        organization_id: window.dk.state.orgId,
-        nama: nama,
-        no_rumah: rumah,
-        pin_hash: hashData,
-        status: 'ACTIVE'
-      }]);
-
-      document.getElementById('loader').classList.add('hidden');
-
-      if (!error) {
-        alert('Warga berhasil ditambah! PIN: 1234');
-        document.getElementById('admNama').value = '';
-        document.getElementById('admRumah').value = '';
-        fnLoadAdminData();
-      } else {
-        alert('Error: ' + error.message);
-      }
+      const nama = document.getElementById('admNama').value.trim(), blok = document.getElementById('admRumah').value.trim(), wa = document.getElementById('admWa').value.trim();
+      if(!nama) return alert('Isi nama!');
+      showLoader(true);
+      const { data: hash } = await db.rpc('hash_password', { raw_pass: '1234' });
+      await db.from('warga').insert([{ id: genId('WRG'), organization_id: window.dk.state.orgId, nama, no_rumah: blok, no_wa: wa, pin_hash: hash, status: 'ACTIVE' }]);
+      document.getElementById('admNama').value=''; document.getElementById('admRumah').value=''; document.getElementById('admWa').value='';
+      await fnLoadData(); fnRenderMaster(); showLoader(false);
     };
 
-    // 9. Tambah Project (Admin)
     window.fnTambahProject = async function() {
-      const nama = document.getElementById('admProj').value.trim();
-      const nom = document.getElementById('admNom').value;
-
-      if (!nama) return alert('Isi nama project!');
-
-      document.getElementById('loader').classList.remove('hidden');
-      const { error } = await db.from('project').insert([{
-        id: 'PRJ-' + Date.now(),
-        organization_id: window.dk.state.orgId,
-        nama_project: nama,
-        nominal_default: nom || 0,
-        tipe: 'bulanan',
-        status: 'ACTIVE'
-      }]);
-      document.getElementById('loader').classList.add('hidden');
-
-      if (!error) {
-        alert('Project berhasil ditambah!');
-        document.getElementById('admProj').value = '';
-        document.getElementById('admNom').value = '';
-        fnLoadAdminData();
-      } else {
-        alert('Error: ' + error.message);
-      }
+      const nama = document.getElementById('admProj').value.trim(), nom = document.getElementById('admNom').value;
+      if(!nama) return alert('Isi nama project!');
+      showLoader(true);
+      await db.from('project').insert([{ id: genId('PRJ'), organization_id: window.dk.state.orgId, nama_project: nama, nominal_default: nom||0, tipe: 'bulanan', status: 'ACTIVE' }]);
+      document.getElementById('admProj').value=''; document.getElementById('admNom').value='';
+      await fnLoadData(); fnRenderMaster(); showLoader(false);
     };
 
-    // 10. Load Data Admin
-    window.fnLoadAdminData = async function() {
-      document.getElementById('loader').classList.remove('hidden');
+    window.fnToggleKasForm = function(type) {
+      document.getElementById('formKasIn').classList.toggle('hidden', type!=='IN');
+      document.getElementById('formKasOut').classList.toggle('hidden', type!=='OUT');
+    };
+
+    window.fnTambahKas = async function(type) {
+      showLoader(true);
+      if(type==='IN') {
+        const sumber = document.getElementById('kasInSumber').value.trim(), nom = document.getElementById('kasInNom').value;
+        if(!sumber || !nom) return alert('Lengkapi data!');
+        await db.from('dana_lain').insert([{ id: genId('DON'), organization_id: window.dk.state.orgId, sumber, nominal: nom, tanggal: new Date().toISOString() }]);
+        document.getElementById('kasInSumber').value=''; document.getElementById('kasInNom').value='';
+      } else {
+        const ket = document.getElementById('kasOutKet').value.trim(), nom = document.getElementById('kasOutNom').value;
+        if(!ket || !nom) return alert('Lengkapi data!');
+        await db.from('pengeluaran').insert([{ id: genId('OUT'), organization_id: window.dk.state.orgId, keterangan: ket, nominal: nom, tanggal: new Date().toISOString() }]);
+        document.getElementById('kasOutKet').value=''; document.getElementById('kasOutNom').value='';
+      }
+      await fnLoadData(); fnRenderKas(); showLoader(false);
+    };
+
+    window.fnRenderKas = function() {
+      let list = [];
+      window.dk.state.data.danaLain.forEach(d => list.push({ tgl: new Date(d.tanggal), html: `<div class="flex justify-between bg-green-50 p-3 rounded-lg"><div><p class="text-xs font-bold text-green-800">MASUK: ${d.sumber}</p><p class="text-[10px] text-slate-500">${new Date(d.tanggal).toLocaleDateString('id-ID')}</p></div><p class="font-black text-green-600">+ ${formatRp(d.nominal)}</p></div>` }));
+      window.dk.state.data.pengeluaran.forEach(o => list.push({ tgl: new Date(o.tanggal), html: `<div class="flex justify-between bg-red-50 p-3 rounded-lg"><div><p class="text-xs font-bold text-red-800">KELUAR: ${o.keterangan}</p><p class="text-[10px] text-slate-500">${new Date(o.tanggal).toLocaleDateString('id-ID')}</p></div><p class="font-black text-red-600">- ${formatRp(o.nominal)}</p></div>` }));
+      list.sort((a,b) => b.tgl - a.tgl);
+      document.getElementById('kasList').innerHTML = list.map(l=>l.html).join('') || '<p class="text-xs text-slate-400 text-center">Belum ada transaksi</p>';
+    };
+
+    window.fnRenderLaporan = function() {
+      const approved = window.dk.state.data.pembayaran.filter(p => p.status === 'DISETUJUI');
+      const totalIn = approved.reduce((s,p)=>s+Number(p.total_nominal),0) + window.dk.state.data.danaLain.reduce((s,d)=>s+Number(d.nominal),0);
+      const totalOut = window.dk.state.data.pengeluaran.reduce((s,o)=>s+Number(o.nominal),0);
       
-      const { data: warga } = await db.from('warga').select('*').eq('organization_id', window.dk.state.orgId);
-      const { data: project } = await db.from('project').select('*').eq('organization_id', window.dk.state.orgId);
+      document.getElementById('rekapList').innerHTML = `
+        <div class="flex justify-between p-3 bg-blue-50 rounded-lg"><span class="font-bold">Total Pemasukan</span><span class="font-black text-green-600">${formatRp(totalIn)}</span></div>
+        <div class="flex justify-between p-3 bg-red-50 rounded-lg mt-2"><span class="font-bold">Total Pengeluaran</span><span class="font-black text-red-600">${formatRp(totalOut)}</span></div>
+        <div class="flex justify-between p-3 bg-slate-100 rounded-lg mt-2"><span class="font-bold">Saldo Akhir</span><span class="font-black text-blue-600">${formatRp(totalIn - totalOut)}</span></div>
+      `;
 
-      document.getElementById('loader').classList.add('hidden');
-
-      // Render Warga
-      const listWarga = document.getElementById('listWarga');
-      listWarga.innerHTML = '';
-      if (warga && warga.length > 0) {
-        warga.forEach(w => {
-          listWarga.innerHTML += `<div class="bg-slate-50 p-3 rounded-lg text-sm"><b>${w.nama}</b> (${w.no_rumah}) - PIN: 1234</div>`;
-        });
-      } else {
-        listWarga.innerHTML = '<p class="text-sm text-slate-400">Belum ada warga</p>';
-      }
-
-      // Render Project
-      const listProj = document.getElementById('listProj');
-      listProj.innerHTML = '';
-      if (project && project.length > 0) {
-        project.forEach(p => {
-          listProj.innerHTML += `<div class="bg-blue-50 p-3 rounded-lg text-sm"><b>${p.nama_project}</b> - Rp ${Number(p.nominal_default).toLocaleString('id-ID')}</div>`;
-        });
-      } else {
-        listProj.innerHTML = '<p class="text-sm text-slate-400">Belum ada project</p>';
-      }
+      // Chart
+      const ctx = document.getElementById('kasChart').getContext('2d');
+      if(kasChartInstance) kasChartInstance.destroy();
+      kasChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Pemasukan', 'Pengeluaran'],
+          datasets: [{ data: [totalIn, totalOut], backgroundColor: ['#10b981', '#ef4444'], borderWidth: 0 }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+      });
     };
 
-    // 11. Load Data Warga
-    window.fnLoadWargaData = async function() {
-      document.getElementById('loader').classList.remove('hidden');
-      const { data: pembayaran } = await db.from('pembayaran').select('*').eq('organization_id', window.dk.state.orgId).eq('status', 'DISETUJUI');
-      document.getElementById('loader').classList.add('hidden');
-
-      const total = pembayaran ? pembayaran.reduce((sum, p) => sum + Number(p.total_nominal), 0) : 0;
-      document.getElementById('saldoDisplay').innerText = 'Rp ' + total.toLocaleString('id-ID');
+    window.fnExportCSV = function() {
+      let csv = "Tanggal,Tipe,Nominal,Keterangan\n";
+      window.dk.state.data.danaLain.forEach(d => csv += `${new Date(d.tanggal).toLocaleDateString('id-ID')},MASUK,${d.nominal},${d.sumber}\n`);
+      window.dk.state.data.pengeluaran.forEach(o => csv += `${new Date(o.tanggal).toLocaleDateString('id-ID')},KELUAR,${o.nominal},${o.keterangan}\n`);
+      window.dk.state.data.pembayaran.filter(p=>p.status==='DISETUJUI').forEach(p => csv += `${new Date(p.tanggal).toLocaleDateString('id-ID')},IURAN,${p.total_nominal},Pembayaran Warga\n`);
+      
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'Laporan_DanaKita.csv'; a.click();
     };
 
     // ==========================================
-    // CHECK SESSION ON LOAD
+    // WARGA FEATURES
     // ==========================================
-    window.addEventListener('DOMContentLoaded', function() {
-      const session = JSON.parse(localStorage.getItem('dk_session'));
-      if (session && session.exp > Date.now()) {
-        window.dk.state.orgId = session.orgId;
-        window.dk.state.user = session.user;
-        fnShowApp();
+    window.fnSwitchWargaTab = function(tabId) {
+      document.querySelectorAll('.w-sec').forEach(c => c.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      document.querySelectorAll('.w-nav').forEach(b => b.classList.remove('nav-active'));
+      event.currentTarget.classList.add('nav-active');
+    };
+
+    window.fnRenderWargaDash = function() {
+      const approved = window.dk.state.data.pembayaran.filter(p => p.status === 'DISETUJUI');
+      const totalIn = approved.reduce((s,p)=>s+Number(p.total_nominal),0) + window.dk.state.data.danaLain.reduce((s,d)=>s+Number(d.nominal),0);
+      const totalOut = window.dk.state.data.pengeluaran.reduce((s,o)=>s+Number(o.nominal),0);
+      document.getElementById('saldoDisplay').innerText = formatRp(totalIn - totalOut);
+      document.getElementById('totalIn').innerText = formatRp(totalIn);
+      document.getElementById('totalOut').innerText = formatRp(totalOut);
+
+      let html = '';
+      window.dk.state.data.project.forEach(proj => {
+        if(proj.tipe === 'non_iuran') return;
+        let terkumpul = window.dk.state.data.detail.filter(d => d.project_id === proj.id && approved.some(p => p.id === d.pembayaran_id)).reduce((s,d)=>s+Number(d.nominal),0);
+        let perc = Number(proj.target) > 0 ? Math.min(Math.round((terkumpul / proj.target) * 100), 100) : 0;
+        html += `<div><div class="flex justify-between text-xs font-bold mb-1"><span>${proj.nama_project}</span><span>${perc}%</span></div><div class="w-full bg-slate-200 rounded-full h-2"><div class="bg-blue-600 h-2 rounded-full" style="width:${perc}%"></div></div><p class="text-[10px] text-slate-500 mt-1 text-right">${formatRp(terkumpul)} / ${formatRp(proj.target)}</p></div>`;
+      });
+      document.getElementById('progressContainer').innerHTML = html || '<p class="text-xs text-slate-400">Belum ada project aktif.</p>';
+    };
+
+    window.fnRenderIuran = function() {
+      const container = document.getElementById('iuranContainer');
+      container.innerHTML = '';
+      window.dk.state.selectedCart = {};
+      document.getElementById('summaryBayar').classList.add('hidden');
+      
+      let paid = {};
+      window.dk.state.data.pembayaran.filter(p => p.warga_id === window.dk.state.user.id && p.status !== 'DITOLAK').forEach(p => {
+        window.dk.state.data.detail.filter(d => d.pembayaran_id === p.id).forEach(d => {
+          if(!paid[d.project_id]) paid[d.project_id]=[];
+          paid[d.project_id].push(d.periode);
+        });
+      });
+
+      window.dk.state.data.project.forEach(p => {
+        if(p.tipe === 'non_iuran') return;
+        let html = '';
+        if(p.tipe === 'bulanan') {
+          const months = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+          months.forEach((m, i) => {
+            let periode = `2026-${String(i+1).padStart(2,'0')}`;
+            if(!paid[p.id]?.includes(periode)) {
+              html += `<label class="flex items-center gap-3 p-3 border rounded-xl mb-2 bg-white cursor-pointer"><input type="checkbox" onchange="fnToggleIuran('${p.id}', this, ${p.nominal_default}, '${periode}')"><span class="text-sm font-bold flex-1">${m} 2026</span><span class="text-blue-600 font-bold">${formatRp(p.nominal_default)}</span></label>`;
+            }
+          });
+        } else {
+          if(!paid[p.id]?.includes('SEKALI')) {
+            html = `<label class="flex items-center gap-3 p-3 border rounded-xl bg-white cursor-pointer"><input type="checkbox" onchange="fnToggleIuran('${p.id}', this, ${p.nominal_default}, 'SEKALI')"><span class="text-sm font-bold flex-1">Sekali Bayar</span><span class="text-blue-600 font-bold">${formatRp(p.nominal_default)}</span></label>`;
+          }
+        }
+        if(html) container.innerHTML += `<div class="border p-4 rounded-2xl bg-slate-50 mb-3"><p class="font-bold text-sm mb-2">${p.nama_project}</p>${html || '<p class="text-xs text-green-600">✅ Lunas</p>'}</div>`;
+      });
+    };
+
+    window.fnToggleIuran = function(pid, el, price, periode) {
+      if(!window.dk.state.selectedCart[pid]) window.dk.state.selectedCart[pid] = { count:0, nominal:0, base:price };
+      let cart = window.dk.state.selectedCart[pid];
+      if(el.checked) { cart.count++; cart.nominal += price; } else { cart.count--; cart.nominal -= price; }
+      if(cart.count === 0) delete window.dk.state.selectedCart[pid];
+      
+      let total = Object.values(window.dk.state.selectedCart).reduce((s,c)=>s+c.nominal, 0);
+      document.getElementById('totalBayarDisplay').innerText = formatRp(total);
+      document.getElementById('summaryBayar').classList.toggle('hidden', total === 0);
+    };
+
+    window.fnSubmitPembayaran = async function() {
+      if(Object.keys(window.dk.state.selectedCart).length === 0) return alert('Pilih iuran!');
+      showLoader(true);
+      
+      let dets = [], tot = 0;
+      for(let pid in window.dk.state.selectedCart) {
+        let c = window.dk.state.selectedCart[pid];
+        dets.push({ project_id: pid, periode: '2026-01', nominal: c.base }); // Simplified periode for demo
+        tot += c.nominal;
       }
-    });
+      
+      const payId = genId('PAY');
+      await db.from('pembayaran').insert([{ id: payId, organization_id: window.dk.state.orgId, tanggal: new Date().toISOString(), warga_id: window.dk.state.user.id, total_nominal: tot, metode: document.getElementById('metodeBayar').value, status: 'MENUNGGU VERIFIKASI' }]);
+      await db.from('pembayaran_detail').insert(dets.map(d => ({ id: genId('DET'), organization_id: window.dk.state.orgId, pembayaran_id: payId, ...d })));
+      
+      showLoader(false);
+      alert('Pembayaran terkirim! Menunggu verifikasi admin.');
+      fnRenderIuran();
+    };
+
+    window.fnRenderRiwayat = function() {
+      const container = document.getElementById('riwayatContainer');
+      const myPay = window.dk.state.data.pembayaran.filter(p => p.warga_id === window.dk.state.user.id);
+      if(myPay.length === 0) { container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">Belum ada riwayat.</p>'; return; }
+      
+      container.innerHTML = myPay.reverse().map(p => {
+        const det = window.dk.state.data.detail.filter(d => d.pembayaran_id === p.id);
+        let rincian = det.map(d => {
+          const proj = window.dk.state.data.project.find(x => x.id === d.project_id);
+          return `${proj?.nama_project || 'Project'} (${d.periode})`;
+        }).join(', ');
+        
+        let statusColor = p.status==='DISETUJUI' ? 'text-green-600 bg-green-50' : p.status==='DITOLAK' ? 'text-red-600 bg-red-50' : 'text-yellow-600 bg-yellow-50';
+        return `
+          <div class="bg-white p-4 rounded-xl border shadow-sm">
+            <div class="flex justify-between mb-2"><span class="font-bold text-sm">${formatRp(p.total_nominal)}</span><span class="text-xs px-2 py-1 rounded font-bold ${statusColor}">${p.status}</span></div>
+            <p class="text-[10px] text-slate-500 mb-1">${new Date(p.tanggal).toLocaleDateString('id-ID')} | ${p.metode}</p>
+            <p class="text-xs text-slate-600 bg-slate-50 p-2 rounded mb-2">${rincian}</p>
+            ${p.status==='DISETUJUI' ? `<button onclick='fnShowStruk(${JSON.stringify(p).replace(/'/g, "&#39;")})' class="btn-blue !py-2 !text-xs">📄 Lihat Struk</button>` : ''}
+          </div>`;
+      }).join('');
+    };
+
+    // ==========================================
+    // STRUK & PDF / WA
+    // ==========================================
+    window.fnShowStruk = function(payment) {
+      currentStrukData = payment;
+      const w = window.dk.state.data.warga.find(x => x.id === payment.warga_id);
+      const det = window.dk.state.data.detail.filter(d => d.pembayaran_id === payment.id);
+      let rows = det.map(d => {
+        const proj = window.dk.state.data.project.find(x => x.id === d.project_id);
+        return `<tr><td class="py-1 text-sm">${proj?.nama_project || 'Project'} (${d.periode})</td><td class="text-right font-bold">${formatRp(d.nominal)}</td></tr>`;
+      }).join('');
+      
+      document.getElementById('strukContent').innerHTML = `
+        <div class="text-center mb-4"><p class="text-xs font-bold text-slate-400">TANDA TERIMA</p><h3 class="font-black text-xl">LUNAS ✅</h3></div>
+        <table class="w-full text-xs mb-4"><tr><td class="py-1">Nama</td><td class="text-right font-bold">${w?.nama || '-'}</td></tr><tr><td class="py-1">No. Rumah</td><td class="text-right">${w?.no_rumah || '-'}</td></tr><tr><td class="py-1">Tanggal</td><td class="text-right">${new Date(payment.tanggal).toLocaleDateString('id-ID')}</td></tr></table>
+        <hr class="border-dashed my-3"><table class="w-full text-sm">${rows}<tr class="border-t pt-2"><td class="py-2 font-black">TOTAL</td><td class="text-right font-black text-blue-600">${formatRp(payment.total_nominal)}</td></tr></table>`;
+      document.getElementById('strukModal').classList.remove('hidden');
+    };
+
+    window.fnKirimWA = function() {
+      if(!currentStrukData) return;
+      const w = window.dk.state.data.warga.find(x => x.id === currentStrukData.warga_id);
+      let phone = w?.no_wa || '';
+      if(phone.startsWith('0')) phone = '62' + phone.substring(1);
+      if(!phone) return alert('Nomor WA warga belum terdaftar!');
+      
+      let text = `*BUKTI PEMBAYARAN IURAN*\nNama: ${w?.nama}\nTotal: ${formatRp(currentStrukData.total_nominal)}\nStatus: LUNAS ✅\nTanggal: ${new Date(currentStrukData.tanggal).toLocaleDateString('id-ID')}\n\n_Sistem DanaKita_`;
+      window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank');
+    };
+
+    window.fnDownloadPDF = function() {
+      if(!currentStrukData) return;
+      showLoader(true);
+      html2pdf().set({ margin: 0.5, filename: `Struk_${currentStrukData.id}.pdf`, html2canvas: { scale: 2 } }).from(document.getElementById('strukContent')).save().then(() => showLoader(false));
+    };
   </script>
 </body>
 </html>
