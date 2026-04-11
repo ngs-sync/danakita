@@ -3,194 +3,313 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>DanaKita - Portal Kas Komunitas</title>
+  <title>DanaKita - Kelola Kas Komunitas</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
-    body { background-color: #f8fafc; font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; padding-bottom: 100px; }
-    .tab-content { display: none; }
-    .active { display: block; animation: fadeIn 0.2s; }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    .nav-active { border-top: 3px solid #2563eb; color: #2563eb; font-weight: 800; }
-    .nav-admin-active { border-top: 3px solid #1e293b; color: #1e293b; font-weight: 800; }
-    input, select { @apply w-full p-3 border border-slate-300 bg-slate-50 shadow-inner rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition text-sm; }
-    input[type="checkbox"] { @apply w-5 h-5 text-blue-600 rounded border-slate-300 bg-slate-50 focus:ring-blue-500 cursor-pointer accent-blue-600; }
-    .btn-blue { @apply bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow-md transition active:scale-95 text-sm w-full; }
-    .btn-green { @apply bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl shadow-md transition active:scale-95 text-sm w-full; }
-    .btn-red { @apply bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-xl shadow-md transition active:scale-95 text-sm w-full; }
-    .btn-slate { @apply bg-slate-600 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded-xl shadow-md transition active:scale-95 text-sm; }
-    .form-grid { @apply grid grid-cols-[90px_10px_1fr] items-center gap-y-3 text-sm; }
+    :root {
+      --tk-primary: #00A6ED; --tk-primary-dark: #0089C9;
+      --tk-secondary: #FF6B35; --tk-secondary-dark: #E55A2B;
+      --tk-success: #00B894; --tk-danger: #FF4757;
+      --tk-bg: #F8F9FA; --tk-card: #FFFFFF;
+      --tk-text-primary: #1A1A1A; --tk-text-secondary: #666666; --tk-text-tertiary: #999999;
+      --tk-border: #E6E8EA; --tk-shadow: 0 2px 8px rgba(0,0,0,0.08); --tk-shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+      --tk-radius: 12px; --tk-radius-lg: 16px; --tk-radius-xl: 20px;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body { background-color: var(--tk-bg); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: var(--tk-text-primary); line-height: 1.5; padding-bottom: 80px; }
+    .tab-content { display: none; } .tab-content.active { display: block; animation: fadeIn 0.2s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .nav-active { color: var(--tk-primary) !important; font-weight: 700 !important; }
+    .nav-admin-active { color: var(--tk-secondary) !important; font-weight: 700 !important; }
+    
+    input, select, textarea { width: 100%; padding: 14px 16px; border: 1px solid var(--tk-border); background: var(--tk-card); border-radius: var(--tk-radius); font-size: 14px; color: var(--tk-text-primary); transition: 0.2s; outline: none; }
+    input:focus, select:focus { border-color: var(--tk-primary); box-shadow: 0 0 0 3px rgba(0, 166, 237, 0.15); background: #fff; }
+    
+    .btn-primary { background: linear-gradient(135deg, var(--tk-primary), var(--tk-primary-dark)); color: white; font-weight: 700; padding: 14px 20px; border-radius: var(--tk-radius); border: none; cursor: pointer; transition: 0.2s; font-size: 14px; width: 100%; box-shadow: 0 4px 12px rgba(0, 166, 237, 0.3); display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0, 166, 237, 0.4); }
+    .btn-secondary { background: linear-gradient(135deg, var(--tk-secondary), var(--tk-secondary-dark)); color: white; font-weight: 700; padding: 14px 20px; border-radius: var(--tk-radius); border: none; cursor: pointer; transition: 0.2s; font-size: 14px; width: 100%; box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3); }
+    .btn-danger { background: var(--tk-danger); color: white; font-weight: 700; padding: 12px 16px; border-radius: var(--tk-radius); border: none; cursor: pointer; transition: 0.2s; font-size: 13px; width: auto; }
+    .btn-ghost { background: transparent; color: var(--tk-text-secondary); font-weight: 500; padding: 8px 12px; border-radius: 8px; border: none; cursor: pointer; transition: 0.2s; font-size: 13px; }
+    .btn-ghost:hover { background: rgba(0,0,0,0.04); color: var(--tk-text-primary); }
+    
+    .card { background: var(--tk-card); border-radius: var(--tk-radius-lg); padding: 20px; box-shadow: var(--tk-shadow); border: 1px solid var(--tk-border); margin-bottom: 16px; }
+    .card-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 1px solid var(--tk-border); margin-bottom: 16px; }
+    .card-title { font-size: 15px; font-weight: 700; color: var(--tk-text-primary); margin: 0; }
+    .card-hero { background: linear-gradient(135deg, var(--tk-primary), #0089C9); border-radius: var(--tk-radius-xl); padding: 24px; color: white; box-shadow: var(--tk-shadow-lg); margin-bottom: 20px; position: relative; overflow: hidden; }
+    .card-hero::before { content: ''; position: absolute; top: -50%; right: -50%; width: 200px; height: 200px; background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%); border-radius: 50%; }
+    .card-hero .label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.9; margin-bottom: 8px; }
+    .card-hero .amount { font-size: 32px; font-weight: 800; margin: 4px 0 20px; letter-spacing: -0.5px; }
+    .card-hero .stats { display: flex; gap: 12px; }
+    .card-hero .stat-item { flex: 1; background: rgba(255,255,255,0.15); padding: 12px; border-radius: 10px; backdrop-filter: blur(4px); }
+    .card-hero .stat-label { font-size: 10px; opacity: 0.85; margin-bottom: 4px; text-transform: uppercase; }
+    .card-hero .stat-value { font-size: 14px; font-weight: 700; }
+    
+    .list-item { display: flex; align-items: center; padding: 14px 16px; background: var(--tk-card); border-radius: var(--tk-radius); border: 1px solid var(--tk-border); margin-bottom: 10px; transition: 0.2s; cursor: pointer; }
+    .list-item:hover { border-color: var(--tk-primary); box-shadow: 0 2px 8px rgba(0, 166, 237, 0.1); transform: translateX(2px); }
+    
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .modal-content { background: var(--tk-card); border-radius: var(--tk-radius-xl); padding: 24px; width: 100%; max-width: 400px; box-shadow: var(--tk-shadow-lg); animation: modalSlide 0.3s ease; }
+    @keyframes modalSlide { from { opacity: 0; transform: translateY(20px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    
+    .loader-overlay { position: fixed; inset: 0; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px); z-index: 200; display: flex; align-items: center; justify-content: center; }
+    .loader-spinner { width: 48px; height: 48px; border: 4px solid var(--tk-border); border-top-color: var(--tk-primary); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 16px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    
+    .app-header { background: var(--tk-card); border-bottom: 1px solid var(--tk-border); padding: 12px 16px; position: sticky; top: 0; z-index: 50; box-shadow: 0 1px 0 var(--tk-border); }
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--tk-card); border-top: 1px solid var(--tk-border); display: flex; justify-content: space-around; padding: 8px 0 20px; z-index: 40; box-shadow: 0 -2px 12px rgba(0,0,0,0.04); }
+    .bottom-nav.admin { background: #1A1A1A; border-top-color: #333; }
+    .bottom-nav.admin .nav-item { color: #999; }
+    .bottom-nav.admin .nav-item.nav-active { color: var(--tk-secondary); }
+    .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 8px 4px; color: var(--tk-text-tertiary); background: none; border: none; cursor: pointer; transition: 0.2s; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+    .nav-item span:first-child { font-size: 22px; margin-bottom: 4px; transition: transform 0.2s; }
+    .nav-item:hover { color: var(--tk-primary); }
+    .nav-item.nav-active { color: var(--tk-primary); }
+    .nav-item.nav-active span:first-child { transform: scale(1.15); }
+    
+    .hidden { display: none !important; }
+    .badge { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+    .badge-success { background: rgba(0, 184, 148, 0.12); color: var(--tk-success); }
+    .badge-warning { background: rgba(253, 203, 110, 0.2); color: #B5860C; }
+    .badge-danger { background: rgba(255, 71, 87, 0.12); color: var(--tk-danger); }
   </style>
 </head>
 <body>
 
   <!-- LOADER -->
-  <div id="loader" class="fixed inset-0 bg-black/40 z-50 hidden flex items-center justify-center">
-    <div class="bg-white p-4 rounded-xl shadow-lg"><div class="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto"></div></div>
+  <div id="loader" class="loader-overlay hidden">
+    <div style="text-align: center;"><div class="loader-spinner"></div><p style="font-size: 13px; font-weight: 600; color: var(--tk-text-secondary);">Memproses...</p></div>
   </div>
 
-  <!-- LOGIN MODAL -->
-  <div id="loginModal" class="fixed inset-0 bg-black/60 z-40 flex items-center justify-center p-4">
-    <div id="stepKode" class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
-      <h2 class="text-xl font-bold mb-4">🔑 Kode Organisasi</h2>
-      <input type="text" id="inputKode" placeholder="DKT-XXXXX" class="mb-4 uppercase text-center font-mono text-lg tracking-wider">
-      <button onclick="fnValidateKode()" class="btn-blue">Lanjutkan</button>
-      <a href="/super-admin.html" class="block text-center text-xs text-blue-600 mt-4">Masuk Super Admin</a>
+  <!-- LOGIN MODALS -->
+  <div id="loginModal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="font-size: 18px; font-weight: 800; color: var(--tk-text-primary); margin: 0;">🔐 Login Pengurus</h2>
+        <button onclick="toggleModal(false)" style="background: none; border: none; font-size: 24px; color: var(--tk-text-tertiary); cursor: pointer;">&times;</button>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <div><label style="display: block; font-size: 13px; font-weight: 600; color: var(--tk-text-secondary); margin-bottom: 6px;">Username</label><input type="text" id="inpUser" placeholder="Masukkan username"></div>
+        <div><label style="display: block; font-size: 13px; font-weight: 600; color: var(--tk-text-secondary); margin-bottom: 6px;">Password</label><input type="password" id="inpPass" placeholder="Masukkan password"></div>
+        <p id="loginError" style="color: var(--tk-danger); font-size: 12px; font-weight: 500; display: none; margin: 0;"></p>
+        <button onclick="fnLoginAdmin()" class="btn-primary">Masuk Panel Admin</button>
+      </div>
+      <div style="margin-top: 20px; padding-top: 20px; border-top: 1px dashed var(--tk-border); text-align: center;">
+        <button onclick="switchLoginTab('warga')" class="btn-ghost" style="width: auto; font-size: 13px;">👤 Login sebagai Warga</button>
+      </div>
     </div>
-    <div id="stepLogin" class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl hidden">
-      <h2 class="text-xl font-bold mb-4" id="orgNameDisplay">Login</h2>
-      <div class="flex gap-2 mb-4 bg-slate-100 p-1 rounded-xl">
-        <button onclick="fnSwitchTab('admin')" id="tabAdmin" class="flex-1 py-2 rounded-lg text-sm font-bold bg-white shadow text-blue-600">Pengurus</button>
-        <button onclick="fnSwitchTab('warga')" id="tabWarga" class="flex-1 py-2 rounded-lg text-sm font-bold text-slate-500">Warga</button>
+  </div>
+
+  <div id="loginModalWarga" class="modal-overlay hidden">
+    <div class="modal-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="font-size: 18px; font-weight: 800; color: var(--tk-text-primary); margin: 0;">👤 Login Warga</h2>
+        <button onclick="toggleModalWarga(false)" style="background: none; border: none; font-size: 24px; color: var(--tk-text-tertiary); cursor: pointer;">&times;</button>
       </div>
-      <div id="formAdmin">
-        <input type="text" id="inpUser" placeholder="Username" class="mb-3">
-        <input type="password" id="inpPass" placeholder="Password" class="mb-4">
-        <button onclick="fnLoginAdmin()" class="btn-blue">Masuk</button>
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <div><label style="display: block; font-size: 13px; font-weight: 600; color: var(--tk-text-secondary); margin-bottom: 6px;">No. Rumah</label><input type="text" id="inpRumah" placeholder="Contoh: A-12" style="text-transform: uppercase;"></div>
+        <div><label style="display: block; font-size: 13px; font-weight: 600; color: var(--tk-text-secondary); margin-bottom: 6px;">PIN (4-6 digit)</label><input type="password" id="inpPin" placeholder="••••••" maxlength="6" style="letter-spacing: 4px; text-align: center;"></div>
+        <p id="loginErrorWarga" style="color: var(--tk-danger); font-size: 12px; font-weight: 500; display: none; margin: 0;"></p>
+        <button onclick="fnLoginWarga()" class="btn-secondary">Masuk Portal Warga</button>
       </div>
-      <div id="formWarga" class="hidden">
-        <input type="text" id="inpRumah" placeholder="No. Rumah" class="mb-3">
-        <input type="password" id="inpPin" placeholder="PIN" maxlength="6" class="mb-4">
-        <button onclick="fnLoginWarga()" class="btn-green">Masuk</button>
+      <div style="margin-top: 20px; padding-top: 20px; border-top: 1px dashed var(--tk-border); text-align: center;">
+        <button onclick="switchLoginTab('admin')" class="btn-ghost" style="width: auto; font-size: 13px;">🔐 Login sebagai Pengurus</button>
       </div>
-      <button onclick="fnBackToKode()" class="w-full mt-4 text-sm text-slate-500">← Ganti Kode</button>
     </div>
   </div>
 
   <!-- STRUK MODAL -->
-  <div id="strukModal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl w-full max-w-sm overflow-hidden flex flex-col max-h-[90vh]">
-      <div class="bg-blue-600 p-4 text-center relative"><h3 class="text-white font-black">BUKTI PEMBAYARAN</h3><button onclick="document.getElementById('strukModal').classList.add('hidden')" class="absolute right-4 top-4 text-white text-2xl">&times;</button></div>
-      <div id="strukContent" class="p-6 overflow-y-auto flex-1 bg-slate-50"></div>
-      <div class="p-4 bg-white border-t flex gap-2">
-        <button onclick="fnKirimWA()" class="btn-green flex-1 py-2 text-xs">💬 Kirim WA</button>
-        <button onclick="fnDownloadPDF()" class="btn-blue flex-1 py-2 text-xs">📄 Simpan PDF</button>
+  <div id="strukModal" class="modal-overlay hidden">
+    <div class="modal-content" style="max-width: 360px; padding: 0; overflow: hidden;">
+      <div style="background: linear-gradient(135deg, var(--tk-primary), var(--tk-primary-dark)); padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
+        <h3 style="color: white; font-weight: 800; font-size: 16px; margin: 0;">🧾 Bukti Pembayaran</h3>
+        <button onclick="closeStrukModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; width: 28px; height: 28px; border-radius: 50%; font-size: 18px; cursor: pointer;">&times;</button>
+      </div>
+      <div id="strukContent" style="padding: 20px; background: var(--tk-bg); max-height: 60vh; overflow-y: auto;"></div>
+      <div style="padding: 16px 20px; background: var(--tk-card); border-top: 1px solid var(--tk-border); display: flex; gap: 10px;">
+        <button id="btnWA" class="btn-secondary" style="flex: 1; padding: 12px; font-size: 13px;">💬 Kirim WA</button>
+        <button id="btnPDF" class="btn-primary" style="flex: 1; padding: 12px; font-size: 13px;">📄 PDF</button>
       </div>
     </div>
   </div>
 
-  <!-- MAIN APP -->
-  <div id="mainApp" class="hidden">
-    <header class="bg-white border-b p-4 sticky top-0 z-30 shadow-sm">
-      <div class="max-w-2xl mx-auto flex justify-between items-center">
-        <div><h1 class="text-xl font-black text-blue-600">DANAKITA</h1><p class="text-[10px] text-slate-500 font-bold tracking-widest" id="headerSubtitle">PORTAL</p></div>
-        <button onclick="fnLogout()" class="bg-red-50 text-red-600 px-3 py-2 rounded-lg text-xs font-bold">Keluar</button>
+  <!-- HEADER (DINAMIS: Logo + Display Name) -->
+  <header class="app-header">
+    <div style="display: flex; align-items: center; gap: 12px; max-width: 640px; margin: 0 auto;">
+      <div style="width: 40px; height: 40px; border-radius: 10px; overflow: hidden; background: #f1f5f9; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <img id="org-logo" src="" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+        <span id="org-logo-fallback" style="font-size: 20px;">🏢</span>
       </div>
-    </header>
+      <div style="flex: 1;">
+        <h1 style="font-size: 16px; font-weight: 900; color: var(--tk-text-primary); margin: 0; letter-spacing: -0.3px; line-height: 1.2;">DANAKITA</h1>
+        <p id="org-display-name" style="font-size: 11px; color: var(--tk-text-secondary); font-weight: 600; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Memuat...</p>
+      </div>
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <button id="authBtn" onclick="toggleModal(true)" style="background: #f1f5f9; padding: 8px; border-radius: 10px; border: none; cursor: pointer; font-size: 18px;">👤</button>
+        <button id="logoutBtn" onclick="fnLogout()" style="display: none; background: #fee2e2; color: #ef4444; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; border: none; cursor: pointer;">Keluar</button>
+      </div>
+    </div>
+  </header>
 
-    <main class="p-4 max-w-2xl mx-auto space-y-4">
-      
-      <!-- ===== AREA WARGA ===== -->
-      <div id="areaWarga" class="hidden">
-        <div id="viewWargaDash" class="tab-content active w-sec">
-          <div class="bg-gradient-to-br from-blue-600 to-indigo-700 p-6 rounded-3xl text-white shadow-xl mb-5">
-            <p class="text-blue-200 text-xs font-bold uppercase tracking-widest">Saldo Kas Aktif</p>
-            <h2 id="saldoDisplay" class="text-4xl font-black mt-1 mb-4">Rp 0</h2>
-            <div class="flex gap-3 text-xs">
-              <div class="flex-1 bg-white/20 p-3 rounded-xl"><span class="block text-[9px] text-blue-200">MASUK</span><span id="totalIn" class="font-bold">Rp 0</span></div>
-              <div class="flex-1 bg-white/20 p-3 rounded-xl"><span class="block text-[9px] text-blue-200">KELUAR</span><span id="totalOut" class="font-bold">Rp 0</span></div>
-            </div>
-          </div>
-          <div class="bg-white p-5 rounded-3xl shadow-sm border"><h3 class="font-black text-xs uppercase mb-3 text-slate-600">Progress Project</h3><div id="progressContainer" class="space-y-4"></div></div>
-        </div>
-
-        <div id="viewWargaBayar" class="tab-content w-sec">
-          <div class="bg-white p-6 rounded-3xl shadow-sm border">
-            <h3 class="font-black text-sm uppercase mb-4">💰 Bayar Iuran</h3>
-            <div class="form-grid mb-4 border-b pb-4"><label>Identitas</label><span>:</span><select id="wargaSelect" onchange="fnRenderIuran()"></select><label>Tahun</label><span>:</span><select id="pilihTahun" onchange="fnRenderIuran()"><option value="2024">2024</option><option value="2025">2025</option><option value="2026" selected>2026</option><option value="2027">2027</option></select></div>
-            <div id="iuranContainer" class="space-y-4 mb-6"></div>
-            <div id="summaryBayar" class="hidden border-t pt-4 mt-4">
-              <p class="text-center text-xs font-bold text-slate-400 uppercase">TOTAL TAGIHAN</p>
-              <h2 id="totalBayarDisplay" class="text-3xl font-black text-center text-blue-600 my-2">Rp 0</h2>
-              <div class="form-grid mt-4"><label>Metode</label><span>:</span><select id="metodeBayar" onchange="fnToggleBukti()"><option value="TRANSFER">Transfer</option><option value="CASH">Tunai</option></select><label id="lblBukti">Bukti</label><span id="spnBukti">:</span><input type="file" id="fileBukti" accept="image/*" class="hidden"><input type="text" id="linkDrive" placeholder="Atau paste link Google Drive" class="hidden"></div>
-              <button onclick="fnSubmitPembayaran()" class="btn-blue mt-4">Kirim Pembayaran</button>
-            </div>
+  <!-- MAIN CONTENT -->
+  <main style="padding: 16px 20px; max-width: 640px; margin: 0 auto;">
+    <!-- AREA WARGA -->
+    <div id="areaWarga">
+      <div id="viewDashboard" class="tab-content active w-sec">
+        <div class="card-hero">
+          <p class="label">💰 Saldo Kas Aktif</p>
+          <h2 id="cardSaldo" class="amount">Rp 0</h2>
+          <div class="stats">
+            <div class="stat-item"><p class="stat-label">Total Masuk</p><p id="totalIn" class="stat-value">Rp 0</p></div>
+            <div class="stat-item"><p class="stat-label">Total Keluar</p><p id="totalOut" class="stat-value">Rp 0</p></div>
           </div>
         </div>
-
-        <div id="viewWargaRiwayat" class="tab-content w-sec">
-          <div class="bg-white p-6 rounded-3xl shadow-sm border"><h3 class="font-black text-sm uppercase mb-4">📜 Riwayat Pembayaran</h3><div id="riwayatContainer" class="space-y-3"></div></div>
+        <div class="card">
+          <div class="card-header"><h3 class="card-title">📊 Progress Project</h3></div>
+          <div id="progressContainer" style="display: flex; flex-direction: column; gap: 16px;"></div>
         </div>
       </div>
 
-      <!-- ===== AREA ADMIN ===== -->
-      <div id="areaAdmin" class="hidden pb-10">
-        <div id="viewAdminVerify" class="tab-content active a-sec">
-          <div class="bg-white p-6 rounded-3xl border-t-4 border-blue-500 shadow-sm mb-4">
-            <div class="flex gap-2 mb-4 bg-slate-200 p-1 rounded-xl w-fit"><button onclick="fnToggleVerifikasi('PENDING')" id="btnPending" class="px-4 py-2 bg-white text-blue-600 rounded-lg font-bold text-xs">Menunggu</button><button onclick="fnToggleVerifikasi('PROCESSED')" id="btnProcessed" class="px-4 py-2 text-slate-500 rounded-lg font-bold text-xs">Selesai</button></div>
-            <h3 class="font-black text-slate-800 mb-4">✅ Verifikasi Pembayaran</h3>
-            <div id="pendingList" class="space-y-3"></div>
-            <div id="processedList" class="space-y-3 hidden"></div>
-            <p id="emptyPending" class="text-center text-xs text-slate-400 py-4 hidden">Tidak ada pembayaran menunggu.</p>
+      <div id="viewIuran" class="tab-content w-sec">
+        <div class="card">
+          <div style="display: grid; grid-template-columns: 90px 8px 1fr; gap: 12px 16px; align-items: center; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--tk-border);">
+            <label style="font-weight: 600; color: var(--tk-text-secondary);">Identitas</label><span style="color: var(--tk-text-tertiary); text-align: center;">:</span>
+            <select id="wargaSelect" onchange="fnRenderIuran()"></select>
+            <label style="font-weight: 600; color: var(--tk-text-secondary);">Tahun</label><span style="color: var(--tk-text-tertiary); text-align: center;">:</span>
+            <select id="pilihTahun" onchange="fnRenderIuran()">
+              <option value="2024">2024</option><option value="2025">2025</option><option value="2026" selected>2026</option><option value="2027">2027</option>
+            </select>
           </div>
-        </div>
-
-        <div id="viewAdminMaster" class="tab-content a-sec space-y-4">
-          <div class="bg-white p-6 rounded-3xl shadow-sm border">
-            <h3 class="font-black text-slate-800 mb-4 text-sm uppercase">👥 Kelola Warga</h3>
-            <div class="form-grid mb-3"><label>Nama</label><span>:</span><input type="text" id="admNama"><label>Blok</label><span>:</span><input type="text" id="admRumah"><label>WA</label><span>:</span><input type="text" id="admWa"></div>
-            <button onclick="fnTambahWarga()" class="btn-blue">+ Simpan Warga</button>
-            <div id="listWarga" class="mt-4 space-y-2 max-h-40 overflow-y-auto"></div>
-          </div>
-          <div class="bg-white p-6 rounded-3xl shadow-sm border">
-            <h3 class="font-black text-slate-800 mb-4 text-sm uppercase">📁 Kelola Project</h3>
-            <div class="form-grid mb-3"><label>Nama</label><span>:</span><input type="text" id="admProj"><label>Tipe</label><span>:</span><select id="admTipe"><option value="bulanan">Bulanan</option><option value="sekali">Sekali</option><option value="non_iuran">Kas Saja</option></select><label>Mulai</label><span>:</span><input type="month" id="admStart"><label>Nominal</label><span>:</span><input type="number" id="admNom"><label>Target</label><span>:</span><input type="number" id="admTarget"></div>
-            <button onclick="fnTambahProject()" class="btn-blue">+ Terbitkan</button>
-            <div id="listProj" class="mt-4 space-y-2"></div>
-          </div>
-        </div>
-
-        <div id="viewAdminKas" class="tab-content a-sec space-y-4">
-          <div class="bg-white p-6 rounded-3xl shadow-sm border">
-            <div class="flex gap-2 mb-4"><button onclick="fnToggleKasForm('IN')" class="flex-1 py-2 bg-green-100 text-green-700 rounded-lg font-bold text-xs">Pemasukan</button><button onclick="fnToggleKasForm('OUT')" class="flex-1 py-2 bg-red-100 text-red-700 rounded-lg font-bold text-xs">Pengeluaran</button></div>
-            
-            <!-- Form Pemasukan -->
-            <div id="formKasIn" class="hidden space-y-3">
-              <input type="text" id="kasInSumber" placeholder="Sumber (Contoh: Donasi Budi)">
-              <input type="text" id="kasInKategori" placeholder="Alokasi Project (opsional)">
-              <input type="text" id="kasInKet" placeholder="Keterangan">
-              <input type="number" id="kasInNom" placeholder="Nominal">
-              <button onclick="fnTambahKas('IN')" class="btn-green">Simpan Pemasukan</button>
+          <div id="iuranContainer" style="display: flex; flex-direction: column; gap: 16px;"></div>
+          <div id="summaryBayar" style="display: none; margin-top: 28px; padding-top: 24px; border-top: 2px solid var(--tk-border);">
+            <p style="text-align: center; font-size: 11px; font-weight: 700; color: var(--tk-text-tertiary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Total Tagihan Dipilih</p>
+            <h2 id="totalBayarDisplay" style="font-size: 32px; font-weight: 900; text-align: center; color: var(--tk-primary); margin: 8px 0 20px; letter-spacing: -0.5px;">Rp 0</h2>
+            <div style="display: grid; grid-template-columns: 90px 8px 1fr; gap: 12px 16px; align-items: center; margin-bottom: 16px;">
+              <label style="font-weight: 600; color: var(--tk-text-secondary);">Metode</label><span style="color: var(--tk-text-tertiary); text-align: center;">:</span>
+              <select id="metodeBayar" onchange="fnToggleBukti()"><option value="TRANSFER">Transfer Bank</option><option value="CASH">Titip Tunai</option></select>
             </div>
-            
-            <!-- Form Pengeluaran dengan Multiple Items -->
-            <div id="formKasOut" class="hidden space-y-3">
-              <div id="expenseItemsContainer" class="space-y-2"></div>
-              <button onclick="fnAddExpenseItem()" class="btn-slate !w-auto">+ Tambah Item</button>
-              <div class="flex justify-between items-center border-t pt-3 mt-2"><span class="font-bold text-slate-500 text-xs uppercase">Total:</span><span id="expenseTotal" class="font-black text-red-600 text-lg">Rp 0</span></div>
-              <input type="text" id="kasOutKategori" placeholder="Kategori Project (opsional)" class="mt-2">
-              <button onclick="fnTambahKas('OUT')" class="btn-red">Simpan Pengeluaran</button>
+            <div id="buktiSection" style="display: none; margin-bottom: 20px;">
+              <div style="display: grid; grid-template-columns: 90px 8px 1fr; gap: 12px 16px; align-items: center; margin-bottom: 12px;">
+                <label style="font-weight: 600; color: var(--tk-text-secondary);">Bukti Transfer</label><span style="color: var(--tk-text-tertiary); text-align: center;">:</span>
+                <div style="display: flex; gap: 8px;">
+                  <input type="file" id="fileBukti" accept="image/*" style="flex: 1;">
+                  <button type="button" onclick="toggleBuktiType('drive')" class="btn-ghost" style="width: auto; padding: 8px 12px; font-size: 12px;">🔗 GDrive</button>
+                </div>
+              </div>
+              <input type="text" id="linkDrive" placeholder="Atau paste link Google Drive" style="display: none;">
             </div>
+            <button onclick="fnSubmitPembayaran()" class="btn-primary" style="margin-top: 8px; padding: 16px; font-size: 15px; font-weight: 800;">✅ Kirim Pembayaran</button>
           </div>
-          <div class="bg-white p-6 rounded-3xl shadow-sm border"><h3 class="font-black text-sm uppercase mb-4">📒 Mutasi Kas</h3><div id="kasList" class="space-y-2 max-h-60 overflow-y-auto"></div></div>
-        </div>
-
-        <div id="viewAdminLaporan" class="tab-content a-sec space-y-4">
-          <div class="bg-white p-6 rounded-3xl shadow-sm border">
-            <div class="flex justify-between items-center mb-4"><h3 class="font-black text-sm uppercase">📊 Grafik Arus Kas</h3><button onclick="fnExportCSV()" class="btn-slate !w-auto !py-2">⬇️ Export CSV</button></div>
-            <div class="h-48"><canvas id="kasChart"></canvas></div>
-          </div>
-          <div class="bg-white p-6 rounded-3xl shadow-sm border"><h3 class="font-black text-sm uppercase mb-4">📋 Rekap Transaksi</h3><div id="rekapList" class="space-y-2 text-xs"></div></div>
         </div>
       </div>
-    </main>
 
-    <!-- NAVIGASI -->
-    <nav id="navWarga" class="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around p-2 pb-6 z-40 hidden">
-      <button onclick="fnSwitchWargaTab('viewWargaDash')" class="w-nav flex-1 nav-active flex flex-col items-center p-2 text-slate-400"><span class="text-2xl mb-1">🏠</span><span class="text-[10px] font-black uppercase">Beranda</span></button>
-      <button onclick="fnSwitchWargaTab('viewWargaBayar')" class="w-nav flex-1 flex flex-col items-center p-2 text-slate-400"><span class="text-2xl mb-1">💰</span><span class="text-[10px] font-black uppercase">Bayar</span></button>
-      <button onclick="fnSwitchWargaTab('viewWargaRiwayat')" class="w-nav flex-1 flex flex-col items-center p-2 text-slate-400"><span class="text-2xl mb-1">📋</span><span class="text-[10px] font-black uppercase">Riwayat</span></button>
-    </nav>
+      <div id="viewRiwayat" class="tab-content w-sec">
+        <div class="card">
+          <div style="margin-bottom: 16px;"><select id="historySelect" onchange="fnRenderRiwayat()"></select></div>
+          <h3 style="font-weight: 800; font-size: 14px; color: var(--tk-text-primary); margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid var(--tk-border);">📋 Riwayat Pembayaran Saya</h3>
+          <div id="riwayatContainer" style="display: flex; flex-direction: column; gap: 12px;"></div>
+        </div>
+      </div>
+    </div>
 
-    <nav id="navAdmin" class="fixed bottom-0 left-0 right-0 bg-slate-900 border-t flex justify-around p-2 pb-6 z-40 hidden text-white">
-      <button onclick="fnSwitchAdminTab('viewAdminVerify')" class="a-nav flex-1 nav-admin-active flex flex-col items-center p-2 text-slate-500"><span class="text-xl mb-1">✅</span><span class="text-[9px] font-bold uppercase">Verifikasi</span></button>
-      <button onclick="fnSwitchAdminTab('viewAdminMaster')" class="a-nav flex-1 flex flex-col items-center p-2 text-slate-500"><span class="text-xl mb-1">👥</span><span class="text-[9px] font-bold uppercase">Master</span></button>
-      <button onclick="fnSwitchAdminTab('viewAdminKas')" class="a-nav flex-1 flex flex-col items-center p-2 text-slate-500"><span class="text-xl mb-1">💸</span><span class="text-[9px] font-bold uppercase">Kas</span></button>
-      <button onclick="fnSwitchAdminTab('viewAdminLaporan')" class="a-nav flex-1 flex flex-col items-center p-2 text-slate-500"><span class="text-xl mb-1">📊</span><span class="text-[9px] font-bold uppercase">Laporan</span></button>
-    </nav>
-  </div>
+    <!-- AREA ADMIN -->
+    <div id="areaAdmin" style="display: none; padding-bottom: 20px;">
+      <div id="viewAdminVerify" class="tab-content active a-sec">
+        <div style="display: flex; gap: 6px; background: var(--tk-bg); padding: 4px; border-radius: 10px; margin-bottom: 16px;">
+          <button id="btnPending" onclick="fnToggleVerifikasi('PENDING')" style="flex: 1; background: var(--tk-card); color: var(--tk-primary); font-weight: 800; font-size: 12px; padding: 10px; border-radius: 8px; border: none; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">⏳ Menunggu</button>
+          <button id="btnProcessed" onclick="fnToggleVerifikasi('PROCESSED')" style="flex: 1; color: var(--tk-text-tertiary); font-weight: 700; font-size: 12px; padding: 10px; border-radius: 8px; border: none; cursor: pointer; background: transparent;">✅ Selesai</button>
+        </div>
+        <div id="pendingList" style="display: flex; flex-direction: column; gap: 12px;"></div>
+        <div id="processedList" style="display: flex; flex-direction: column; gap: 12px; display: none;"></div>
+        <p id="emptyPending" style="font-size: 13px; color: var(--tk-text-tertiary); text-align: center; padding: 24px; display: none;">✨ Tidak ada pembayaran menunggu verifikasi.</p>
+      </div>
+
+      <div id="viewAdminMaster" class="tab-content a-sec" style="display: flex; flex-direction: column; gap: 20px;">
+        <div class="card">
+          <h3 style="font-weight: 800; color: var(--tk-text-primary); margin-bottom: 16px; font-size: 15px; padding-bottom: 12px; border-bottom: 2px solid var(--tk-border);">👥 Kelola Warga</h3>
+          <div style="display: grid; grid-template-columns: 70px 8px 1fr; gap: 12px 16px; align-items: center; margin-bottom: 16px;">
+            <label style="font-weight: 600; color: var(--tk-text-secondary); font-size: 13px;">Nama</label><span style="color: var(--tk-text-tertiary); text-align: center;">:</span><input type="text" id="admNama" placeholder="Nama lengkap warga">
+            <label style="font-weight: 600; color: var(--tk-text-secondary); font-size: 13px;">Blok</label><span style="color: var(--tk-text-tertiary); text-align: center;">:</span><input type="text" id="admRumah" placeholder="Contoh: A-12">
+            <label style="font-weight: 600; color: var(--tk-text-secondary); font-size: 13px;">WA</label><span style="color: var(--tk-text-tertiary); text-align: center;">:</span><input type="text" id="admWa" placeholder="081234567890">
+          </div>
+          <button onclick="fnTambahWarga()" class="btn-primary">+ Simpan Warga</button>
+          <h4 style="font-weight: 700; color: var(--tk-text-tertiary); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin: 24px 0 12px; padding-top: 16px; border-top: 1px dashed var(--tk-border);">Daftar Warga Aktif</h4>
+          <div id="listWarga" style="display: flex; flex-direction: column; gap: 8px; max-height: 240px; overflow-y: auto; padding-right: 4px;"></div>
+        </div>
+        <div class="card">
+          <h3 style="font-weight: 800; color: var(--tk-text-primary); margin-bottom: 16px; font-size: 15px; padding-bottom: 12px; border-bottom: 2px solid var(--tk-border);">📁 Kelola Project</h3>
+          <div style="display: grid; grid-template-columns: 70px 8px 1fr; gap: 12px 16px; align-items: center; margin-bottom: 16px;">
+            <label style="font-weight: 600; color: var(--tk-text-secondary); font-size: 13px;">Project</label><span style="color: var(--tk-text-tertiary); text-align: center;">:</span><input type="text" id="admProj" placeholder="Nama project/iuran">
+            <label style="font-weight: 600; color: var(--tk-text-secondary); font-size: 13px;">Tipe</label><span style="color: var(--tk-text-tertiary); text-align: center;">:</span>
+            <select id="admTipe"><option value="bulanan">Bulanan</option><option value="sekali">Sekali</option><option value="non_iuran">Kas Saja</option></select>
+            <label style="font-weight: 600; color: var(--tk-text-secondary); font-size: 13px;">Mulai</label><span style="color: var(--tk-text-tertiary); text-align: center;">:</span><input type="month" id="admStart">
+            <label style="font-weight: 600; color: var(--tk-text-secondary); font-size: 13px;">Nominal</label><span style="color: var(--tk-text-tertiary); text-align: center;">:</span><input type="number" id="admNom" placeholder="0">
+            <label style="font-weight: 600; color: var(--tk-text-secondary); font-size: 13px;">Target</label><span style="color: var(--tk-text-tertiary); text-align: center;">:</span><input type="number" id="admTarget" placeholder="0">
+          </div>
+          <button onclick="fnTambahProject()" class="btn-primary">+ Terbitkan Project</button>
+          <div id="listProj" style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px;"></div>
+        </div>
+      </div>
+
+      <div id="viewAdminKas" class="tab-content a-sec" style="display: flex; flex-direction: column; gap: 20px;">
+        <div style="display: flex; gap: 6px; background: var(--tk-bg); padding: 4px; border-radius: 10px;">
+          <button id="btnTabOut" onclick="fnToggleKasForm('OUT')" style="flex: 1; background: var(--tk-card); color: var(--tk-danger); font-weight: 800; font-size: 12px; padding: 10px; border-radius: 8px; border: none; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">💸 Pengeluaran</button>
+          <button id="btnTabIn" onclick="fnToggleKasForm('IN')" style="flex: 1; color: var(--tk-text-tertiary); font-weight: 700; font-size: 12px; padding: 10px; border-radius: 8px; border: none; cursor: pointer; background: transparent;">💰 Pemasukan</button>
+        </div>
+        <div id="formKasOut" class="card" style="border-top: 4px solid var(--tk-danger);">
+          <div id="expenseItemsContainer" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;"></div>
+          <button onclick="fnAddExpenseItem()" class="btn-ghost" style="width: 100%; margin-bottom: 16px; border: 2px dashed var(--tk-border);">+ Tambah Item Belanja</button>
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px; background: var(--tk-bg); border-radius: var(--tk-radius); margin-bottom: 16px;">
+            <span style="font-weight: 700; color: var(--tk-text-secondary); font-size: 13px; text-transform: uppercase;">Total Pengeluaran</span>
+            <span id="expenseTotal" style="font-weight: 900; color: var(--tk-danger); font-size: 22px;">Rp 0</span>
+          </div>
+          <div style="margin-bottom: 16px;">
+            <label style="display: block; font-size: 13px; font-weight: 600; color: var(--tk-text-secondary); margin-bottom: 6px;">Kategori Project</label>
+            <select id="kasOutKategori"><option value="">-- Pilih Project --</option></select>
+          </div>
+          <button onclick="fnTambahKas('OUT')" class="btn-danger">Simpan Pengeluaran</button>
+        </div>
+        <div id="formKasIn" class="card" style="border-top: 4px solid var(--tk-success); display: none;">
+          <div style="display: grid; grid-template-columns: 70px 8px 1fr; gap: 12px 16px; align-items: center;">
+            <label style="font-weight: 600; color: var(--tk-text-secondary); font-size: 13px;">Sumber</label><span style="color: var(--tk-text-tertiary); text-align: center;">:</span><input type="text" id="kasInSumber" placeholder="Contoh: Donasi Budi">
+            <label style="font-weight: 600; color: var(--tk-text-secondary); font-size: 13px;">Kategori</label><span style="color: var(--tk-text-tertiary); text-align: center;">:</span><select id="kasInKategori"><option value="">-- Pilih Project --</option></select>
+            <label style="font-weight: 600; color: var(--tk-text-secondary); font-size: 13px;">Ket.</label><span style="color: var(--tk-text-tertiary); text-align: center;">:</span><input type="text" id="kasInKet" placeholder="Keterangan tambahan">
+            <label style="font-weight: 600; color: var(--tk-text-secondary); font-size: 13px;">Nominal</label><span style="color: var(--tk-text-tertiary); text-align: center;">:</span><input type="number" id="kasInNom" placeholder="0">
+          </div>
+          <button onclick="fnTambahKas('IN')" class="btn-secondary" style="margin-top: 16px;">Simpan Pemasukan</button>
+        </div>
+        <div id="kasList" style="display: flex; flex-direction: column; gap: 12px;"></div>
+      </div>
+
+      <div id="viewAdminLaporan" class="tab-content a-sec" style="display: flex; flex-direction: column; gap: 20px;">
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid var(--tk-border);">
+            <h3 style="font-weight: 800; color: var(--tk-text-primary); font-size: 15px; margin: 0;">📊 Buku Kas (LPJ)</h3>
+            <button onclick="fnExportCSV()" style="background: rgba(0, 184, 148, 0.12); color: var(--tk-success); padding: 8px 14px; border-radius: 10px; font-size: 12px; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; gap: 4px;">⬇️ Export Excel</button>
+          </div>
+          <div id="laporanBukukas" style="max-height: 400px; overflow-y: auto;"></div>
+        </div>
+        <div class="card">
+          <h3 style="font-weight: 800; color: var(--tk-text-primary); font-size: 15px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid var(--tk-border);">📋 Rekap Iuran Warga</h3>
+          <div id="rekapList"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- BOTTOM NAV -->
+  <nav id="navWarga" class="bottom-nav">
+    <button onclick="fnSwitchWargaTab('viewDashboard', this)" class="nav-item nav-active"><span>🏠</span>Beranda</button>
+    <button onclick="fnSwitchWargaTab('viewIuran', this)" class="nav-item"><span>💰</span>Bayar</button>
+    <button onclick="fnSwitchWargaTab('viewRiwayat', this)" class="nav-item"><span>📋</span>Riwayat</button>
+  </nav>
+  <nav id="navAdmin" class="bottom-nav admin" style="display: none;">
+    <button onclick="fnSwitchAdminTab('viewAdminVerify', this)" class="nav-item nav-admin-active"><span>✅</span>Verifikasi</button>
+    <button onclick="fnSwitchAdminTab('viewAdminMaster', this)" class="nav-item"><span>👥</span>Master</button>
+    <button onclick="fnSwitchAdminTab('viewAdminKas', this)" class="nav-item"><span>💸</span>Buku Kas</button>
+    <button onclick="fnSwitchAdminTab('viewAdminLaporan', this)" class="nav-item"><span>📊</span>Laporan</button>
+  </nav>
 
   <script>
     // ==========================================
@@ -205,16 +324,13 @@
     }
     const db = window.dk.db;
     window.dk.state = { 
-      orgId: null, 
-      user: null, 
+      orgId: null, user: null, 
       data: { warga:[], project:[], pembayaran:[], detail:[], pengeluaran:[], danaLain:[] }, 
-      selectedCart: {},
-      expenseItems: [{ket:'', nom:''}]
+      selectedCart: {}, expenseItems: [{ket:'', nom:''}] 
     };
-    let kasChartInstance = null;
-    let currentStrukData = null;
     const months = ['01','02','03','04','05','06','07','08','09','10','11','12'];
     const monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    let currentStrukData = null;
 
     window.addEventListener('DOMContentLoaded', () => {
       const s = JSON.parse(localStorage.getItem('dk_session'));
@@ -222,54 +338,55 @@
         window.dk.state.orgId = s.orgId;
         window.dk.state.user = s.user;
         fnShowApp();
+      } else {
+        toggleModal(true);
       }
     });
 
     // ==========================================
-    // AUTH & UI HELPERS
+    // UI HELPERS
     // ==========================================
-    window.fnValidateKode = async function() {
-      const kode = document.getElementById('inputKode').value.trim().toUpperCase();
-      if (!kode) return alert('Masukkan kode!');
-      showLoader(true);
-      const { data, error } = await db.from('organizations').select('id, nama').eq('client_code', kode).single();
-      showLoader(false);
-      if (data && !error) {
-        window.dk.state.orgId = data.id;
-        document.getElementById('orgNameDisplay').innerText = data.nama;
-        document.getElementById('stepKode').classList.add('hidden');
-        document.getElementById('stepLogin').classList.remove('hidden');
-      } else alert('Kode tidak valid!');
-    };
+    function showLoader(show) { document.getElementById('loader').classList.toggle('hidden', !show); }
+    function formatRp(n) { return 'Rp ' + Number(n||0).toLocaleString('id-ID'); }
+    function genId(p) { return p + '-' + Date.now() + '-' + Math.floor(Math.random()*100); }
+    function formatBulan(p) { if(p==='SEKALI') return 'Sekali Bayar'; const parts=p.split('-'); if(parts.length<2) return p; return `${monthNames[parseInt(parts[1])-1]} ${parts[0]}`; }
+    function formatWA(n) { if(!n) return ''; let c=n.replace(/\D/g,''); if(c.startsWith('0')) c='62'+c.substring(1); return c; }
+    function toggleModal(show) { document.getElementById('loginModal').classList.toggle('hidden', !show); document.getElementById('loginModalWarga').classList.add('hidden'); }
+    function toggleModalWarga(show) { document.getElementById('loginModalWarga').classList.toggle('hidden', !show); document.getElementById('loginModal').classList.add('hidden'); }
+    function switchLoginTab(type) { if(type==='admin') { toggleModal(true); toggleModalWarga(false); } else { toggleModal(false); toggleModalWarga(true); } }
+    function closeStrukModal() { document.getElementById('strukModal').classList.add('hidden'); }
 
-    window.fnBackToKode = function() {
-      document.getElementById('stepLogin').classList.add('hidden');
-      document.getElementById('stepKode').classList.remove('hidden');
-    };
-
-    window.fnSwitchTab = function(type) {
-      const fAdm = document.getElementById('formAdmin'), fWrg = document.getElementById('formWarga');
-      const tAdm = document.getElementById('tabAdmin'), tWrg = document.getElementById('tabWarga');
-      if(type==='admin') { fAdm.classList.remove('hidden'); fWrg.classList.add('hidden'); tAdm.className='flex-1 py-2 rounded-lg text-sm font-bold bg-white shadow text-blue-600'; tWrg.className='flex-1 py-2 rounded-lg text-sm font-bold text-slate-500'; }
-      else { fWrg.classList.remove('hidden'); fAdm.classList.add('hidden'); tWrg.className='flex-1 py-2 rounded-lg text-sm font-bold bg-white shadow text-green-600'; tAdm.className='flex-1 py-2 rounded-lg text-sm font-bold text-slate-500'; }
-    };
-
+    // ==========================================
+    // AUTH & SESSION
+    // ==========================================
     window.fnLoginAdmin = async function() {
       const u = document.getElementById('inpUser').value.trim(), p = document.getElementById('inpPass').value;
-      if(!u || !p) return alert('Isi credential!');
+      const err = document.getElementById('loginError'); err.style.display = 'none';
+      if(!u || !p) { err.textContent='Isi username & password!'; err.style.display='block'; return; }
       showLoader(true);
       const { data } = await db.rpc('rpc_login_admin', { p_username: u, p_password: p, p_org_id: window.dk.state.orgId });
       showLoader(false);
-      if(data?.success) { window.dk.state.user = { type:'admin', id:data.data.id, name:data.data.nama_admin }; fnShowApp(); } else alert('Login gagal: ' + (data?.msg||'Credential salah'));
+      if(data?.success) {
+        window.dk.state.user = { type:'admin', id:data.data.id, name:data.data.nama_admin };
+        toggleModal(false);
+        document.getElementById('inpUser').value = ''; document.getElementById('inpPass').value = '';
+        fnShowApp();
+      } else { err.textContent = 'Login gagal: ' + (data?.msg || 'Credential salah'); err.style.display = 'block'; }
     };
 
     window.fnLoginWarga = async function() {
-      const r = document.getElementById('inpRumah').value.trim(), p = document.getElementById('inpPin').value;
-      if(!r || !p) return alert('Isi credential!');
+      const r = document.getElementById('inpRumah').value.trim().toUpperCase(), pin = document.getElementById('inpPin').value;
+      const err = document.getElementById('loginErrorWarga'); err.style.display = 'none';
+      if(!r || !pin || pin.length < 4) { err.textContent='Isi No. Rumah & PIN (min. 4 digit)!'; err.style.display='block'; return; }
       showLoader(true);
-      const { data } = await db.rpc('rpc_login_warga', { p_no_rumah: r, p_pin: p, p_org_id: window.dk.state.orgId });
+      const { data } = await db.rpc('rpc_login_warga', { p_no_rumah: r, p_pin: pin, p_org_id: window.dk.state.orgId });
       showLoader(false);
-      if(data?.success) { window.dk.state.user = { type:'warga', id:data.data.id, name:data.data.nama, noRumah:data.data.no_rumah }; fnShowApp(); } else alert('Login gagal: ' + (data?.msg||'Credential salah'));
+      if(data?.success) {
+        window.dk.state.user = { type:'warga', id:data.data.id, name:data.data.nama, noRumah:data.data.no_rumah };
+        toggleModalWarga(false);
+        document.getElementById('inpRumah').value = ''; document.getElementById('inpPin').value = '';
+        fnShowApp();
+      } else { err.textContent = 'Login gagal: ' + (data?.msg || 'Credential salah'); err.style.display = 'block'; }
     };
 
     window.fnLogout = function() {
@@ -280,31 +397,71 @@
 
     function fnShowApp() {
       localStorage.setItem('dk_session', JSON.stringify({ orgId: window.dk.state.orgId, user: window.dk.state.user, exp: Date.now() + 86400000 }));
-      document.getElementById('loginModal').classList.add('hidden');
-      document.getElementById('mainApp').classList.remove('hidden');
-      
       if(window.dk.state.user.type === 'admin') {
-        document.getElementById('areaAdmin').classList.remove('hidden');
-        document.getElementById('areaWarga').classList.add('hidden');
-        document.getElementById('navAdmin').classList.remove('hidden');
-        document.getElementById('navWarga').classList.add('hidden');
-        document.getElementById('headerSubtitle').innerText = "PANEL PENGURUS";
-        fnLoadData().then(() => { fnRenderAdminVerify(); fnRenderMaster(); fnRenderKas(); fnRenderLaporan(); fnPopulateWargaSelect(); });
+        document.getElementById('areaAdmin').style.display = 'block';
+        document.getElementById('areaWarga').style.display = 'none';
+        document.getElementById('navAdmin').style.display = 'flex';
+        document.getElementById('navWarga').style.display = 'none';
+        document.getElementById('authBtn').style.display = 'none';
+        document.getElementById('logoutBtn').style.display = 'block';
+        document.getElementById('org-display-name').innerText = 'Panel Pengurus';
+        document.querySelector('.app-header').style.background = '#1A1A1A';
+        document.querySelector('.app-header h1').style.color = 'white';
+        document.querySelector('.app-header p').style.color = '#999';
+        fnLoadData().then(() => { fnRenderAdminVerify(); fnRenderMaster(); fnRenderKas(); fnRenderLaporan(); fnPopulateWargaSelect(); loadOrgHeaderInfo(); });
       } else {
-        document.getElementById('areaWarga').classList.remove('hidden');
-        document.getElementById('areaAdmin').classList.add('hidden');
-        document.getElementById('navWarga').classList.remove('hidden');
-        document.getElementById('navAdmin').classList.add('hidden');
-        document.getElementById('headerSubtitle').innerText = "PORTAL WARGA";
-        fnLoadData().then(() => { fnRenderWargaDash(); fnRenderIuran(); fnRenderRiwayat(); fnPopulateWargaSelect(); });
+        document.getElementById('areaWarga').style.display = 'block';
+        document.getElementById('areaAdmin').style.display = 'none';
+        document.getElementById('navWarga').style.display = 'flex';
+        document.getElementById('navAdmin').style.display = 'none';
+        document.getElementById('authBtn').style.display = 'block';
+        document.getElementById('logoutBtn').style.display = 'block';
+        document.getElementById('org-display-name').innerText = 'Portal Warga';
+        document.querySelector('.app-header').style.background = 'var(--tk-card)';
+        document.querySelector('.app-header h1').style.color = 'var(--tk-text-primary)';
+        document.querySelector('.app-header p').style.color = 'var(--tk-text-tertiary)';
+        fnLoadData().then(() => { fnRenderWargaDash(); fnRenderIuran(); fnRenderRiwayat(); fnPopulateWargaSelect(); loadOrgHeaderInfo(); });
       }
     }
 
-    function showLoader(show) { document.getElementById('loader').classList.toggle('hidden', !show); }
-    function formatRp(n) { return 'Rp ' + Number(n||0).toLocaleString('id-ID'); }
-    function genId(p) { return p + '-' + Date.now() + '-' + Math.floor(Math.random()*100); }
-    function formatBulan(p) { if(p==='SEKALI') return 'Sekali Bayar'; const parts=p.split('-'); if(parts.length<2) return p; return `${monthNames[parseInt(parts[1])-1]} ${parts[0]}`; }
-    function formatWA(n) { if(!n) return ''; let c=n.replace(/\D/g,''); if(c.startsWith('0')) c='62'+c.substring(1); return c; }
+    // Load Header Info (Logo + Display Name)
+    async function loadOrgHeaderInfo() {
+      if(!window.dk.state.orgId) return;
+      const {  org } = await db.from('organizations').select('display_name, logo_url, nama').eq('id', window.dk.state.orgId).single();
+      if(org) {
+        document.getElementById('org-display-name').innerText = org.display_name || org.nama || 'Portal';
+        const logoImg = document.getElementById('org-logo');
+        const fallback = document.getElementById('org-logo-fallback');
+        if(org.logo_url) {
+          logoImg.src = org.logo_url;
+          logoImg.style.display = 'block';
+          fallback.style.display = 'none';
+        }
+      }
+    }
+
+    // ==========================================
+    // TAB SWITCHING
+    // ==========================================
+    window.fnSwitchWargaTab = function(tabId, btn) {
+      document.querySelectorAll('.w-sec').forEach(c => c.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      document.querySelectorAll('#navWarga .nav-item').forEach(b => b.classList.remove('nav-active'));
+      if(btn) btn.classList.add('nav-active');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    window.fnSwitchAdminTab = function(tabId, btn) {
+      document.querySelectorAll('.a-sec').forEach(c => c.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      document.querySelectorAll('#navAdmin .nav-item').forEach(b => b.classList.remove('nav-admin-active'));
+      if(btn) btn.classList.add('nav-admin-active');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      if(tabId==='view-admin-verify') fnRenderAdminVerify();
+      if(tabId==='view-admin-master') fnRenderMaster();
+      if(tabId==='view-admin-kas') fnRenderKas();
+      if(tabId==='view-admin-laporan') fnRenderLaporan();
+    };
 
     // ==========================================
     // DATA LOADING
@@ -312,495 +469,348 @@
     window.fnLoadData = async function() {
       showLoader(true);
       const orgId = window.dk.state.orgId;
-      const [w, p, pay, det, out, inc] = await Promise.all([
-        db.from('warga').select('*').eq('organization_id', orgId),
-        db.from('project').select('*').eq('organization_id', orgId).eq('status', 'ACTIVE'),
-        db.from('pembayaran').select('*').eq('organization_id', orgId),
-        db.from('pembayaran_detail').select('*').eq('organization_id', orgId),
-        db.from('pengeluaran').select('*').eq('organization_id', orgId),
-        db.from('dana_lain').select('*').eq('organization_id', orgId)
-      ]);
-      window.dk.state.data = { 
-        warga: (w.data||[]).filter(x => x.status !== 'INACTIVE'), 
-        project: p.data||[], 
-        pembayaran: pay.data||[], 
-        detail: det.data||[], 
-        pengeluaran: out.data||[], 
-        danaLain: inc.data||[] 
-      };
-      showLoader(false);
+      try {
+        const [w, p, pay, det, out, inc] = await Promise.all([
+          db.from('warga').select('*').eq('organization_id', orgId),
+          db.from('project').select('*').eq('organization_id', orgId).eq('status', 'ACTIVE'),
+          db.from('pembayaran').select('*').eq('organization_id', orgId),
+          db.from('pembayaran_detail').select('*').eq('organization_id', orgId),
+          db.from('pengeluaran').select('*').eq('organization_id', orgId),
+          db.from('dana_lain').select('*').eq('organization_id', orgId)
+        ]);
+        window.dk.state.data = { 
+          warga: (w.data||[]).filter(x => x.status !== 'INACTIVE'), 
+          project: p.data||[], pembayaran: pay.data||[], detail: det.data||[], 
+          pengeluaran: out.data||[], danaLain: inc.data||[] 
+        };
+      } catch(e) { console.error('Load error:', e); alert('Gagal memuat data.'); }
+      finally { showLoader(false); }
     };
 
     // ==========================================
-    // ADMIN FEATURES
+    // ADMIN: VERIFIKASI
     // ==========================================
-    window.fnSwitchAdminTab = function(tabId) {
-      document.querySelectorAll('.a-sec').forEach(c => c.classList.remove('active'));
-      document.getElementById(tabId).classList.add('active');
-      document.querySelectorAll('.a-nav').forEach(b => b.classList.remove('nav-admin-active'));
-      event.currentTarget.classList.add('nav-admin-active');
-      if(tabId==='viewAdminVerify') fnRenderAdminVerify();
-      if(tabId==='viewAdminMaster') fnRenderMaster();
-      if(tabId==='viewAdminKas') fnRenderKas();
-      if(tabId==='viewAdminLaporan') fnRenderLaporan();
-    };
-
     window.fnToggleVerifikasi = function(type) {
       const pending = document.getElementById('pendingList'), processed = document.getElementById('processedList');
       const btnP = document.getElementById('btnPending'), btnPr = document.getElementById('btnProcessed');
       if(type==='PENDING') {
-        pending.classList.remove('hidden'); processed.classList.add('hidden');
-        btnP.className='px-4 py-2 bg-white text-blue-600 rounded-lg font-bold text-xs shadow'; btnPr.className='px-4 py-2 text-slate-500 rounded-lg font-bold text-xs';
+        pending.style.display = 'flex'; processed.style.display = 'none';
+        btnP.style.cssText='flex:1;background:var(--tk-card);color:var(--tk-primary);font-weight:800;font-size:12px;padding:10px;border-radius:8px;border:none;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,0.08);';
+        btnPr.style.cssText='flex:1;color:var(--tk-text-tertiary);font-weight:700;font-size:12px;padding:10px;border-radius:8px;border:none;cursor:pointer;background:transparent;';
       } else {
-        processed.classList.remove('hidden'); pending.classList.add('hidden');
-        btnPr.className='px-4 py-2 bg-white text-blue-600 rounded-lg font-bold text-xs shadow'; btnP.className='px-4 py-2 text-slate-500 rounded-lg font-bold text-xs';
+        processed.style.display = 'flex'; pending.style.display = 'none';
+        btnPr.style.cssText='flex:1;background:var(--tk-card);color:var(--tk-primary);font-weight:800;font-size:12px;padding:10px;border-radius:8px;border:none;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,0.08);';
+        btnP.style.cssText='flex:1;color:var(--tk-text-tertiary);font-weight:700;font-size:12px;padding:10px;border-radius:8px;border:none;cursor:pointer;background:transparent;';
       }
     };
 
     window.fnRenderAdminVerify = function() {
       const pending = window.dk.state.data.pembayaran.filter(p => p.status === 'MENUNGGU VERIFIKASI');
       const approved = window.dk.state.data.pembayaran.filter(p => p.status === 'DISETUJUI');
-      const pendingC = document.getElementById('pendingList'), processedC = document.getElementById('processedList');
-      
       function renderCard(p, isPending) {
         const w = window.dk.state.data.warga.find(x => x.id === p.warga_id);
         const det = window.dk.state.data.detail.filter(d => d.pembayaran_id === p.id);
-        let rincian = det.map(d => {
-          const proj = window.dk.state.data.project.find(x => x.id === d.project_id);
-          return `${proj?.nama_project || 'Project'} (${formatBulan(d.periode)})`;
-        }).join(', ');
-        const statusClass = p.status==='DISETUJUI'?'bg-green-100 text-green-700':p.status==='DITOLAK'?'bg-red-100 text-red-700':'bg-yellow-100 text-yellow-700';
+        let rincian = det.map(d => { const proj = window.dk.state.data.project.find(x => x.id === d.project_id); return `${proj?.nama_project || 'Project'} (${formatBulan(d.periode)})`; }).join(', ');
+        const statusClass = p.status==='DISETUJUI' ? 'badge-success' : p.status==='DITOLAK' ? 'badge-danger' : 'badge-warning';
+        const statusText = p.status==='DISETUJUI' ? 'Disetujui' : p.status==='DITOLAK' ? 'Ditolak' : 'Menunggu';
         const actions = isPending 
-          ? `<div class="flex gap-2 mt-3"><button onclick="fnVerify('${p.id}','DISETUJUI')" class="flex-1 bg-green-100 text-green-700 py-2 rounded-lg text-xs font-bold">Setujui</button><button onclick="fnVerify('${p.id}','DITOLAK')" class="flex-1 bg-red-100 text-red-700 py-2 rounded-lg text-xs font-bold">Tolak</button></div>`
-          : (p.status==='DISETUJUI' ? `<button onclick='fnShowStruk(${JSON.stringify(p).replace(/'/g,"&#39;")})' class="btn-blue !py-2 !text-xs mt-2">📄 Buka Struk</button>` : '');
-        
-        return `<div class="bg-white p-4 rounded-xl border shadow-sm">
-          <div class="flex justify-between mb-1"><span class="font-bold text-sm">${w?.nama || 'Unknown'}</span><span class="text-xs px-2 py-1 rounded font-bold ${statusClass}">${p.status}</span></div>
-          <p class="text-lg font-black text-blue-600">${formatRp(p.total_nominal)}</p>
-          <p class="text-[10px] text-slate-500 mb-2">${p.metode} | ${new Date(p.tanggal).toLocaleDateString('id-ID')}</p>
-          <p class="text-xs text-slate-600 mb-2 bg-slate-50 p-2 rounded">${rincian}</p>
-          ${p.bukti_url ? `<a href="${p.bukti_url}" target="_blank" class="text-[10px] text-blue-500 underline mb-2 block">📎 Lihat Bukti</a>` : ''}
-          ${actions}
-        </div>`;
+          ? `<div style="display:flex;gap:8px;margin-top:16px;"><button onclick="fnVerify('${p.id}','DISETUJUI')" class="btn-secondary" style="flex:1;padding:10px;font-size:13px;">✅ Setujui</button><button onclick="fnVerify('${p.id}','DITOLAK')" class="btn-danger" style="flex:1;padding:10px;font-size:13px;">❌ Tolak</button></div>`
+          : (p.status==='DISETUJUI' ? `<button onclick='fnShowStruk(${JSON.stringify(p).replace(/'/g,"&#39;")})' class="btn-primary" style="margin-top:12px;padding:10px;font-size:13px;">🧾 Lihat Struk</button>` : '');
+        return `<div class="card" style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:12px;"><div><p style="font-weight:800;color:var(--tk-text-primary);font-size:15px;margin:0;">${w?.nama || 'Unknown'}</p><p style="font-size:12px;color:var(--tk-text-tertiary);margin:4px 0 0;">${w?.no_rumah || ''}</p></div><span class="badge ${statusClass}">${statusText}</span></div><p style="font-weight:900;color:var(--tk-primary);font-size:22px;margin:8px 0 12px;letter-spacing:-0.5px;">${formatRp(p.total_nominal)}</p><p style="font-size:12px;color:var(--tk-text-tertiary);line-height:1.5;margin-bottom:8px;">${p.metode} • ${new Date(p.tanggal).toLocaleDateString('id-ID')}</p><p style="font-size:13px;color:var(--tk-text-secondary);background:var(--tk-bg);padding:12px;border-radius:10px;margin-bottom:8px;">${rincian}</p>${p.bukti_url ? `<a href="${p.bukti_url}" target="_blank" style="font-size:12px;color:var(--tk-primary);font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:4px;margin-bottom:8px;">📎 Lihat Bukti</a>`:''} ${actions}</div>`;
       }
-      
-      pendingC.innerHTML = pending.map(p => renderCard(p, true)).join('') || '<p class="text-xs text-slate-400 text-center py-4">Tidak ada pembayaran menunggu.</p>';
-      processedC.innerHTML = approved.map(p => renderCard(p, false)).join('') || '<p class="text-xs text-slate-400 text-center py-4">Belum ada pembayaran disetujui.</p>';
-      document.getElementById('emptyPending').classList.toggle('hidden', pending.length > 0);
+      document.getElementById('pendingList').innerHTML = pending.length > 0 ? pending.map(p => renderCard(p, true)).join('') : '<p style="font-size:13px;color:var(--tk-text-tertiary);text-align:center;padding:32px 16px;">✨ Tidak ada pembayaran menunggu.</p>';
+      document.getElementById('processedList').innerHTML = approved.length > 0 ? approved.map(p => renderCard(p, false)).join('') : '<p style="font-size:13px;color:var(--tk-text-tertiary);text-align:center;padding:32px 16px;">✨ Belum ada pembayaran disetujui.</p>';
+      document.getElementById('emptyPending').style.display = pending.length > 0 ? 'none' : 'block';
     };
 
     window.fnVerify = async function(pid, status) {
+      if(!confirm(`Yakin ingin ${status==='DISETUJUI'?'menyetujui':'menolak'} pembayaran ini?`)) return;
       showLoader(true);
       await db.from('pembayaran').update({ status: status, verified_by: window.dk.state.user.name, verified_at: new Date().toISOString() }).eq('id', pid);
-      await fnLoadData();
-      fnRenderAdminVerify();
-      showLoader(false);
+      await fnLoadData(); fnRenderAdminVerify(); showLoader(false);
     };
 
+    // ==========================================
+    // ADMIN: MASTER DATA
+    // ==========================================
     window.fnRenderMaster = function() {
-      // Warga List dengan Soft Delete
       const wList = document.getElementById('listWarga');
-      wList.innerHTML = window.dk.state.data.warga.map(w => `
-        <div class="bg-slate-50 p-2 rounded text-xs flex justify-between items-center">
-          <span>${w.nama} (${w.no_rumah})</span>
-          <div class="flex gap-2">
-            <span class="text-green-600">PIN: 1234</span>
-            <button onclick="fnToggleWargaStatus('${w.id}')" class="text-red-500 hover:text-red-700 font-bold">🗑️</button>
-          </div>
-        </div>`).join('') || '<p class="text-xs text-slate-400">Belum ada warga</p>';
+      wList.innerHTML = window.dk.state.data.warga.length === 0 
+        ? '<p style="font-size:13px;color:var(--tk-text-tertiary);text-align:center;padding:24px;">Belum ada warga terdaftar.</p>'
+        : window.dk.state.data.warga.map(w => `<div class="list-item" style="padding:12px 16px;"><div style="flex:1;"><p style="font-weight:700;color:var(--tk-text-primary);font-size:14px;margin:0;">${w.nama}</p><p style="font-size:12px;color:var(--tk-text-tertiary);margin:2px 0 0;">${w.no_rumah} • ${w.no_wa || 'No WA -'}</p></div><div style="display:flex;gap:8px;align-items:center;"><span class="badge badge-success" style="font-size:10px;">PIN: 1234</span><button onclick="fnToggleWargaStatus('${w.id}')" class="btn-ghost" style="padding:6px;color:var(--tk-danger);">🗑️</button></div></div>`).join('');
       
-      // Project List
       const pList = document.getElementById('listProj');
-      pList.innerHTML = window.dk.state.data.project.map(p => `
-        <div class="bg-blue-50 p-2 rounded text-xs flex justify-between items-center">
-          <div><span class="font-bold">${p.nama_project}</span><br><span class="text-slate-500">${p.tipe} | ${formatRp(p.nominal_default)}</span></div>
-          <button onclick="fnCloseProject('${p.id}')" class="text-red-500 text-[10px] font-bold">Tutup</button>
-        </div>`).join('') || '<p class="text-xs text-slate-400">Belum ada project</p>';
+      pList.innerHTML = window.dk.state.data.project.length === 0
+        ? '<p style="font-size:13px;color:var(--tk-text-tertiary);text-align:center;padding:24px;">Belum ada project aktif.</p>'
+        : window.dk.state.data.project.map(p => `<div class="list-item" style="padding:12px 16px;"><div style="flex:1;"><p style="font-weight:700;color:var(--tk-text-primary);font-size:14px;margin:0;">${p.nama_project}</p><p style="font-size:12px;color:var(--tk-text-tertiary);margin:2px 0 0;">${p.tipe==='bulanan'?'📅 Bulanan':p.tipe==='sekali'?'🎯 Sekali':'💰 Kas'} • ${formatRp(p.nominal_default)}</p></div><button onclick="fnCloseProject('${p.id}')" class="btn-ghost" style="padding:6px;color:var(--tk-danger);font-size:12px;">Tutup</button></div>`).join('');
     };
 
     window.fnToggleWargaStatus = async function(wid) {
-      if(!confirm('Nonaktifkan warga ini?')) return;
-      showLoader(true);
-      await db.from('warga').update({ status: 'INACTIVE' }).eq('id', wid);
-      await fnLoadData(); fnRenderMaster();
-      showLoader(false);
+      if(!confirm('Nonaktifkan warga ini? Data tidak akan hilang, hanya disembunyikan.')) return;
+      showLoader(true); await db.from('warga').update({ status: 'INACTIVE' }).eq('id', wid); await fnLoadData(); fnRenderMaster(); showLoader(false);
     };
-
     window.fnCloseProject = async function(pid) {
       if(!confirm('Tutup project ini?')) return;
-      showLoader(true);
-      await db.from('project').update({ status: 'INACTIVE' }).eq('id', pid);
-      await fnLoadData(); fnRenderMaster();
-      showLoader(false);
+      showLoader(true); await db.from('project').update({ status: 'INACTIVE' }).eq('id', pid); await fnLoadData(); fnRenderMaster(); showLoader(false);
     };
-
     window.fnTambahWarga = async function() {
       const nama = document.getElementById('admNama').value.trim(), blok = document.getElementById('admRumah').value.trim(), wa = document.getElementById('admWa').value.trim();
-      if(!nama) return alert('Isi nama!');
+      if(!nama || !blok) return alert('Nama dan No. Rumah wajib diisi!');
       showLoader(true);
-      const { data: hash } = await db.rpc('hash_password', { raw_pass: '1234' });
+      const {  hash } = await db.rpc('hash_password', { raw_pass: '1234' });
       await db.from('warga').insert([{ id: genId('WRG'), organization_id: window.dk.state.orgId, nama, no_rumah: blok, no_wa: wa, pin_hash: hash, status: 'ACTIVE' }]);
       document.getElementById('admNama').value=''; document.getElementById('admRumah').value=''; document.getElementById('admWa').value='';
-      await fnLoadData(); fnRenderMaster(); showLoader(false);
+      alert('✅ Warga berhasil ditambahkan! PIN default: 1234');
+      await fnLoadData(); fnRenderMaster(); fnRenderIuran(); fnRenderRiwayat(); showLoader(false);
     };
-
     window.fnTambahProject = async function() {
       const nama = document.getElementById('admProj').value.trim(), tipe = document.getElementById('admTipe').value, start = document.getElementById('admStart').value, nom = document.getElementById('admNom').value, target = document.getElementById('admTarget').value;
-      if(!nama) return alert('Isi nama project!');
+      if(!nama) return alert('Nama project wajib diisi!');
       showLoader(true);
       await db.from('project').insert([{ id: genId('PRJ'), organization_id: window.dk.state.orgId, nama_project: nama, tipe, start_periode: start||null, nominal_default: nom||0, target: target||0, status: 'ACTIVE' }]);
-      document.getElementById('admProj').value=''; document.getElementById('admNom').value='';
-      await fnLoadData(); fnRenderMaster(); showLoader(false);
+      document.getElementById('admProj').value=''; document.getElementById('admNom').value=''; document.getElementById('admTarget').value='';
+      alert('✅ Project berhasil diterbitkan!');
+      await fnLoadData(); fnRenderMaster(); fnRenderIuran(); showLoader(false);
     };
 
-    // ===== KAS: Multiple Expense Items =====
+    // ==========================================
+    // ADMIN: BUKU KAS
+    // ==========================================
     window.fnToggleKasForm = function(type) {
-      document.getElementById('formKasIn').classList.toggle('hidden', type!=='IN');
-      document.getElementById('formKasOut').classList.toggle('hidden', type!=='OUT');
-      if(type==='OUT') fnRenderExpenseItems();
+      document.getElementById('formKasOut').style.display = type!=='OUT' ? 'none' : 'block';
+      document.getElementById('formKasIn').style.display = type!=='IN' ? 'none' : 'block';
+      const btnOut = document.getElementById('btnTabOut'), btnIn = document.getElementById('btnTabIn');
+      if(type==='OUT') {
+        btnOut.style.cssText='flex:1;background:var(--tk-card);color:var(--tk-danger);font-weight:800;font-size:12px;padding:10px;border-radius:8px;border:none;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,0.08);';
+        btnIn.style.cssText='flex:1;color:var(--tk-text-tertiary);font-weight:700;font-size:12px;padding:10px;border-radius:8px;border:none;cursor:pointer;background:transparent;';
+        fnRenderExpenseItems();
+      } else {
+        btnIn.style.cssText='flex:1;background:var(--tk-card);color:var(--tk-success);font-weight:800;font-size:12px;padding:10px;border-radius:8px;border:none;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,0.08);';
+        btnOut.style.cssText='flex:1;color:var(--tk-text-tertiary);font-weight:700;font-size:12px;padding:10px;border-radius:8px;border:none;cursor:pointer;background:transparent;';
+      }
     };
-
     window.fnRenderExpenseItems = function() {
-      const container = document.getElementById('expenseItemsContainer');
-      let html = '', total = 0;
+      const container = document.getElementById('expenseItemsContainer'); let html = '', total = 0;
       window.dk.state.expenseItems.forEach((it, i) => {
         total += Number(it.nom||0);
-        html += `<div class="flex gap-2 items-center">
-          <input type="text" placeholder="Rincian" value="${it.ket}" onchange="window.dk.state.expenseItems[${i}].ket=this.value; fnRenderExpenseItems()" class="flex-1">
-          <input type="number" placeholder="Rp" value="${it.nom}" onchange="window.dk.state.expenseItems[${i}].nom=this.value; fnRenderExpenseItems()" class="w-24">
-          ${i>0 ? `<button onclick="fnRemoveExpenseItem(${i})" class="text-red-500 font-bold">&times;</button>` : '<div class="w-6"></div>'}
-        </div>`;
+        html += `<div style="display:flex;gap:8px;align-items:center;"><input type="text" placeholder="Nama barang/keperluan" value="${it.ket}" onchange="window.dk.state.expenseItems[${i}].ket=this.value;fnRenderExpenseItems()" style="flex:1;"><input type="number" placeholder="Rp" value="${it.nom}" onchange="window.dk.state.expenseItems[${i}].nom=this.value;fnRenderExpenseItems()" style="width:100px;text-align:right;">${i>0 ? `<button onclick="fnRemoveExpenseItem(${i})" style="background:none;border:none;color:var(--tk-danger);font-size:20px;cursor:pointer;padding:0 4px;">&times;</button>` : '<div style="width:24px;"></div>'}</div>`;
       });
-      container.innerHTML = html;
-      document.getElementById('expenseTotal').innerText = formatRp(total);
+      container.innerHTML = html; document.getElementById('expenseTotal').innerText = formatRp(total);
     };
-
     window.fnAddExpenseItem = function() { window.dk.state.expenseItems.push({ket:'', nom:''}); fnRenderExpenseItems(); };
     window.fnRemoveExpenseItem = function(idx) { window.dk.state.expenseItems.splice(idx,1); fnRenderExpenseItems(); };
-
     window.fnTambahKas = async function(type) {
       showLoader(true);
-      if(type==='IN') {
-        const sumber = document.getElementById('kasInSumber').value.trim(), kat = document.getElementById('kasInKategori').value.trim(), ket = document.getElementById('kasInKet').value.trim(), nom = document.getElementById('kasInNom').value;
-        if(!sumber || !nom) return alert('Lengkapi data!');
-        await db.from('dana_lain').insert([{ id: genId('DON'), organization_id: window.dk.state.orgId, sumber, kategori_project: kat||null, keterangan: ket, nominal: nom, tanggal: new Date().toISOString() }]);
-        document.getElementById('kasInSumber').value=''; document.getElementById('kasInKategori').value=''; document.getElementById('kasInKet').value=''; document.getElementById('kasInNom').value='';
-      } else {
-        const validItems = window.dk.state.expenseItems.filter(it => it.ket.trim() && Number(it.nom)>0);
-        if(validItems.length===0) return alert('Isi minimal 1 item dengan nominal!');
-        const total = validItems.reduce((s,it)=>s+Number(it.nom),0);
-        const ketText = validItems.map((it,idx)=>`${idx+1}. ${it.ket} (Rp ${Number(it.nom).toLocaleString('id-ID')})`).join('\n');
-        const kat = document.getElementById('kasOutKategori').value.trim();
-        await db.from('pengeluaran').insert([{ id: genId('OUT'), organization_id: window.dk.state.orgId, kategori_project: kat||null, keterangan: ketText, nominal: total, tanggal: new Date().toISOString() }]);
-        window.dk.state.expenseItems = [{ket:'', nom:''}]; fnRenderExpenseItems(); document.getElementById('kasOutKategori').value='';
-      }
-      await fnLoadData(); fnRenderKas(); showLoader(false);
+      try {
+        if(type==='IN') {
+          const sumber = document.getElementById('kasInSumber').value.trim(), kat = document.getElementById('kasInKategori').value, ket = document.getElementById('kasInKet').value.trim(), nom = document.getElementById('kasInNom').value;
+          if(!sumber || !nom) return alert('Sumber dan nominal wajib diisi!');
+          await db.from('dana_lain').insert([{ id: genId('DON'), organization_id: window.dk.state.orgId, sumber, kategori_project: kat||null, keterangan: ket, nominal: nom, tanggal: new Date().toISOString() }]);
+          document.getElementById('kasInSumber').value=''; document.getElementById('kasInKategori').value=''; document.getElementById('kasInKet').value=''; document.getElementById('kasInNom').value='';
+        } else {
+          const validItems = window.dk.state.expenseItems.filter(it => it.ket.trim() && Number(it.nom)>0);
+          if(validItems.length===0) return alert('Isi minimal 1 item dengan nominal!');
+          const total = validItems.reduce((s,it)=>s+Number(it.nom),0);
+          const ketText = validItems.map((it,idx)=>`${idx+1}. ${it.ket} (Rp ${Number(it.nom).toLocaleString('id-ID')})`).join('\n');
+          const kat = document.getElementById('kasOutKategori').value;
+          await db.from('pengeluaran').insert([{ id: genId('OUT'), organization_id: window.dk.state.orgId, kategori_project: kat||null, keterangan: ketText, nominal: total, tanggal: new Date().toISOString() }]);
+          window.dk.state.expenseItems = [{ket:'', nom:''}]; fnRenderExpenseItems(); document.getElementById('kasOutKategori').value='';
+        }
+        await fnLoadData(); fnRenderKas(); alert('✅ Data kas berhasil disimpan!');
+      } catch(e) { alert('Gagal: ' + e.message); } finally { showLoader(false); }
     };
-
     window.fnRenderKas = function() {
       let list = [];
       window.dk.state.data.danaLain.forEach(d => {
         const proj = d.kategori_project ? (window.dk.state.data.project.find(p=>p.id===d.kategori_project)?.nama_project || d.kategori_project) : '';
-        list.push({ tgl: new Date(d.tanggal), html: `<div class="flex justify-between bg-green-50 p-3 rounded-lg"><div><p class="text-xs font-bold text-green-800">MASUK: ${d.sumber}${proj?` → ${proj}`:''}</p><p class="text-[10px] text-slate-500">${d.keterangan?d.keterangan+' | ':''}${new Date(d.tanggal).toLocaleDateString('id-ID')}</p></div><p class="font-black text-green-600">+ ${formatRp(d.nominal)}</p></div>` });
+        list.push({ tgl: new Date(d.tanggal), type: 'in', html: `<div class="list-item" style="border-left:4px solid var(--tk-success);"><div style="flex:1;"><p style="font-weight:700;color:var(--tk-text-primary);font-size:14px;margin:0;">+ ${formatRp(d.nominal)}</p><p style="font-size:12px;color:var(--tk-text-secondary);margin:4px 0 0;">${d.sumber}${proj?` → ${proj}`:''}</p><p style="font-size:11px;color:var(--tk-text-tertiary);margin:4px 0 0;">${d.keterangan?d.keterangan+' • ':''}${new Date(d.tanggal).toLocaleDateString('id-ID')}</p></div></div>` });
       });
       window.dk.state.data.pengeluaran.forEach(o => {
         const proj = o.kategori_project ? (window.dk.state.data.project.find(p=>p.id===o.kategori_project)?.nama_project || o.kategori_project) : '';
-        list.push({ tgl: new Date(o.tanggal), html: `<div class="flex justify-between bg-red-50 p-3 rounded-lg"><div><p class="text-xs font-bold text-red-800">KELUAR: ${proj?proj+' | ':''}${o.keterangan.split('\n')[0]}${o.keterangan.includes('\n')?'...':''}</p><p class="text-[10px] text-slate-500">${new Date(o.tanggal).toLocaleDateString('id-ID')}</p></div><p class="font-black text-red-600">- ${formatRp(o.nominal)}</p></div>` });
+        list.push({ tgl: new Date(o.tanggal), type: 'out', html: `<div class="list-item" style="border-left:4px solid var(--tk-danger);"><div style="flex:1;"><p style="font-weight:700;color:var(--tk-text-primary);font-size:14px;margin:0;">- ${formatRp(o.nominal)}</p><p style="font-size:12px;color:var(--tk-text-secondary);margin:4px 0 0;">${proj?proj+' • ':''}${o.keterangan.split('\n')[0]}${o.keterangan.includes('\n')?'...':''}</p><p style="font-size:11px;color:var(--tk-text-tertiary);margin:4px 0 0;">${new Date(o.tanggal).toLocaleDateString('id-ID')}</p></div></div>` });
       });
       list.sort((a,b) => b.tgl - a.tgl);
-      document.getElementById('kasList').innerHTML = list.map(l=>l.html).join('') || '<p class="text-xs text-slate-400 text-center">Belum ada transaksi</p>';
+      document.getElementById('kasList').innerHTML = list.length > 0 ? list.map(l=>l.html).join('') : '<p style="font-size:13px;color:var(--tk-text-tertiary);text-align:center;padding:32px 16px;">✨ Belum ada transaksi kas.</p>';
     };
 
+    // ==========================================
+    // ADMIN: LAPORAN
+    // ==========================================
     window.fnRenderLaporan = function() {
       const approved = window.dk.state.data.pembayaran.filter(p => p.status === 'DISETUJUI');
       const totalIn = approved.reduce((s,p)=>s+Number(p.total_nominal),0) + window.dk.state.data.danaLain.reduce((s,d)=>s+Number(d.nominal),0);
       const totalOut = window.dk.state.data.pengeluaran.reduce((s,o)=>s+Number(o.nominal),0);
-      
-      document.getElementById('rekapList').innerHTML = `
-        <div class="flex justify-between p-3 bg-blue-50 rounded-lg"><span class="font-bold">Total Pemasukan</span><span class="font-black text-green-600">${formatRp(totalIn)}</span></div>
-        <div class="flex justify-between p-3 bg-red-50 rounded-lg mt-2"><span class="font-bold">Total Pengeluaran</span><span class="font-black text-red-600">${formatRp(totalOut)}</span></div>
-        <div class="flex justify-between p-3 bg-slate-100 rounded-lg mt-2"><span class="font-bold">Saldo Akhir</span><span class="font-black text-blue-600">${formatRp(totalIn - totalOut)}</span></div>
-      `;
+      document.getElementById('laporanBukukas').innerHTML = `
+        <div style="display:flex;justify-content:space-between;padding:14px 16px;background:var(--tk-bg);border-radius:12px;margin-bottom:12px;"><div><p style="font-size:12px;color:var(--tk-text-tertiary);margin:0;">Total Pemasukan</p><p style="font-weight:800;color:var(--tk-success);font-size:18px;margin:4px 0 0;">+ ${formatRp(totalIn)}</p></div></div>
+        <div style="display:flex;justify-content:space-between;padding:14px 16px;background:var(--tk-bg);border-radius:12px;margin-bottom:12px;"><div><p style="font-size:12px;color:var(--tk-text-tertiary);margin:0;">Total Pengeluaran</p><p style="font-weight:800;color:var(--tk-danger);font-size:18px;margin:4px 0 0;">- ${formatRp(totalOut)}</p></div></div>
+        <div style="display:flex;justify-content:space-between;padding:16px 20px;background:linear-gradient(135deg,var(--tk-primary),var(--tk-primary-dark));border-radius:12px;color:white;"><div><p style="font-size:12px;opacity:0.9;margin:0;">Saldo Akhir</p><p style="font-weight:900;font-size:22px;margin:4px 0 0;">${formatRp(totalIn - totalOut)}</p></div></div>`;
 
-      const ctx = document.getElementById('kasChart').getContext('2d');
-      if(kasChartInstance) kasChartInstance.destroy();
-      kasChartInstance = new Chart(ctx, {
-        type: 'doughnut',
-        data: { labels: ['Pemasukan', 'Pengeluaran'], datasets: [{ data: [totalIn, totalOut], backgroundColor: ['#10b981', '#ef4444'], borderWidth: 0 }] },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+      let rekap = {};
+      approved.forEach(p => {
+        const wNama = window.dk.state.data.warga.find(w=>w.id===p.warga_id)?.nama || 'Unknown';
+        if(!rekap[wNama]) rekap[wNama] = {};
+        window.dk.state.data.detail.filter(d=>d.pembayaran_id===p.id).forEach(d => {
+          const pNama = window.dk.state.data.project.find(pj=>pj.id===d.project_id)?.nama_project || '';
+          if(!rekap[wNama][d.project_id]) rekap[wNama][d.project_id] = { nama: pNama, bulan: [] };
+          rekap[wNama][d.project_id].bulan.push(formatBulan(d.periode));
+        });
       });
+      let rekHtml = '';
+      for(const w in rekap) {
+        rekHtml += `<div style="background:var(--tk-bg);padding:16px;border-radius:12px;margin-bottom:12px;"><p style="font-weight:800;color:var(--tk-text-primary);font-size:14px;margin:0 0 12px;">${w}</p>`;
+        for(const pid in rekap[w]) rekHtml += `<div style="margin-bottom:8px;"><span style="font-size:12px;font-weight:700;color:var(--tk-primary);">${rekap[w][pid].nama}</span><p style="font-size:12px;color:var(--tk-text-secondary);margin:4px 0 0;line-height:1.5;">✅ ${rekap[w][pid].bulan.sort().join(', ')}</p></div>`;
+        rekHtml += `</div>`;
+      }
+      document.getElementById('rekapList').innerHTML = rekHtml || '<p style="font-size:13px;color:var(--tk-text-tertiary);text-align:center;padding:24px;">Belum ada data rekap.</p>';
     };
-
     window.fnExportCSV = function() {
       let csv = "Tanggal,Tipe,Nominal,Keterangan,Project\n";
       window.dk.state.data.danaLain.forEach(d => csv += `${new Date(d.tanggal).toLocaleDateString('id-ID')},MASUK,${d.nominal},"${d.sumber} - ${d.keterangan}",${d.kategori_project||'-'}\n`);
       window.dk.state.data.pengeluaran.forEach(o => csv += `${new Date(o.tanggal).toLocaleDateString('id-ID')},KELUAR,${o.nominal},"${o.keterangan.replace(/"/g,'""')}",${o.kategori_project||'-'}\n`);
-      window.dk.state.data.pembayaran.filter(p=>p.status==='DISETUJUI').forEach(p => {
-        const w = window.dk.state.data.warga.find(x=>x.id===p.warga_id);
-        csv += `${new Date(p.tanggal).toLocaleDateString('id-ID')},IURAN,${p.total_nominal},"Pembayaran: ${w?.nama||'-'}",-\n`;
-      });
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = 'Laporan_DanaKita.csv'; a.click();
+      window.dk.state.data.pembayaran.filter(p=>p.status==='DISETUJUI').forEach(p => { const w = window.dk.state.data.warga.find(x=>x.id===p.warga_id); csv += `${new Date(p.tanggal).toLocaleDateString('id-ID')},IURAN,${p.total_nominal},"Pembayaran: ${w?.nama||'-'}",-\n`; });
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `Laporan_DanaKita_${new Date().toISOString().split('T')[0]}.csv`; a.click();
     };
 
     // ==========================================
-    // WARGA FEATURES
+    // WARGA: DASHBOARD & IURAN
     // ==========================================
-    window.fnSwitchWargaTab = function(tabId) {
-      document.querySelectorAll('.w-sec').forEach(c => c.classList.remove('active'));
-      document.getElementById(tabId).classList.add('active');
-      document.querySelectorAll('.w-nav').forEach(b => b.classList.remove('nav-active'));
-      event.currentTarget.classList.add('nav-active');
-    };
-
     window.fnPopulateWargaSelect = function() {
-      const sel = document.getElementById('wargaSelect');
-      if(!sel) return;
+      const sel = document.getElementById('wargaSelect'), hist = document.getElementById('historySelect');
+      if(!sel || !hist) return;
       let opt = '<option value="">-- Pilih Identitas --</option>';
       window.dk.state.data.warga.forEach(w => opt += `<option value="${w.id}">${w.nama} (${w.no_rumah})</option>`);
-      sel.innerHTML = opt;
-      if(window.dk.state.user?.type==='warga') sel.value = window.dk.state.user.id;
+      sel.innerHTML = opt; hist.innerHTML = opt;
+      if(window.dk.state.user?.type==='warga') { sel.value = window.dk.state.user.id; hist.value = window.dk.state.user.id; }
     };
-
     window.fnRenderWargaDash = function() {
       const approved = window.dk.state.data.pembayaran.filter(p => p.status === 'DISETUJUI');
       const totalIn = approved.reduce((s,p)=>s+Number(p.total_nominal),0) + window.dk.state.data.danaLain.reduce((s,d)=>s+Number(d.nominal),0);
       const totalOut = window.dk.state.data.pengeluaran.reduce((s,o)=>s+Number(o.nominal),0);
-      document.getElementById('saldoDisplay').innerText = formatRp(totalIn - totalOut);
+      document.getElementById('cardSaldo').innerText = formatRp(totalIn - totalOut);
       document.getElementById('totalIn').innerText = formatRp(totalIn);
       document.getElementById('totalOut').innerText = formatRp(totalOut);
-
       let html = '';
       window.dk.state.data.project.forEach(proj => {
         if(proj.tipe === 'non_iuran') return;
         let terkumpul = window.dk.state.data.detail.filter(d => d.project_id === proj.id && approved.some(p => p.id === d.pembayaran_id)).reduce((s,d)=>s+Number(d.nominal),0);
         let perc = Number(proj.target) > 0 ? Math.min(Math.round((terkumpul / proj.target) * 100), 100) : 0;
-        html += `<div><div class="flex justify-between text-xs font-bold mb-1"><span>${proj.nama_project}</span><span>${perc}%</span></div><div class="w-full bg-slate-200 rounded-full h-2"><div class="bg-blue-600 h-2 rounded-full" style="width:${perc}%"></div></div><p class="text-[10px] text-slate-500 mt-1 text-right">${formatRp(terkumpul)} / ${formatRp(proj.target||0)}</p></div>`;
+        html += `<div><div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="font-weight:700;color:var(--tk-text-primary);font-size:14px;">${proj.nama_project}</span><span style="font-weight:800;color:var(--tk-primary);font-size:13px;">${perc}%</span></div><div style="width:100%;height:6px;background:var(--tk-border);border-radius:3px;overflow:hidden;"><div style="height:100%;background:linear-gradient(90deg,var(--tk-primary),var(--tk-primary-dark));border-radius:3px;width:${perc}%;transition:width 0.4s ease;"></div></div><p style="font-size:11px;color:var(--tk-text-tertiary);margin-top:6px;text-align:right;">${formatRp(terkumpul)} ${proj.target>0?'/ '+formatRp(proj.target):''}</p></div>`;
       });
-      document.getElementById('progressContainer').innerHTML = html || '<p class="text-xs text-slate-400">Belum ada project aktif.</p>';
+      document.getElementById('progressContainer').innerHTML = html || '<p style="font-size:13px;color:var(--tk-text-tertiary);text-align:center;padding:24px;">Belum ada project aktif.</p>';
     };
-
-    // ===== GRANULAR MONTH SELECTION =====
     window.fnRenderIuran = function() {
       const wId = document.getElementById('wargaSelect')?.value || window.dk.state.user?.id;
       const tahun = document.getElementById('pilihTahun')?.value || '2026';
       const container = document.getElementById('iuranContainer');
       if(!wId || !container) return;
-      
-      container.innerHTML = '';
-      window.dk.state.selectedCart = {};
-      document.getElementById('summaryBayar')?.classList.add('hidden');
-      
-      // Track what user already paid
+      container.innerHTML = ''; window.dk.state.selectedCart = {}; document.getElementById('summaryBayar').style.display = 'none';
       let paid = {};
       window.dk.state.data.pembayaran.filter(p => p.warga_id === wId && p.status !== 'DITOLAK').forEach(p => {
-        window.dk.state.data.detail.filter(d => d.pembayaran_id === p.id).forEach(d => {
-          if(!paid[d.project_id]) paid[d.project_id]=[];
-          paid[d.project_id].push(d.periode);
-        });
+        window.dk.state.data.detail.filter(d => d.pembayaran_id === p.id).forEach(d => { if(!paid[d.project_id]) paid[d.project_id]=[]; paid[d.project_id].push(d.periode); });
       });
-
       window.dk.state.data.project.forEach(p => {
         if(p.tipe === 'non_iuran') return;
         let html = '';
-        
         if(p.tipe === 'bulanan') {
-          let listHtml = '';
-          const startPeriode = p.start_periode || '2000-01';
-          
+          let listHtml = ''; const startPeriode = p.start_periode || '2000-01';
           months.forEach((m, i) => {
             const periode = `${tahun}-${m}`;
-            const isPaid = paid[p.id]?.includes(periode);
-            const isBeforeStart = periode < startPeriode;
-            
-            if(!isPaid && !isBeforeStart) {
-              listHtml += `<label class="flex items-center gap-3 p-3 border rounded-xl mb-2 bg-white cursor-pointer hover:bg-slate-50">
-                <input type="checkbox" value="${periode}" onchange="fnToggleIuran('${p.id}', this, ${p.nominal_default}, '${periode}')">
-                <span class="text-sm font-bold flex-1">${monthNames[i]} ${tahun}</span>
-                <span class="text-blue-600 font-bold">${formatRp(p.nominal_default)}</span>
-              </label>`;
-            }
+            const isPaid = paid[p.id]?.includes(periode); const isBeforeStart = periode < startPeriode;
+            if(!isPaid && !isBeforeStart) listHtml += `<label class="list-item" style="margin-bottom:8px;padding:14px 16px;"><input type="checkbox" value="${periode}" onchange="fnToggleIuran('${p.id}', this, ${p.nominal_default}, '${periode}')"><div style="flex:1;margin-left:12px;"><p style="font-weight:700;color:var(--tk-text-primary);font-size:14px;margin:0;">${monthNames[i]} ${tahun}</p><p style="font-size:12px;color:var(--tk-text-tertiary);margin:2px 0 0;">Iuran bulanan</p></div><span style="font-weight:800;color:var(--tk-primary);font-size:14px;">${formatRp(p.nominal_default)}</span></label>`;
           });
-          html = listHtml || '<div class="p-3 bg-green-50 text-green-600 text-xs font-bold text-center rounded-xl">✅ Lunas / Tidak Ada Tagihan</div>';
-          
+          html = listHtml || '<div style="padding:16px;background:rgba(0,184,148,0.08);border-radius:12px;text-align:center;"><p style="color:var(--tk-success);font-weight:700;font-size:13px;margin:0;">✅ Semua iuran bulan ini sudah lunas!</p></div>';
         } else if(p.tipe === 'sekali') {
           const isPaid = paid[p.id]?.includes('SEKALI');
-          html = isPaid 
-            ? '<div class="p-3 bg-green-50 text-green-600 text-xs font-bold text-center rounded-xl">✅ SUDAH LUNAS</div>'
-            : `<label class="flex items-center gap-3 p-3 border rounded-xl bg-white cursor-pointer hover:bg-slate-50">
-                <input type="checkbox" value="SEKALI" onchange="fnToggleIuran('${p.id}', this, ${p.nominal_default}, 'SEKALI')">
-                <span class="text-sm font-bold flex-1">Sekali Bayar</span>
-                <span class="text-blue-600 font-bold">${formatRp(p.nominal_default)}</span>
-              </label>`;
+          html = isPaid ? '<div style="padding:16px;background:rgba(0,184,148,0.08);border-radius:12px;text-align:center;"><p style="color:var(--tk-success);font-weight:700;font-size:13px;margin:0;">✅ Sudah lunas</p></div>' : `<label class="list-item" style="padding:14px 16px;"><input type="checkbox" value="SEKALI" onchange="fnToggleIuran('${p.id}', this, ${p.nominal_default}, 'SEKALI')"><div style="flex:1;margin-left:12px;"><p style="font-weight:700;color:var(--tk-text-primary);font-size:14px;margin:0;">Sekali Bayar</p><p style="font-size:12px;color:var(--tk-text-tertiary);margin:2px 0 0;">Pembayaran satu kali</p></div><span style="font-weight:800;color:var(--tk-primary);font-size:14px;">${formatRp(p.nominal_default)}</span></label>`;
         }
-        
-        if(html) container.innerHTML += `<div class="border p-4 rounded-2xl bg-slate-50 mb-3"><p class="font-bold text-sm mb-2">${p.nama_project}</p>${html}</div>`;
+        if(html) { const div = document.createElement('div'); div.className = 'card'; div.style.marginBottom = '16px'; div.innerHTML = `<p style="font-weight:800;color:var(--tk-text-primary);font-size:15px;margin:0 0 12px;">${p.nama_project}</p>${html}`; container.appendChild(div); }
       });
     };
-
     window.fnToggleIuran = function(pid, el, price, periode) {
       if(!window.dk.state.selectedCart[pid]) window.dk.state.selectedCart[pid] = { periods:[], nominal:0, base:price };
       let cart = window.dk.state.selectedCart[pid];
-      if(el.checked) { if(!cart.periods.includes(periode)) cart.periods.push(periode); } 
-      else { cart.periods = cart.periods.filter(x => x !== periode); }
+      if(el.checked) { if(!cart.periods.includes(periode)) cart.periods.push(periode); } else { cart.periods = cart.periods.filter(x => x !== periode); }
       cart.nominal = cart.periods.length * price;
       if(cart.periods.length === 0) delete window.dk.state.selectedCart[pid];
-      
       let total = Object.values(window.dk.state.selectedCart).reduce((s,c)=>s+c.nominal, 0);
       document.getElementById('totalBayarDisplay').innerText = formatRp(total);
-      document.getElementById('summaryBayar')?.classList.toggle('hidden', total === 0);
+      document.getElementById('summaryBayar').style.display = total === 0 ? 'none' : 'block';
     };
-
-    window.fnToggleBukti = function() {
-      const metode = document.getElementById('metodeBayar').value;
-      const lbl = document.getElementById('lblBukti'), spn = document.getElementById('spnBukti'), file = document.getElementById('fileBukti'), drive = document.getElementById('linkDrive');
-      if(metode === 'TRANSFER') {
-        lbl.classList.remove('hidden'); spn.classList.remove('hidden');
-        // Toggle between file upload or Google Drive link
-        if(file.classList.contains('hidden')) { file.classList.remove('hidden'); drive.classList.add('hidden'); }
-        else { file.classList.add('hidden'); drive.classList.remove('hidden'); }
-      } else {
-        lbl.classList.add('hidden'); spn.classList.add('hidden'); file.classList.add('hidden'); drive.classList.add('hidden');
-      }
+    window.fnToggleBukti = function() { document.getElementById('buktiSection').style.display = document.getElementById('metodeBayar').value === 'TRANSFER' ? 'block' : 'none'; };
+    window.toggleBuktiType = function(type) {
+      const file = document.getElementById('fileBukti'), drive = document.getElementById('linkDrive');
+      if(type === 'drive') { file.style.display = 'none'; drive.style.display = 'block'; } else { file.style.display = 'block'; drive.style.display = 'none'; }
     };
-
-    // ===== FILE UPLOAD: Supabase Storage + Google Drive Option =====
     window.fnSubmitPembayaran = async function() {
       const wId = document.getElementById('wargaSelect')?.value || window.dk.state.user?.id;
       const metode = document.getElementById('metodeBayar').value;
-      const fileInput = document.getElementById('fileBukti');
-      const driveLink = document.getElementById('linkDrive')?.value?.trim();
-      
+      const fileInput = document.getElementById('fileBukti'); const driveLink = document.getElementById('linkDrive')?.value?.trim();
       if(Object.keys(window.dk.state.selectedCart).length === 0) return alert('Pilih minimal 1 iuran!');
       if(metode === 'TRANSFER' && !fileInput?.files?.length && !driveLink) return alert('Upload bukti transfer atau paste link Google Drive!');
-      
       showLoader(true);
-      
-      // Build payment details
-      let dets = [], tot = 0;
-      for(let pid in window.dk.state.selectedCart) {
-        const c = window.dk.state.selectedCart[pid];
-        c.periods.forEach(per => {
-          dets.push({ project_id: pid, periode: per, nominal: c.base });
-          tot += c.base;
-        });
-      }
-      
-      const payId = genId('PAY');
-      let buktiUrl = '';
-      
-      // Handle file upload to Supabase Storage (organized by org_id)
-      if(metode === 'TRANSFER' && fileInput?.files?.length) {
-        const file = fileInput.files[0];
-        const ext = file.name.split('.').pop();
-        const fileName = `${window.dk.state.orgId}/${payId}_${Date.now()}.${ext}`; // Folder per org = isolasi klien
-        
-        const { error: uploadError } = await db.storage.from('bukti_transfer').upload(fileName, file, { upsert: false });
-        if(uploadError) {
-          showLoader(false);
-          return alert('Gagal upload bukti: ' + uploadError.message);
+      try {
+        let dets = [], tot = 0;
+        for(let pid in window.dk.state.selectedCart) { const c = window.dk.state.selectedCart[pid]; c.periods.forEach(per => { dets.push({ project_id: pid, periode: per, nominal: c.base }); tot += c.base; }); }
+        const payId = genId('PAY'); let buktiUrl = '';
+        if(metode === 'TRANSFER' && fileInput?.files?.length) {
+          const file = fileInput.files[0]; const ext = file.name.split('.').pop();
+          const fileName = `${window.dk.state.orgId}/${payId}_${Date.now()}.${ext}`;
+          const { error: uploadError } = await db.storage.from('bukti_transfer').upload(fileName, file, { upsert: false });
+          if(uploadError) throw new Error('Gagal upload: ' + uploadError.message);
+          const {  pub } = db.storage.from('bukti_transfer').getPublicUrl(fileName); buktiUrl = pub.publicUrl;
+        } else if(driveLink) {
+          if(!driveLink.includes('drive.google.com')) throw new Error('Link Google Drive tidak valid!'); buktiUrl = driveLink;
         }
-        const { data } = db.storage.from('bukti_transfer').getPublicUrl(fileName);
-        buktiUrl = data.publicUrl;
-      }
-      // Handle Google Drive link (manual paste)
-      else if(driveLink) {
-        // Basic validation for Google Drive share link
-        if(!driveLink.includes('drive.google.com')) return alert('Link Google Drive tidak valid!');
-        buktiUrl = driveLink;
-      }
-      
-      // Insert payment header
-      const { error: err1 } = await db.from('pembayaran').insert([{ 
-        id: payId, 
-        organization_id: window.dk.state.orgId,
-        tanggal: new Date().toISOString(), 
-        warga_id: wId, 
-        total_nominal: tot, 
-        metode, 
-        bukti_url: buktiUrl, 
-        status: 'MENUNGGU VERIFIKASI' 
-      }]);
-      if(err1) { showLoader(false); return alert('Error: ' + err1.message); }
-      
-      // Insert payment details
-      const { error: err2 } = await db.from('pembayaran_detail').insert(dets.map(d => ({ 
-        id: genId('DET'), 
-        organization_id: window.dk.state.orgId,
-        pembayaran_id: payId, 
-        ...d 
-      })));
-      if(err2) { showLoader(false); return alert('Error: ' + err2.message); }
-      
-      showLoader(false);
-      alert('✅ Pembayaran terkirim! Menunggu verifikasi admin.');
-      fnRenderIuran();
+        await db.from('pembayaran').insert([{ id: payId, organization_id: window.dk.state.orgId, tanggal: new Date().toISOString(), warga_id: wId, total_nominal: tot, metode, bukti_url: buktiUrl, status: 'MENUNGGU VERIFIKASI' }]);
+        await db.from('pembayaran_detail').insert(dets.map(d => ({ id: genId('DET'), organization_id: window.dk.state.orgId, pembayaran_id: payId, ...d })));
+        alert('✅ Pembayaran berhasil dikirim!\nMenunggu verifikasi pengurus.'); fnRenderIuran();
+      } catch(e) { alert('Gagal: ' + e.message); } finally { showLoader(false); }
     };
-
     window.fnRenderRiwayat = function() {
-      const wId = document.getElementById('wargaSelect')?.value || window.dk.state.user?.id;
+      const wId = document.getElementById('historySelect')?.value || window.dk.state.user?.id;
       const container = document.getElementById('riwayatContainer');
       if(!wId || !container) return;
-      
       const myPay = window.dk.state.data.pembayaran.filter(p => p.warga_id === wId);
-      if(myPay.length === 0) { container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">Belum ada riwayat.</p>'; return; }
-      
+      if(myPay.length === 0) { container.innerHTML = '<p style="font-size:13px;color:var(--tk-text-tertiary);text-align:center;padding:32px 16px;">✨ Belum ada riwayat pembayaran.</p>'; return; }
       container.innerHTML = myPay.reverse().map(p => {
         const det = window.dk.state.data.detail.filter(d => d.pembayaran_id === p.id);
-        let rincian = det.map(d => {
-          const proj = window.dk.state.data.project.find(x => x.id === d.project_id);
-          return `${proj?.nama_project || 'Project'} (${formatBulan(d.periode)})`;
-        }).join(', ');
-        
-        const statusClass = p.status==='DISETUJUI' ? 'text-green-600 bg-green-50' : p.status==='DITOLAK' ? 'text-red-600 bg-red-50' : 'text-yellow-600 bg-yellow-50';
-        return `
-          <div class="bg-white p-4 rounded-xl border shadow-sm">
-            <div class="flex justify-between mb-2"><span class="font-bold text-sm">${formatRp(p.total_nominal)}</span><span class="text-xs px-2 py-1 rounded font-bold ${statusClass}">${p.status}</span></div>
-            <p class="text-[10px] text-slate-500 mb-1">${new Date(p.tanggal).toLocaleDateString('id-ID')} | ${p.metode}</p>
-            <p class="text-xs text-slate-600 bg-slate-50 p-2 rounded mb-2">${rincian}</p>
-            ${p.bukti_url ? `<a href="${p.bukti_url}" target="_blank" class="text-[10px] text-blue-500 underline mb-2 block">📎 Lihat Bukti</a>` : ''}
-            ${p.status==='DISETUJUI' ? `<button onclick='fnShowStruk(${JSON.stringify(p).replace(/'/g, "&#39;")})' class="btn-blue !py-2 !text-xs">📄 Lihat Struk</button>` : ''}
-          </div>`;
+        let rincian = det.map(d => { const proj = window.dk.state.data.project.find(x => x.id === d.project_id); return `${proj?.nama_project || 'Project'} (${formatBulan(d.periode)})`; }).join(', ');
+        const statusClass = p.status==='DISETUJUI' ? 'badge-success' : p.status==='DITOLAK' ? 'badge-danger' : 'badge-warning';
+        const statusText = p.status==='DISETUJUI' ? 'Lunas' : p.status==='DITOLAK' ? 'Ditolak' : 'Menunggu';
+        return `<div class="card" style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:12px;"><p style="font-weight:900;color:var(--tk-primary);font-size:20px;margin:0;">${formatRp(p.total_nominal)}</p><span class="badge ${statusClass}">${statusText}</span></div><p style="font-size:12px;color:var(--tk-text-tertiary);margin-bottom:8px;">${new Date(p.tanggal).toLocaleDateString('id-ID')} • ${p.metode}</p><p style="font-size:13px;color:var(--tk-text-secondary);background:var(--tk-bg);padding:12px;border-radius:10px;margin-bottom:12px;">${rincian}</p>${p.bukti_url ? `<a href="${p.bukti_url}" target="_blank" style="font-size:12px;color:var(--tk-primary);font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:4px;margin-bottom:12px;">📎 Lihat Bukti</a>` : ''}${p.status==='DISETUJUI' ? `<button onclick='fnShowStruk(${JSON.stringify(p).replace(/'/g, "&#39;")})' class="btn-primary" style="padding:10px;font-size:13px;">🧾 Lihat Struk</button>` : ''}</div>`;
       }).join('');
     };
 
     // ==========================================
-    // STRUK & PDF / WA
+    // STRUK: PDF & WhatsApp
     // ==========================================
     window.fnShowStruk = function(payment) {
       currentStrukData = payment;
       const w = window.dk.state.data.warga.find(x => x.id === payment.warga_id);
       const det = window.dk.state.data.detail.filter(d => d.pembayaran_id === payment.id);
-      let rows = det.map(d => {
-        const proj = window.dk.state.data.project.find(x => x.id === d.project_id);
-        return `<tr><td class="py-1 text-sm">${proj?.nama_project || 'Project'} (${formatBulan(d.periode)})</td><td class="text-right font-bold">${formatRp(d.nominal)}</td></tr>`;
-      }).join('');
-      
+      let rows = det.map(d => { const proj = window.dk.state.data.project.find(x => x.id === d.project_id); return `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed var(--tk-border);"><span style="font-size:13px;color:var(--tk-text-primary);">${proj?.nama_project || 'Project'}<br><span style="font-size:11px;color:var(--tk-text-tertiary);">${formatBulan(d.periode)}</span></span><span style="font-weight:700;color:var(--tk-text-primary);">${formatRp(d.nominal)}</span></div>`; }).join('');
       document.getElementById('strukContent').innerHTML = `
-        <div class="text-center mb-4"><p class="text-xs font-bold text-slate-400">TANDA TERIMA IURAN</p><h3 class="font-black text-xl">LUNAS ✅</h3></div>
-        <table class="w-full text-xs mb-4"><tr><td class="py-1">Nama</td><td class="text-right font-bold">${w?.nama || '-'}</td></tr><tr><td class="py-1">No. Rumah</td><td class="text-right">${w?.no_rumah || '-'}</td></tr><tr><td class="py-1">Tanggal</td><td class="text-right">${new Date(payment.tanggal).toLocaleDateString('id-ID')}</td></tr><tr><td class="py-1">ID Transaksi</td><td class="text-right font-mono text-[10px]">${payment.id}</td></tr></table>
-        <hr class="border-dashed my-3"><table class="w-full text-sm">${rows}<tr class="border-t pt-2"><td class="py-2 font-black">TOTAL</td><td class="text-right font-black text-blue-600">${formatRp(payment.total_nominal)}</td></tr></table>
-        ${payment.bukti_url ? `<p class="text-[10px] text-slate-400 mt-3 text-center">Bukti: ${payment.bukti_url.includes('drive.google.com')?'Google Drive':'Supabase Storage'}</p>`:''}`;
+        <div style="text-align:center;margin-bottom:20px;"><p style="font-size:11px;color:var(--tk-text-tertiary);text-transform:uppercase;letter-spacing:0.5px;margin:0;">Tanda Terima Iuran</p><h3 style="font-weight:900;color:var(--tk-text-primary);font-size:22px;margin:8px 0 0;letter-spacing:-0.5px;">✅ LUNAS</h3></div>
+        <table style="width:100%;font-size:13px;color:var(--tk-text-secondary);margin-bottom:16px;"><tr><td style="padding:6px 0;">Nama</td><td style="text-align:right;font-weight:700;color:var(--tk-text-primary);">${w?.nama || '-'}</td></tr><tr><td style="padding:6px 0;">No. Rumah</td><td style="text-align:right;">${w?.no_rumah || '-'}</td></tr><tr><td style="padding:6px 0;">Tanggal</td><td style="text-align:right;">${new Date(payment.tanggal).toLocaleDateString('id-ID')}</td></tr><tr><td style="padding:6px 0;">ID Transaksi</td><td style="text-align:right;font-family:monospace;font-size:11px;color:var(--tk-text-tertiary);">${payment.id}</td></tr></table>
+        <div style="margin-bottom:16px;">${rows}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding-top:16px;border-top:2px solid var(--tk-border);"><span style="font-weight:700;color:var(--tk-text-tertiary);font-size:13px;text-transform:uppercase;">Total Bayar</span><span style="font-weight:900;color:var(--tk-primary);font-size:24px;letter-spacing:-0.5px;">${formatRp(payment.total_nominal)}</span></div>
+        ${payment.bukti_url ? `<p style="font-size:11px;color:var(--tk-text-tertiary);text-align:center;margin-top:16px;">Bukti: ${payment.bukti_url.includes('drive.google.com')?'Google Drive':'Supabase Storage'}</p>`:''}`;
       document.getElementById('strukModal').classList.remove('hidden');
     };
-
-    window.fnKirimWA = function() {
+    document.getElementById('btnWA').onclick = function() {
       if(!currentStrukData) return;
       const w = window.dk.state.data.warga.find(x => x.id === currentStrukData.warga_id);
-      let phone = w?.no_wa || '';
-      if(phone.startsWith('0')) phone = '62' + phone.substring(1);
+      let phone = w?.no_wa || ''; if(phone.startsWith('0')) phone = '62' + phone.substring(1);
       if(!phone) return alert('Nomor WA warga belum terdaftar!');
-      
-      let text = `*BUKTI PEMBAYARAN IURAN*\nID: ${currentStrukData.id}\nNama: ${w?.nama}\nTotal: ${formatRp(currentStrukData.total_nominal)}\nStatus: LUNAS ✅\nTanggal: ${new Date(currentStrukData.tanggal).toLocaleDateString('id-ID')}\n\n_Sistem DanaKita_`;
+      let text = `*BUKTI PEMBAYARAN IURAN*\n🆔 ID: ${currentStrukData.id}\n👤 Nama: ${w?.nama}\n💰 Total: ${formatRp(currentStrukData.total_nominal)}\n✅ Status: LUNAS\n📅 Tanggal: ${new Date(currentStrukData.tanggal).toLocaleDateString('id-ID')}\n\n_DanaKita - Kelola Kas Komunitas_`;
       window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank');
     };
-
-    window.fnDownloadPDF = function() {
-      if(!currentStrukData) return;
-      showLoader(true);
-      html2pdf().set({ margin: 0.5, filename: `Struk_${currentStrukData.id}.pdf`, html2canvas: { scale: 2 } }).from(document.getElementById('strukContent')).save().then(() => showLoader(false));
+    document.getElementById('btnPDF').onclick = function() {
+      if(!currentStrukData) return; showLoader(true);
+      html2pdf().set({ margin: 10, filename: `Struk_${currentStrukData.id}.pdf`, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a6', orientation: 'portrait' } }).from(document.getElementById('strukContent')).save().then(() => showLoader(false)).catch(() => { showLoader(false); alert('Gagal generate PDF.'); });
     };
+    document.getElementById('strukModal').addEventListener('click', function(e) { if(e.target === this) closeStrukModal(); });
   </script>
 </body>
 </html>
