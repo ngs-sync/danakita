@@ -599,30 +599,38 @@
     };
 
     // LOGIN WARGA CASE-INSENSITIVE (VIA RPC)
-    window.fnLoginWarga = async function() {
-      const r = document.getElementById('inpRumah').value.trim();
-      const pin = document.getElementById('inpPin').value;
-      const err = document.getElementById('loginErrorWarga'); err.style.display = 'none';
-      
-      if(!r || !pin || pin.length < 4) { err.textContent='Isi No. Rumah & PIN (min. 4 digit)!'; err.style.display='block'; return; }
-      showLoader(true);
-      
-      const { data, error } = await db.rpc('rpc_login_warga', { p_no_rumah: r, p_pin: pin, p_org_id: window.dk.state.orgId });
-      showLoader(false);
-      
-      if(error) {
-         err.textContent = 'Terjadi kesalahan sistem: ' + error.message; err.style.display = 'block'; return;
-      }
-      
-      if(data?.success) {
-        window.dk.state.user = { type:'warga', id:data.data.id, name:data.data.nama, noRumah:data.data.no_rumah, wa:data.data.no_wa };
-        document.getElementById('loginModal').classList.add('hidden');
-        document.getElementById('inpRumah').value = ''; document.getElementById('inpPin').value = '';
-        fnShowApp();
-      } else {
-        err.textContent = 'Login gagal: ' + (data?.msg || 'Blok/No Rumah atau PIN salah.');
-        err.style.display = 'block';
-      }
+   window.fnGantiPinWarga = async function() {
+        const oldPin = document.getElementById('profPinOld').value;
+        const newPin = document.getElementById('profPinNew').value;
+        const confirmPin = document.getElementById('profPinConfirm').value;
+        
+        if(!oldPin || !newPin || !confirmPin) return alert('Semua kolom PIN wajib diisi!');
+        if(newPin.length < 4) return alert('PIN baru minimal 4 karakter!');
+        if(newPin !== confirmPin) return alert('Konfirmasi PIN baru tidak sama!');
+        
+        showLoader(true);
+        
+        // 1. TRIK CERDAS: Pura-pura login pakai PIN lama untuk validasi Bcrypt
+        const { data: loginCheck } = await db.rpc('rpc_login_warga', { 
+            p_no_rumah: window.dk.state.user.noRumah, 
+            p_pin: oldPin, 
+            p_org_id: window.dk.state.orgId 
+        });
+        
+        // 2. Jika pura-pura login sukses, berarti PIN Lama VALID
+        if(loginCheck && loginCheck.success) {
+            const { data: newHash } = await db.rpc('hash_password', { raw_pass: newPin });
+            await db.from('warga').update({ pin_hash: newHash || newPin }).eq('id', window.dk.state.user.id);
+            
+            document.getElementById('profPinOld').value=''; 
+            document.getElementById('profPinNew').value=''; 
+            document.getElementById('profPinConfirm').value='';
+            showLoader(false);
+            alert('✅ PIN Keamanan berhasil diperbarui!');
+        } else {
+            showLoader(false);
+            alert('Gagal: PIN Lama yang Anda masukkan salah!');
+        }
     };
 
     window.fnLogout = function() {
