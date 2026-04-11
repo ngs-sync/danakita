@@ -6,7 +6,7 @@
   <title>Super Admin - DanaKita</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script> <!-- For CSV -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <style>
     body { background-color: #f1f5f9; font-family: ui-sans-serif, system-ui, sans-serif; }
     .hidden { display: none !important; }
@@ -22,6 +22,7 @@
     .badge-enterprise { background: #f3e8ff; color: #9333ea; }
     .badge-active { background: #dcfce7; color: #16a34a; }
     .badge-inactive { background: #fee2e2; color: #dc2626; }
+    .badge-code { background: #f1f5f9; color: #475569; border: 1px dashed #94a3b8; font-family: monospace; }
     .loader { border: 3px solid #f3f3f3; border-top: 3px solid #00A6ED; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   </style>
@@ -86,6 +87,7 @@
           <table class="w-full text-sm text-left">
             <thead class="bg-slate-50 text-slate-600 font-bold uppercase text-xs">
               <tr>
+                <th class="px-4 py-3">Kode Organisasi</th>
                 <th class="px-4 py-3">Klien</th>
                 <th class="px-4 py-3">Plan</th>
                 <th class="px-4 py-3">Validitas</th>
@@ -184,6 +186,34 @@
     </div>
   </div>
 
+  <!-- MODAL: SHOW CLIENT CODE (NEW!) -->
+  <div id="modal-client-code" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl w-full max-w-md p-6 text-center">
+      <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+        <span class="text-3xl">✅</span>
+      </div>
+      <h3 class="text-xl font-black text-slate-800 mb-2">Klien Berhasil Didaftarkan!</h3>
+      <p class="text-sm text-slate-600 mb-6">Berikut informasi login untuk klien:</p>
+      
+      <div class="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 mb-6">
+        <p class="text-xs text-blue-600 font-bold mb-1 uppercase tracking-wider">Kode Organisasi</p>
+        <p id="display-client-code" class="text-2xl font-black text-blue-700 font-mono tracking-wider">DKT-XXXXX</p>
+        <p class="text-xs text-blue-500 mt-2">⚠️ Berikan kode ini ke klien untuk login!</p>
+      </div>
+
+      <div class="bg-slate-50 rounded-xl p-4 mb-6 text-left">
+        <p class="text-xs font-bold text-slate-600 mb-2">📋 Credential Admin:</p>
+        <p class="text-sm"><span class="font-bold">Username:</span> <span id="display-admin-user" class="font-mono"></span></p>
+        <p class="text-sm"><span class="font-bold">Password:</span> <span id="display-admin-pass" class="font-mono"></span></p>
+      </div>
+
+      <div class="flex gap-3">
+        <button onclick="copyClientCode()" class="flex-1 py-3 border-2 border-blue-600 text-blue-600 rounded-xl font-bold hover:bg-blue-50">📋 Copy Kode</button>
+        <button onclick="closeModal('modal-client-code')" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700">Tutup</button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: IMPORT CSV -->
   <div id="modal-import" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl w-full max-w-lg p-6">
@@ -207,12 +237,14 @@
     const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let currentImportOrgId = null;
+    let tempClientCode = '';
+    let tempAdminUser = '';
+    let tempAdminPass = '';
 
     // LOGIN
     async function handleLogin() {
       const e = document.getElementById('sa-email').value;
       const p = document.getElementById('sa-pass').value;
-      // Simple check (In production, verify with super_admin table)
       if(e === 'admin@danakita.com' && p === 'SuperAdmin123!') {
         document.getElementById('login-section').classList.add('hidden');
         document.getElementById('dashboard-section').classList.remove('hidden');
@@ -236,7 +268,6 @@
       });
       document.getElementById('btn-' + name).classList.add('bg-white', 'shadow');
       document.getElementById('btn-' + name).classList.remove('text-slate-500');
-      
       if(name === 'audit') loadAudit();
     }
 
@@ -260,6 +291,9 @@
 
         return `
           <tr class="hover:bg-slate-50">
+            <td class="px-4 py-3">
+              <span class="badge badge-code">${org.client_code}</span>
+            </td>
             <td class="px-4 py-3">
               <div class="font-bold text-slate-800">${org.display_name || org.nama}</div>
               <div class="text-xs text-slate-500">WA: ${org.kontak_wa_admin || '-'}</div>
@@ -317,12 +351,33 @@
       showLoader(false);
       if(res.error) alert('Gagal: ' + res.error.message);
       else {
-        alert('✅ Klien berhasil dibuat!');
+        // Simpan data untuk ditampilkan di modal
+        tempClientCode = res.client_code;
+        tempAdminUser = document.getElementById('reg-admin-user').value;
+        tempAdminPass = document.getElementById('reg-admin-pass').value;
+        
+        // Tampilkan modal kode
+        document.getElementById('display-client-code').innerText = res.client_code;
+        document.getElementById('display-admin-user').innerText = tempAdminUser;
+        document.getElementById('display-admin-pass').innerText = tempAdminPass;
+        
         closeModal('modal-add-client');
+        openModal('modal-client-code');
         document.getElementById('form-add-client').reset();
         loadClients();
       }
     };
+
+    function copyClientCode() {
+      const code = document.getElementById('display-client-code').innerText;
+      const user = document.getElementById('display-admin-user').innerText;
+      const pass = document.getElementById('display-admin-pass').innerText;
+      
+      const text = `Kode Organisasi: ${code}\nUsername: ${user}\nPassword: ${pass}`;
+      navigator.clipboard.writeText(text).then(() => {
+        alert('✅ Credential berhasil dicopy!');
+      });
+    }
 
     // IMPORT CSV
     function openImport(orgId) {
@@ -358,15 +413,11 @@
         skipEmptyLines: true,
         complete: async function(results) {
           let success = 0, error = 0;
-          
-          // Get default PIN hash for '1234'
           const {  hash } = await db.rpc('hash_password', { raw_pass: '1234' });
 
           for(const row of results.data) {
             try {
               if(!row.nama || !row.no_rumah) throw new Error("Missing name/room");
-              
-              // Insert warga
               await db.from('warga').insert({
                 id: 'wrg_' + Date.now() + Math.random(),
                 organization_id: currentImportOrgId,
@@ -377,10 +428,7 @@
                 status: 'ACTIVE'
               });
               success++;
-            } catch(err) {
-              error++;
-              console.error(err);
-            }
+            } catch(err) { error++; }
           }
           
           showLoader(false);
