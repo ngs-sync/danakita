@@ -216,3 +216,20 @@ input:focus, select:focus {
   background: #f3e8ff;
   color: #9333ea;
 }
+/* Fix untuk tabel kosong */
+#clients-tbody:empty::before {
+  content: "Memuat data...";
+  display: block;
+  text-align: center;
+  padding: 40px;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+/* Badge styles */
+.badge-starter { background: #e0f2fe; color: #0284c7; }
+.badge-pro { background: #fef3c7; color: #d97706; }
+.badge-enterprise { background: #f3e8ff; color: #9333ea; }
+.badge-active { background: #dcfce7; color: #16a34a; }
+.badge-inactive { background: #fee2e2; color: #dc2626; }
+.badge-info { background: rgba(59, 130, 246, 0.12); color: #3b82f6; }
