@@ -27,7 +27,7 @@
     /* FIXED LAYOUT CONCEPT */
     body, html { 
       background-color: var(--tk-bg); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
-      color: var(--tk-text-primary); margin: 0; height: 100%; overflow: hidden; /* Mencegah scroll full page */
+      color: var(--tk-text-primary); margin: 0; height: 100%; overflow: hidden;
     }
     
     .hidden { display: none !important; }
@@ -37,13 +37,13 @@
 
     /* SCROLLABLE MAIN AREA */
     .main-container {
-      height: calc(100vh - 76px); /* Kurangi tinggi header */
+      height: calc(100vh - 76px);
       overflow-y: auto;
-      padding: 20px 20px 120px 20px; /* Padding bawah extra untuk bottom nav */
+      padding: 20px 20px 120px 20px;
       max-width: 640px;
       margin: 0 auto;
     }
-    .main-container::-webkit-scrollbar { width: 0px; background: transparent; } /* Sembunyikan scrollbar bawaan */
+    .main-container::-webkit-scrollbar { width: 0px; background: transparent; }
 
     /* INPUTS */
     input, select, textarea {
@@ -463,13 +463,15 @@
 
   <script>
     // ==========================================
-    // CONFIG & INIT
+    // CONFIG & INIT 
     // ==========================================
     const SUPABASE_URL = 'https://tgcpyatrllswhlysqfer.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_lwmxiQPF5yUSQnDu4JK12A_mN4tMdWH';
     
     window.dk = window.dk || {};
-    if (!window.dk.db) { window.dk.db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); }
+    if (!window.dk.db) {
+      window.dk.db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    }
     const db = window.dk.db;
     
     window.dk.state = { 
@@ -483,25 +485,21 @@
     let currentStrukData = null;
 
     window.addEventListener('DOMContentLoaded', () => {
-      // Cek Sesi Org (24 Jam)
       const orgSession = JSON.parse(localStorage.getItem('dk_org'));
       const authSession = JSON.parse(localStorage.getItem('dk_session'));
       
       if (authSession && authSession.exp > Date.now()) {
-        // Full login bypass
         window.dk.state.orgId = authSession.orgId;
         window.dk.state.user = authSession.user;
         document.getElementById('org-display-name').innerText = authSession.orgName || 'Memuat...';
         fnShowApp();
       } else if (orgSession && orgSession.exp > Date.now()) {
-        // Skip org code modal, go to login modal
         window.dk.state.orgId = orgSession.id;
         document.getElementById('org-display-name').innerText = orgSession.name;
         document.getElementById('modal-org-name').innerText = orgSession.name;
         document.getElementById('modal-kode').classList.add('hidden');
         document.getElementById('loginModal').classList.remove('hidden');
       } else {
-        // Need org code
         document.getElementById('modal-kode').classList.remove('hidden');
       }
     });
@@ -544,7 +542,6 @@
       } else {
         window.dk.state.orgId = org.id;
         const oName = org.display_name || org.nama;
-        // Simpan sesi Org 24 jam
         localStorage.setItem('dk_org', JSON.stringify({ id: org.id, name: oName, exp: Date.now() + 86400000 }));
         
         document.getElementById('org-display-name').innerText = oName;
@@ -574,62 +571,63 @@
       }
     }
 
-    // LOGIN ADMIN CASE-INSENSITIVE
+    // LOGIN ADMIN CASE-INSENSITIVE (VIA RPC)
     window.fnLoginAdmin = async function() {
-      const u = document.getElementById('inpUser').value.trim().toLowerCase(); // Paksa kecil
+      const u = document.getElementById('inpUser').value.trim();
       const p = document.getElementById('inpPass').value;
       const err = document.getElementById('loginError'); err.style.display = 'none';
       
       if(!u || !p) { err.textContent='Isi username & password!'; err.style.display='block'; return; }
       showLoader(true);
-      // Panggil table langsung buat cek case-insensitive (Lebih aman dari RPC yg strict)
-      const { data } = await db.from('admin').select('*').eq('organization_id', window.dk.state.orgId).ilike('username', u).single();
       
-      if(data) {
-          // Verify hash
-          const { data: hashCek } = await db.rpc('hash_password', { raw_pass: p });
-          if(data.password_hash === hashCek || data.password_hash === p) {
-              window.dk.state.user = { type:'admin', id:data.id, name:data.nama_admin };
-              document.getElementById('loginModal').classList.add('hidden');
-              document.getElementById('inpUser').value = ''; document.getElementById('inpPass').value = '';
-              showLoader(false);
-              fnShowApp();
-              return;
-          }
-      }
+      const { data, error } = await db.rpc('rpc_login_admin', { p_username: u, p_password: p, p_org_id: window.dk.state.orgId });
       showLoader(false);
-      err.textContent = 'Login gagal: Username atau Password salah.'; err.style.display = 'block';
+      
+      if(error) {
+         err.textContent = 'Terjadi kesalahan sistem: ' + error.message; err.style.display = 'block'; return;
+      }
+      
+      if(data?.success) {
+        window.dk.state.user = { type:'admin', id:data.data.id, name:data.data.nama_admin };
+        document.getElementById('loginModal').classList.add('hidden');
+        document.getElementById('inpUser').value = ''; document.getElementById('inpPass').value = '';
+        fnShowApp();
+      } else {
+        err.textContent = 'Login gagal: ' + (data?.msg || 'Username atau Password salah.');
+        err.style.display = 'block';
+      }
     };
 
-    // LOGIN WARGA CASE-INSENSITIVE
+    // LOGIN WARGA CASE-INSENSITIVE (VIA RPC)
     window.fnLoginWarga = async function() {
-      const r = document.getElementById('inpRumah').value.trim().toUpperCase(); // Paksa kapital
+      const r = document.getElementById('inpRumah').value.trim();
       const pin = document.getElementById('inpPin').value;
       const err = document.getElementById('loginErrorWarga'); err.style.display = 'none';
       
       if(!r || !pin || pin.length < 4) { err.textContent='Isi No. Rumah & PIN (min. 4 digit)!'; err.style.display='block'; return; }
       showLoader(true);
       
-      const { data } = await db.from('warga').select('*').eq('organization_id', window.dk.state.orgId).ilike('no_rumah', r).eq('status', 'ACTIVE').single();
-      
-      if(data) {
-          const { data: hashCek } = await db.rpc('hash_password', { raw_pass: pin });
-          if(data.pin_hash === hashCek || data.pin_hash === pin) {
-              window.dk.state.user = { type:'warga', id:data.id, name:data.nama, noRumah:data.no_rumah, wa:data.no_wa };
-              document.getElementById('loginModal').classList.add('hidden');
-              document.getElementById('inpRumah').value = ''; document.getElementById('inpPin').value = '';
-              showLoader(false);
-              fnShowApp();
-              return;
-          }
-      }
+      const { data, error } = await db.rpc('rpc_login_warga', { p_no_rumah: r, p_pin: pin, p_org_id: window.dk.state.orgId });
       showLoader(false);
-      err.textContent = 'Login gagal: Blok/No Rumah atau PIN salah.'; err.style.display = 'block';
+      
+      if(error) {
+         err.textContent = 'Terjadi kesalahan sistem: ' + error.message; err.style.display = 'block'; return;
+      }
+      
+      if(data?.success) {
+        window.dk.state.user = { type:'warga', id:data.data.id, name:data.data.nama, noRumah:data.data.no_rumah, wa:data.data.no_wa };
+        document.getElementById('loginModal').classList.add('hidden');
+        document.getElementById('inpRumah').value = ''; document.getElementById('inpPin').value = '';
+        fnShowApp();
+      } else {
+        err.textContent = 'Login gagal: ' + (data?.msg || 'Blok/No Rumah atau PIN salah.');
+        err.style.display = 'block';
+      }
     };
 
     window.fnLogout = function() {
       localStorage.removeItem('dk_session');
-      location.reload(); // Biarkan dk_org session tetap ada agar gampang login lg
+      location.reload(); 
     };
 
     function fnShowApp() {
@@ -647,6 +645,7 @@
         document.querySelector('.app-header').style.background = 'rgba(30, 41, 59, 0.95)';
         document.querySelector('.app-header h1').style.color = 'white';
         document.querySelector('.app-header p').style.color = '#94A3B8';
+        document.getElementById('org-logo-fallback').className = "ph ph-shield-check text-2xl text-blue-500";
         fnLoadData().then(() => { fnRenderAdminVerify(); fnRenderMaster(); fnRenderKas(); fnRenderLaporan(); });
       } else {
         document.getElementById('areaWarga').style.display = 'block';
@@ -858,7 +857,7 @@
         
         const orgSession = JSON.parse(localStorage.getItem('dk_org'));
         const orgName = orgSession ? orgSession.name : 'Sistem Kas';
-        const link = window.location.href.split('?')[0]; // Ambil URL dasar web
+        const link = window.location.href.split('?')[0]; 
         
         let text = `Halo Bapak/Ibu *${nama}* 👋\nIni adalah akses login Anda untuk Portal Warga di komunitas *${orgName}*.\n\n` +
                    `🏢 *No Rumah / Blok:* ${rumah}\n` +
@@ -888,14 +887,13 @@
                 if(!rows || rows.length === 0) { showLoader(false); return alert('File CSV kosong!'); }
                 
                 let successCount = 0;
-                // Get standard hash for '1234' as fallback
                 const { data: defaultHash } = await db.rpc('hash_password', { raw_pass: '1234' });
                 
                 let inserts = [];
                 for(let r of rows) {
                     const nama = r.NamaLengkap?.trim() || r.nama?.trim();
                     const rumah = r.NoRumah?.trim()?.toUpperCase() || r.no_rumah?.trim()?.toUpperCase();
-                    if(!nama || !rumah) continue; // Skip baris ga valid
+                    if(!nama || !rumah) continue; 
                     
                     const wa = r.NoWhatsApp?.trim() || r.wa?.trim() || '';
                     const pin = r.PIN_Default?.trim() || '1234';
@@ -1169,7 +1167,7 @@
     };
 
     window.fnRenderIuran = function() {
-      const wId = window.dk.state.user?.id; // KUNCI IDENTITAS
+      const wId = window.dk.state.user?.id; 
       const tahun = document.getElementById('pilihTahun')?.value || '2026';
       const container = document.getElementById('iuranContainer');
       if(!wId || !container) return;
@@ -1229,7 +1227,7 @@
 
     // FUNGSI KOMPRESI & UPLOAD FOTO (Mencegah Timeout/Error)
     window.fnSubmitPembayaran = async function() {
-      const wId = window.dk.state.user?.id; // KUNCI IDENTITAS
+      const wId = window.dk.state.user?.id; 
       const metode = document.getElementById('metodeBayar').value;
       const fileInput = document.getElementById('fileBukti');
       
@@ -1249,11 +1247,7 @@
           const originalFile = fileInput.files[0]; 
           
           // KOMPRESI AI BROWSER IMAGE
-          const options = {
-            maxSizeMB: 0.2, // Kompres sampai maksimal 200 KB
-            maxWidthOrHeight: 1280, // Resolusi tetap aman dibaca
-            useWebWorker: true
-          };
+          const options = { maxSizeMB: 0.2, maxWidthOrHeight: 1280, useWebWorker: true };
           const compressedFile = await browserImageCompression(originalFile, options);
           const ext = originalFile.name.split('.').pop();
           
@@ -1276,7 +1270,7 @@
     };
 
     window.fnRenderRiwayat = function() {
-      const wId = window.dk.state.user?.id; // KUNCI IDENTITAS
+      const wId = window.dk.state.user?.id; 
       const container = document.getElementById('riwayatContainer');
       if(!wId || !container) return;
       
@@ -1292,7 +1286,7 @@
         const iconName = p.status==='DISETUJUI' ? 'check-circle' : p.status==='DITOLAK' ? 'x-circle' : 'clock';
         
         return `
-        <div style="background:white;padding:20px;border-radius:20px;border:1px solid var(--tk-border);box-shadow:0 4px 12px rgba(0,0,0,0.02);">
+        <div style="background:white;padding:20px;border-radius:20px;border:1px solid var(--tk-border);box-shadow:0 4px 12px rgba(0,0,0,0.02);margin-bottom:16px;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
                 <p style="font-weight:900;color:var(--tk-primary);font-size:24px;margin:0;letter-spacing:-1px;">${formatRp(p.total_nominal)}</p>
                 <span class="badge ${statusClass}"><i class="ph ph-${iconName} text-sm"></i> ${statusText}</span>
@@ -1373,7 +1367,6 @@
     document.getElementById('btnPDF').onclick = function() {
       if(!currentStrukData) return; 
       showLoader(true);
-      // Trik agar PDF tidak kepotong di HP: Lebarkan container virtual
       const wrapper = document.getElementById('pdfWrapper');
       wrapper.style.width = '400px'; 
       wrapper.style.maxWidth = 'none';
@@ -1385,7 +1378,7 @@
           html2canvas: { scale: 3, useCORS: true, windowWidth: 400 }, 
           jsPDF: { unit: 'mm', format: 'a6', orientation: 'portrait' } 
       }).from(wrapper).save().then(() => {
-          wrapper.style.width = '100%'; // Kembalikan ke normal
+          wrapper.style.width = '100%';
           showLoader(false);
       }).catch(() => { 
           wrapper.style.width = '100%';
