@@ -6,11 +6,9 @@
   <title>Super Admin - DanaKita</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-  <!-- EXTERNAL CSS -->
   <link rel="stylesheet" href="css/style.css">
 </head>
-<body>
+<body class="bg-slate-50 min-h-screen pb-20">
 
   <!-- LOADER -->
   <div id="loader" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center">
@@ -20,57 +18,72 @@
   <!-- LOGIN -->
   <div id="login-section" class="min-h-screen flex items-center justify-center p-4">
     <div class="card w-full max-w-sm">
-      <h2 class="text-xl font-black text-center mb-6">🔐 Super Admin</h2>
-      <input type="email" id="sa-email" placeholder="Email" class="input-field mb-3">
+      <h2 class="text-xl font-black text-center mb-6">🔐 Login Super Admin</h2>
+      <input type="text" id="sa-email" placeholder="Username / Email" class="input-field mb-3">
       <input type="password" id="sa-pass" placeholder="Password" class="input-field mb-4">
       <button onclick="handleLogin()" class="btn-primary w-full">Masuk</button>
     </div>
   </div>
 
   <!-- DASHBOARD -->
-  <div id="dashboard-section" class="hidden min-h-screen pb-20">
-    <header class="bg-white border-b sticky top-0 z-40">
+  <div id="dashboard-section" class="hidden min-h-screen">
+    <header class="bg-white border-b sticky top-0 z-40 shadow-sm">
       <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
         <div class="flex items-center gap-3">
           <span class="text-2xl">🛡️</span>
-          <div><h1 class="text-lg font-black text-slate-800">Super Admin Panel</h1><p class="text-xs text-slate-500">Manajemen Klien & Sistem</p></div>
+          <div><h1 class="text-lg font-black text-slate-800">Super Admin Panel</h1><p class="text-xs text-slate-500">Manajemen Sistem</p></div>
         </div>
         <button onclick="handleLogout()" class="text-red-600 text-sm font-bold hover:underline">Keluar</button>
       </div>
     </header>
 
     <main class="max-w-7xl mx-auto px-4 py-6">
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <div class="card !mb-0 !p-4"><p class="text-xs text-slate-500 font-bold">Total Klien</p><p class="text-2xl font-black text-blue-600" id="stat-total">0</p></div>
-        <div class="card !mb-0 !p-4"><p class="text-xs text-slate-500 font-bold">Aktif</p><p class="text-2xl font-black text-green-600" id="stat-active">0</p></div>
-        <div class="card !mb-0 !p-4"><p class="text-xs text-slate-500 font-bold">Kadaluarsa</p><p class="text-2xl font-black text-red-600" id="stat-expired">0</p></div>
-        <div class="card !mb-0 !p-4"><p class="text-xs text-slate-500 font-bold">Plan Pro/Ent</p><p class="text-2xl font-black text-purple-600" id="stat-premium">0</p></div>
-      </div>
-
+      <!-- Tabs -->
       <div class="flex gap-2 mb-6 bg-slate-200 p-1 rounded-xl w-fit">
         <button onclick="showTab('clients')" class="tab-btn px-6 py-2 rounded-lg font-bold text-sm bg-white shadow" id="btn-clients">👥 Klien</button>
+        <button onclick="showTab('superadmins')" class="tab-btn px-6 py-2 rounded-lg font-bold text-sm text-slate-500" id="btn-superadmins">👮 Super Admin</button>
         <button onclick="showTab('audit')" class="tab-btn px-6 py-2 rounded-lg font-bold text-sm text-slate-500" id="btn-audit">📜 Audit Log</button>
       </div>
 
       <!-- TAB: KLIEN -->
       <div id="tab-clients" class="tab-content">
         <div class="flex justify-between items-center mb-4">
-          <h2 class="text-xl font-black text-slate-800">Kelola Klien</h2>
+          <h2 class="text-xl font-black text-slate-800">Kelola Klien & Admin</h2>
           <button onclick="openModal('modal-add-client')" class="btn-secondary text-sm">+ Registrasi Klien</button>
         </div>
         <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
           <table class="w-full text-sm text-left">
             <thead class="bg-slate-50 text-slate-600 font-bold uppercase text-xs">
               <tr>
-                <th class="px-4 py-3">Kode Organisasi</th>
+                <th class="px-4 py-3 w-8"></th>
                 <th class="px-4 py-3">Klien</th>
                 <th class="px-4 py-3">Plan</th>
-                <th class="px-4 py-3">Validitas</th>
                 <th class="px-4 py-3">Status</th>
                 <th class="px-4 py-3 text-right">Aksi</th>
               </tr>
             </thead>
             <tbody id="clients-tbody" class="divide-y"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB: SUPER ADMIN -->
+      <div id="tab-superadmins" class="tab-content hidden">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xl font-black text-slate-800">Manajemen Super Admin</h2>
+          <button onclick="openModal('modal-add-sa')" class="btn-secondary text-sm">+ Tambah Super Admin</button>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
+          <table class="w-full text-sm text-left">
+            <thead class="bg-slate-50 text-slate-600 font-bold uppercase text-xs">
+              <tr>
+                <th class="px-4 py-3">Username</th>
+                <th class="px-4 py-3">Nama</th>
+                <th class="px-4 py-3">Password</th>
+                <th class="px-4 py-3 text-right">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="sa-tbody" class="divide-y"></tbody>
           </table>
         </div>
       </div>
@@ -84,132 +97,105 @@
   </div>
 
   <!-- MODAL: ADD CLIENT -->
-  <div id="modal-add-client" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6">
-      <div class="flex justify-between mb-4 border-b pb-3">
-        <h3 class="text-lg font-black">🆕 Registrasi Klien Baru</h3>
-        <button onclick="closeModal('modal-add-client')" class="text-slate-400 hover:text-slate-600 text-xl">&times;</button>
-      </div>
-      
-      <form id="form-add-client" class="space-y-4">
-        <div class="grid grid-cols-2 gap-4">
-          <div class="col-span-2">
-            <label class="text-xs font-bold text-slate-600">Nama Organisasi (Legal)</label>
-            <input type="text" id="reg-nama" required class="input-field mt-1" placeholder="Contoh: RT 05 RW 02">
-          </div>
-          <div class="col-span-2">
-            <label class="text-xs font-bold text-slate-600">Nama Tampil di App</label>
-            <input type="text" id="reg-display" required class="input-field mt-1" placeholder="Contoh: Komplek Asri">
-          </div>
-          <div class="col-span-2">
-            <label class="text-xs font-bold text-slate-600">Alamat Lengkap</label>
-            <textarea id="reg-alamat" class="input-field mt-1" rows="2"></textarea>
-          </div>
-          <div>
-            <label class="text-xs font-bold text-slate-600">Kontak WA Admin (628...)</label>
-            <input type="text" id="reg-wa" required class="input-field mt-1" placeholder="628123456789">
-          </div>
-          <div>
-            <label class="text-xs font-bold text-slate-600">URL Logo (Opsional)</label>
-            <input type="url" id="reg-logo" class="input-field mt-1" placeholder="https://...">
+  <div id="modal-add-client" class="modal-overlay hidden">
+    <div class="modal-content" style="max-width: 600px;">
+      <h3 class="text-lg font-black mb-4">🆕 Registrasi Klien Baru</h3>
+      <form id="form-add-client" class="space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div class="col-span-2"><label class="text-xs font-bold text-slate-600">Nama Organisasi</label><input type="text" id="reg-nama" required class="input-field mt-1"></div>
+          <div class="col-span-2"><label class="text-xs font-bold text-slate-600">Nama Tampil di App</label><input type="text" id="reg-display" required class="input-field mt-1"></div>
+          <div><label class="text-xs font-bold text-slate-600">WA Admin</label><input type="text" id="reg-wa" required class="input-field mt-1" placeholder="628..."></div>
+          <div><label class="text-xs font-bold text-slate-600">URL Logo</label><input type="url" id="reg-logo" class="input-field mt-1"></div>
+          <div><label class="text-xs font-bold text-slate-600">Paket</label><select id="reg-plan" class="input-field mt-1"><option value="starter">Starter</option><option value="pro">Pro</option><option value="enterprise">Enterprise</option></select></div>
+          <div><label class="text-xs font-bold text-slate-600">Berakhir</label><input type="date" id="reg-validity" required class="input-field mt-1"></div>
+        </div>
+        <div class="bg-slate-50 p-3 rounded-lg mt-2">
+          <p class="text-xs font-bold text-slate-700 mb-2">Credential Admin Utama</p>
+          <div class="grid grid-cols-2 gap-3">
+            <div><input type="text" id="reg-admin-user" required placeholder="Username" class="input-field"></div>
+            <div><input type="text" id="reg-admin-pass" required placeholder="Password" class="input-field"></div>
+            <div class="col-span-2"><input type="text" id="reg-admin-nama" required placeholder="Nama Lengkap Admin" class="input-field"></div>
           </div>
         </div>
-
-        <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 grid grid-cols-2 gap-4">
-          <div>
-            <label class="text-xs font-bold text-blue-800">Paket Langganan</label>
-            <select id="reg-plan" class="input-field mt-1 bg-white">
-              <option value="starter">Starter (≤100 warga)</option>
-              <option value="pro">Pro (Unlimited)</option>
-              <option value="enterprise">Enterprise (Custom)</option>
-            </select>
-          </div>
-          <div>
-            <label class="text-xs font-bold text-blue-800">Berakhir Tanggal</label>
-            <input type="date" id="reg-validity" required class="input-field mt-1 bg-white">
-          </div>
-        </div>
-
-        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 grid grid-cols-2 gap-4">
-          <div class="col-span-2 text-sm font-bold text-slate-700 border-b pb-2 mb-2">Credential Admin Utama</div>
-          <div><label class="text-xs font-bold text-slate-600">Username</label><input type="text" id="reg-admin-user" required class="input-field mt-1"></div>
-          <div><label class="text-xs font-bold text-slate-600">Nama Admin</label><input type="text" id="reg-admin-nama" required class="input-field mt-1"></div>
-          <div class="col-span-2"><label class="text-xs font-bold text-slate-600">Password Default</label><input type="text" id="reg-admin-pass" required class="input-field mt-1"></div>
-        </div>
-
-        <div class="flex gap-3 mt-6 pt-4 border-t">
+        <div class="flex gap-3 mt-4">
           <button type="button" onclick="closeModal('modal-add-client')" class="flex-1 py-3 border rounded-xl font-bold text-slate-600">Batal</button>
-          <button type="submit" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700">Simpan & Buat Akun</button>
+          <button type="submit" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700">Simpan</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- MODAL: SHOW CLIENT CODE -->
-  <div id="modal-client-code" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl w-full max-w-md p-6 text-center">
-      <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4"><span class="text-3xl">✅</span></div>
-      <h3 class="text-xl font-black text-slate-800 mb-2">Klien Berhasil Didaftarkan!</h3>
-      <p class="text-sm text-slate-600 mb-6">Berikut informasi login untuk klien:</p>
-      
-      <div class="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 mb-6">
-        <p class="text-xs text-blue-600 font-bold mb-1 uppercase tracking-wider">Kode Organisasi</p>
-        <p id="display-client-code" class="text-2xl font-black text-blue-700 font-mono tracking-wider">DKT-XXXXX</p>
-        <p class="text-xs text-blue-500 mt-2">⚠️ Berikan kode ini ke klien untuk login!</p>
-      </div>
-
-      <div class="bg-slate-50 rounded-xl p-4 mb-6 text-left">
-        <p class="text-xs font-bold text-slate-600 mb-2">📋 Credential Admin:</p>
-        <p class="text-sm"><span class="font-bold">Username:</span> <span id="display-admin-user" class="font-mono"></span></p>
-        <p class="text-sm"><span class="font-bold">Password:</span> <span id="display-admin-pass" class="font-mono"></span></p>
-      </div>
-
-      <div class="flex gap-3">
-        <button onclick="copyClientCode()" class="flex-1 py-3 border-2 border-blue-600 text-blue-600 rounded-xl font-bold hover:bg-blue-50">📋 Copy Kode</button>
-        <button onclick="closeModal('modal-client-code')" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700">Tutup</button>
+  <!-- MODAL: ADD SUPER ADMIN -->
+  <div id="modal-add-sa" class="modal-overlay hidden">
+    <div class="modal-content">
+      <h3 class="text-lg font-black mb-4">👮 Tambah Super Admin</h3>
+      <div class="space-y-3">
+        <div><label class="text-xs font-bold text-slate-600">Username / Email</label><input type="text" id="sa-new-user" required class="input-field mt-1"></div>
+        <div><label class="text-xs font-bold text-slate-600">Nama Lengkap</label><input type="text" id="sa-new-nama" required class="input-field mt-1"></div>
+        <div><label class="text-xs font-bold text-slate-600">Password</label><input type="text" id="sa-new-pass" required class="input-field mt-1"></div>
+        <div class="flex gap-3 mt-4">
+          <button onclick="closeModal('modal-add-sa')" class="flex-1 py-3 border rounded-xl font-bold text-slate-600">Batal</button>
+          <button onclick="addSuperAdmin()" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700">Simpan</button>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- MODAL: IMPORT CSV -->
-  <div id="modal-import" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl w-full max-w-lg p-6">
-      <h3 class="text-lg font-black mb-4">📥 Import Data Warga</h3>
-      <p class="text-xs text-slate-500 mb-4">Format CSV: nama, no_rumah, no_wa, pin_opsional</p>
-      <input type="file" id="csv-file" accept=".csv" class="input-field mb-4">
-      <div id="csv-preview" class="max-h-40 overflow-y-auto bg-slate-50 rounded-lg p-2 text-xs mb-4 hidden"></div>
-      <div class="flex gap-3">
-        <button onclick="closeModal('modal-import')" class="flex-1 py-2 border rounded-lg">Batal</button>
-        <button onclick="processImport()" class="flex-1 py-2 bg-green-600 text-white rounded-lg font-bold">Import Data</button>
+  <!-- MODAL: PASSWORD RESET RESULT -->
+  <div id="modal-pass-result" class="modal-overlay hidden">
+    <div class="modal-content text-center">
+      <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4"><span class="text-3xl">🔑</span></div>
+      <h3 class="text-xl font-black text-slate-800 mb-2">Password Baru Generated!</h3>
+      <p class="text-sm text-slate-600 mb-4">Simpan password ini baik-baik. Ini hanya muncul sekali.</p>
+      <div class="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 mb-6 select-all">
+        <p class="text-xs text-blue-600 font-bold mb-1 uppercase">Password</p>
+        <p id="display-new-pass" class="text-2xl font-black text-blue-700 font-mono tracking-wider">Loading...</p>
       </div>
+      <button onclick="copyNewPass()" class="btn-primary w-full mb-2">📋 Copy Password</button>
+      <button onclick="closeModal('modal-pass-result')" class="btn-ghost w-full">Tutup</button>
     </div>
   </div>
 
   <script>
-    // CONFIG
     const SUPABASE_URL = 'https://tgcpyatrllswhlysqfer.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRnY3B5YXRybGxzd2hseXNxZmVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MjI2ODMsImV4cCI6MjA5MTM5ODY4M30.BHY6R2e62YvXz-N_2n_qHossbKxPZxUX0y1lrNKketg';
     const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    let currentImportOrgId = null;
-    let tempClientCode = '';
-    let tempAdminUser = '';
-    let tempAdminPass = '';
+    let expandedOrgs = {}; // Cache admin list
 
     // LOGIN
     async function handleLogin() {
-      const e = document.getElementById('sa-email').value;
+      const u = document.getElementById('sa-email').value;
       const p = document.getElementById('sa-pass').value;
-      if(e === 'admin@danakita.com' && p === 'SuperAdmin123!') {
+      showLoader(true);
+      
+      // Cek di tabel super_admins
+      const { data, error } = await db.from('super_admins').select('*').eq('username', u).eq('password', p).single();
+      showLoader(false);
+
+      if (data && !error) {
+        localStorage.setItem('sa_session', JSON.stringify(data));
         document.getElementById('login-section').classList.add('hidden');
         document.getElementById('dashboard-section').classList.remove('hidden');
         loadClients();
+        loadSuperAdmins();
       } else {
-        alert('Login salah! Gunakan admin@danakita.com / SuperAdmin123!');
+        alert('Login Gagal! Cek username/password.');
       }
     }
 
-    function handleLogout() { location.reload(); }
+    async function handleLogout() {
+      localStorage.removeItem('sa_session');
+      location.reload();
+    }
+
+    // Check Session
+    if(localStorage.getItem('sa_session')) {
+      document.getElementById('login-section').classList.add('hidden');
+      document.getElementById('dashboard-section').classList.remove('hidden');
+      loadClients();
+      loadSuperAdmins();
+    }
 
     // TABS
     function showTab(name) {
@@ -221,131 +207,186 @@
       if(name === 'audit') loadAudit();
     }
 
-    // CLIENTS
-    async function loadClients() {
-      const { data, error } = await db.from('organizations').select('*').order('created_at', { ascending: false });
-      if(error) return console.error(error);
-
-      let total = 0, active = 0, expired = 0, premium = 0;
-      const today = new Date();
-      
-      document.getElementById('clients-tbody').innerHTML = data.map(org => {
-        total++; if(org.is_active) active++; else expired++; if(org.plan_tier !== 'starter') premium++;
-        const isExpired = new Date(org.validity_end) < today;
-        const statusClass = isExpired ? 'badge-inactive' : 'badge-active';
-        const statusText = isExpired ? 'Expired' : (org.is_active ? 'Aktif' : 'Nonaktif');
-        const planClass = `badge-${org.plan_tier}`;
-
-        return `
-          <tr class="hover:bg-slate-50">
-            <td class="px-4 py-3"><span class="badge badge-code">${org.client_code}</span></td>
-            <td class="px-4 py-3"><div class="font-bold text-slate-800">${org.display_name || org.nama}</div><div class="text-xs text-slate-500">WA: ${org.kontak_wa_admin || '-'}</div></td>
-            <td class="px-4 py-3"><span class="badge ${planClass}">${org.plan_tier.toUpperCase()}</span></td>
-            <td class="px-4 py-3 text-xs">${new Date(org.validity_end).toLocaleDateString('id-ID')}</td>
-            <td class="px-4 py-3"><span class="badge ${statusClass}">${statusText}</span></td>
-            <td class="px-4 py-3 text-right">
-              <button onclick="openImport('${org.id}')" class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded mr-1">Import</button>
-              <button onclick="toggleStatus('${org.id}', ${!org.is_active})" class="text-xs ${org.is_active ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'} px-2 py-1 rounded">${org.is_active ? 'Suspend' : 'Activate'}</button>
-            </td>
-          </tr>
-        `;
-      }).join('');
-
-      document.getElementById('stat-total').innerText = total;
-      document.getElementById('stat-active').innerText = active;
-      document.getElementById('stat-expired').innerText = expired;
-      document.getElementById('stat-premium').innerText = premium;
+    // --- SUPER ADMIN MANAGEMENT ---
+    async function loadSuperAdmins() {
+      const { data } = await db.from('super_admins').select('*');
+      document.getElementById('sa-tbody').innerHTML = data.map(sa => `
+        <tr class="hover:bg-slate-50">
+          <td class="px-4 py-3 font-bold">${sa.username}</td>
+          <td class="px-4 py-3">${sa.nama}</td>
+          <td class="px-4 py-3 font-mono text-blue-600 font-bold">${sa.password}</td>
+          <td class="px-4 py-3 text-right">
+            <button onclick="deleteSuperAdmin('${sa.id}')" class="text-red-600 hover:text-red-800 text-xs font-bold">Hapus</button>
+          </td>
+        </tr>
+      `).join('');
     }
 
-    async function toggleStatus(id, status) { await db.from('organizations').update({ is_active: status }).eq('id', id); loadClients(); }
+    async function addSuperAdmin() {
+      const u = document.getElementById('sa-new-user').value;
+      const n = document.getElementById('sa-new-nama').value;
+      const p = document.getElementById('sa-new-pass').value;
+      if(!u || !n || !p) return alert('Lengkapi semua field!');
 
-    // ADD CLIENT
+      showLoader(true);
+      const { error } = await db.rpc('super_admin_add_super_admin', { p_username: u, p_nama: n, p_plain_pass: p });
+      showLoader(false);
+
+      if(error) alert('Gagal: ' + error.message);
+      else {
+        closeModal('modal-add-sa');
+        loadSuperAdmins();
+        document.getElementById('sa-new-user').value = '';
+        document.getElementById('sa-new-nama').value = '';
+        document.getElementById('sa-new-pass').value = '';
+      }
+    }
+
+    async function deleteSuperAdmin(id) {
+      if(!confirm('Hapus Super Admin ini?')) return;
+      await db.from('super_admins').delete().eq('id', id);
+      loadSuperAdmins();
+    }
+
+    // --- CLIENT MANAGEMENT ---
+    async function loadClients() {
+      const { data } = await db.from('organizations').select('*').order('created_at', { ascending: false });
+      document.getElementById('clients-tbody').innerHTML = data.map(org => `
+        <tr class="hover:bg-slate-50">
+          <td class="px-2 py-3 text-center cursor-pointer text-slate-400" onclick="toggleRow('${org.id}', '${org.display_name}')">▼</td>
+          <td class="px-4 py-3"><div class="font-bold text-slate-800">${org.display_name}</div><div class="text-[10px] text-slate-500 font-mono">${org.client_code}</div></td>
+          <td class="px-4 py-3"><span class="badge badge-${org.plan_tier}">${org.plan_tier.toUpperCase()}</span></td>
+          <td class="px-4 py-3"><span class="badge ${org.is_active ? 'badge-active' : 'badge-inactive'}">${org.is_active ? 'Aktif' : 'Suspend'}</span></td>
+          <td class="px-4 py-3 text-right">
+            <button onclick="toggleStatus('${org.id}', ${!org.is_active})" class="text-xs ${org.is_active ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'} px-2 py-1 rounded">${org.is_active ? 'Suspend' : 'Activate'}</button>
+          </td>
+        </tr>
+        <tr id="row-${org.id}" class="row-expand bg-slate-50 border-b-4 border-slate-200">
+          <td colspan="5" class="p-4">
+            <div id="admin-panel-${org.id}">Loading admins...</div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    async function toggleRow(orgId, orgName) {
+      const row = document.getElementById(`row-${orgId}`);
+      const panel = document.getElementById(`admin-panel-${orgId}`);
+      const isHidden = row.style.display === 'none' || !row.style.display;
+      
+      // Toggle
+      document.querySelectorAll('.row-expand').forEach(r => r.style.display = 'none');
+      
+      if(isHidden) {
+        row.style.display = 'table-row';
+        if(!expandedOrgs[orgId]) {
+          // Fetch Admins
+          const { data } = await db.from('admin').select('id, username, nama_admin, role, is_active').eq('organization_id', orgId);
+          expandedOrgs[orgId] = data || [];
+          renderAdminPanel(orgId, orgName, expandedOrgs[orgId]);
+        } else {
+          renderAdminPanel(orgId, orgName, expandedOrgs[orgId]);
+        }
+      }
+    }
+
+    function renderAdminPanel(orgId, orgName, admins) {
+      const panel = document.getElementById(`admin-panel-${orgId}`);
+      
+      let adminRows = admins.filter(a => a.is_active).map(a => `
+        <tr class="bg-white border-b">
+          <td class="p-2 font-bold text-sm">${a.username}</td>
+          <td class="p-2 text-sm">${a.nama_admin}</td>
+          <td class="p-2"><span class="badge badge-info text-[10px]">${a.role}</span></td>
+          <td class="p-2 text-center">
+            <span class="text-slate-400 text-xs italic mr-2">••••••</span>
+            <button onclick="resetAdminPass('${orgId}', '${a.id}', '${a.username}')" class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded font-bold">🔑 Reset</button>
+          </td>
+          <td class="p-2 text-right">
+            <button onclick="deleteClientAdmin('${orgId}', '${a.id}')" class="text-red-600 text-xs font-bold hover:underline">Hapus</button>
+          </td>
+        </tr>
+      `).join('');
+
+      panel.innerHTML = `
+        <div class="bg-white rounded-lg border shadow-sm p-4">
+          <div class="flex justify-between items-center mb-3">
+            <h4 class="font-bold text-slate-700">👥 Admin: ${orgName}</h4>
+            <button onclick="openModal('modal-add-admin-${orgId}')" class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold">+ Tambah Admin</button>
+          </div>
+          ${admins.filter(a=>!a.is_active).length > 0 ? `<p class="text-[10px] text-slate-400 mb-2">(${admins.filter(a=>!a.is_active).length} admin nonaktif)</p>` : ''}
+          <table class="w-full nested-table">
+            <thead><tr><th class="text-left">Username</th><th class="text-left">Nama</th><th>Role</th><th>Password</th><th class="text-right">Aksi</th></tr></thead>
+            <tbody>${adminRows || '<tr><td colspan="5" class="p-4 text-center text-slate-400">Belum ada admin aktif.</td></tr>'}</tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    // --- CLIENT ADMIN ACTIONS ---
+    async function deleteClientAdmin(orgId, adminId) {
+      const activeCount = expandedOrgs[orgId].filter(a => a.is_active).length;
+      if(activeCount <= 1) return alert('❌ Tidak bisa menghapus admin terakhir!');
+      if(!confirm('Hapus admin ini? (Soft delete)')) return;
+
+      await db.from('admin').update({ is_active: false }).eq('id', adminId);
+      // Refresh cache & UI
+      const { data } = await db.from('admin').select('id, username, nama_admin, role, is_active').eq('organization_id', orgId);
+      expandedOrgs[orgId] = data;
+      renderAdminPanel(orgId, '...', expandedOrgs[orgId]);
+    }
+
+    async function resetAdminPass(orgId, adminId, username) {
+      // Generate random password
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#';
+      let pass = '';
+      for(let i=0; i<10; i++) pass += chars.charAt(Math.floor(Math.random() * chars.length));
+
+      showLoader(true);
+      // Update DB with hashed password
+      const hash = await db.rpc('hash_password', { raw_pass: pass });
+      await db.from('admin').update({ password_hash: hash }).eq('id', adminId);
+      showLoader(false);
+
+      // Show result
+      document.getElementById('display-new-pass').innerText = pass;
+      document.getElementById('modal-pass-result').classList.remove('hidden');
+      
+      // Copy logic
+      window.copyNewPass = () => {
+        navigator.clipboard.writeText(pass).then(() => alert('Password copied!'));
+      };
+    }
+
+    // --- GLOBAL MODALS & UTILS ---
+    function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+    function showLoader(show) { document.getElementById('loader').classList.toggle('hidden', !show); }
+
+    // Add Client Form Submit
     document.getElementById('form-add-client').onsubmit = async function(e) {
       e.preventDefault();
       showLoader(true);
-
-      const wa = document.getElementById('reg-wa').value;
-      if(!/^(\+62|62|0)8[1-9][0-9]{7,10}$/.test(wa.replace(/[\s-]/g,''))) {
-        alert('Format WhatsApp tidak valid! (Contoh: 628123456789)');
-        showLoader(false); return;
-      }
-
       const res = await db.rpc('super_admin_create_org', {
         p_nama: document.getElementById('reg-nama').value, p_display_name: document.getElementById('reg-display').value,
-        p_alamat: document.getElementById('reg-alamat').value, p_kontak_wa: wa, p_plan_tier: document.getElementById('reg-plan').value,
+        p_alamat: '', p_kontak_wa: document.getElementById('reg-wa').value, p_plan_tier: document.getElementById('reg-plan').value,
         p_validity_start: new Date().toISOString(), p_validity_end: document.getElementById('reg-validity').value,
         p_admin_username: document.getElementById('reg-admin-user').value, p_admin_nama: document.getElementById('reg-admin-nama').value,
         p_admin_password: document.getElementById('reg-admin-pass').value, p_logo_url: document.getElementById('reg-logo').value || null
       });
-
       showLoader(false);
       if(res.error) alert('Gagal: ' + res.error.message);
       else {
-        tempClientCode = res.client_code; tempAdminUser = document.getElementById('reg-admin-user').value; tempAdminPass = document.getElementById('reg-admin-pass').value;
-        document.getElementById('display-client-code').innerText = res.client_code;
-        document.getElementById('display-admin-user').innerText = tempAdminUser;
-        document.getElementById('display-admin-pass').innerText = tempAdminPass;
-        closeModal('modal-add-client'); openModal('modal-client-code');
-        document.getElementById('form-add-client').reset(); loadClients();
+        alert('Klien berhasil dibuat!');
+        closeModal('modal-add-client');
+        loadClients();
       }
     };
-
-    function copyClientCode() {
-      const text = `Kode: ${tempClientCode}\nUser: ${tempAdminUser}\nPass: ${tempAdminPass}`;
-      navigator.clipboard.writeText(text).then(() => alert('✅ Credential berhasil dicopy!'));
+    
+    function toggleStatus(id, status) {
+      db.from('organizations').update({ is_active: status }).eq('id', id).then(() => loadClients());
     }
 
-    // IMPORT CSV
-    function openImport(orgId) {
-      currentImportOrgId = orgId;
-      document.getElementById('csv-file').value = '';
-      document.getElementById('csv-preview').classList.add('hidden');
-      document.getElementById('modal-import').classList.remove('hidden');
-    }
-
-    document.getElementById('csv-file').addEventListener('change', function(e) {
-      const file = e.target.files[0];
-      if(!file) return;
-      Papa.parse(file, {
-        header: true, skipEmptyLines: true,
-        complete: function(results) {
-          const preview = document.getElementById('csv-preview');
-          preview.classList.remove('hidden');
-          preview.innerHTML = `<p class="font-bold mb-2">Preview ${results.data.length} baris:</p>` + 
-            results.data.slice(0, 3).map(row => `<div class="mb-1 border-b pb-1">${JSON.stringify(row)}</div>`).join('');
-        }
-      });
-    });
-
-    async function processImport() {
-      const file = document.getElementById('csv-file').files[0];
-      if(!file) return alert('Pilih file CSV dulu!');
-      showLoader(true);
-      Papa.parse(file, {
-        header: true, skipEmptyLines: true,
-        complete: async function(results) {
-          let success = 0, error = 0;
-          const { data: hash } = await db.rpc('hash_password', { raw_pass: '1234' });
-          for(const row of results.data) {
-            try {
-              if(!row.nama || !row.no_rumah) throw new Error("Missing name/room");
-              await db.from('warga').insert({
-                id: 'wrg_' + Date.now() + Math.random(), organization_id: currentImportOrgId,
-                nama: row.nama.trim(), no_rumah: row.no_rumah.trim().toUpperCase(),
-                no_wa: row.no_wa?.trim() || null,
-                pin_hash: row.pin_opsional ? await db.rpc('hash_password', { raw_pass: row.pin_opsional }) : hash,
-                status: 'ACTIVE'
-              });
-              success++;
-            } catch(err) { error++; }
-          }
-          showLoader(false); alert(`Import Selesai!\n✅ Berhasil: ${success}\n❌ Gagal: ${error}`);
-          closeModal('modal-import'); loadClients();
-        }
-      });
-    }
-
-    // AUDIT LOG
     async function loadAudit() {
       const { data } = await db.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(50);
       document.getElementById('audit-list').innerHTML = data.map(log => `
@@ -354,11 +395,6 @@
           <p class="font-bold text-slate-700 text-sm">${log.action}</p><p class="text-xs text-slate-500">Tabel: ${log.table_name}</p>
         </li>`).join('');
     }
-
-    // UTILS
-    function showLoader(show) { document.getElementById('loader').classList.toggle('hidden', !show); }
-    function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
-    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
   </script>
 </body>
 </html>
