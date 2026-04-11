@@ -61,7 +61,7 @@
 </head>
 <body>
 
-  <div id="loader" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[200] hidden flex items-center justify-center">
+  <div id="loader" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[200] !hidden flex items-center justify-center">
     <div class="bg-white p-5 rounded-2xl shadow-2xl flex flex-col items-center"><div class="loader mb-3"></div><p class="text-xs text-slate-500 font-bold tracking-widest uppercase">Memproses</p></div>
   </div>
 
@@ -72,7 +72,7 @@
     </div>
   </div>
 
-  <div id="dashboard-section" class="hidden">
+  <div id="dashboard-section" class="!hidden">
     <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
       <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
         <div class="flex items-center gap-3"><div class="w-10 h-10 bg-gradient-to-br from-[#00A6ED] to-[#0089C9] text-white rounded-xl flex items-center justify-center shadow-lg shadow-blue-200"><i class="ph ph-buildings text-2xl"></i></div><div><h1 class="text-lg font-black text-slate-800 leading-tight">DanaKita Super</h1><p class="text-[10px] font-bold text-[#FF6B35] tracking-widest uppercase">Console Management</p></div></div>
@@ -173,7 +173,7 @@
     </div>
   </div>
 
-  <div id="modal-add-client" class="modal-overlay hidden">
+  <div id="modal-add-client" class="modal-overlay !hidden">
     <div class="modal-content !max-w-2xl">
       <div class="flex justify-between items-center mb-6 border-b pb-4"><h3 class="text-xl font-black text-slate-800 flex items-center gap-2"><i class="ph ph-buildings text-[#00A6ED]"></i> Registrasi Klien Baru</h3><button onclick="closeModal('modal-add-client')" class="text-slate-400 hover:text-red-500"><i class="ph ph-x text-2xl"></i></button></div>
       <form id="form-add-client" class="space-y-4">
@@ -208,7 +208,7 @@
     </div>
   </div>
 
-  <div id="modal-add-sa" class="modal-overlay hidden">
+  <div id="modal-add-sa" class="modal-overlay !hidden">
     <div class="modal-content" style="max-width: 400px;">
       <h3 class="text-lg font-black mb-4 flex items-center gap-2"><i class="ph ph-shield-plus text-[#00A6ED]"></i> Super Admin Baru</h3>
       <div class="space-y-4">
@@ -256,19 +256,25 @@
     const db = window.dk.db;
     // =======================================================================
 
-    let currentBillingData = null; // Menyimpan data billing klien yg sedang dibuka
-    let allOrgs = []; // Cache list klien
+    let currentBillingData = null; 
+    let allOrgs = []; 
 
-    // UTILS FORMATTER
     const formatDate = (dateStr) => {
       if(!dateStr) return '-';
       const d = new Date(dateStr);
       return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
     };
     function formatIDR(num) { return 'Rp ' + Number(num||0).toLocaleString('id-ID'); }
-    function showLoader(show) { document.getElementById('loader').classList.toggle('hidden', !show); }
+    
+    // Tweak to ensure loaders and modals behave safely
+    function showLoader(show) { 
+        if(show) {
+            document.getElementById('loader').classList.remove('!hidden');
+        } else {
+            document.getElementById('loader').classList.add('!hidden');
+        }
+    }
 
-    // LOGIN & INIT
     async function handleLogin() {
       const u = document.getElementById('sa-email').value;
       const p = document.getElementById('sa-pass').value;
@@ -277,8 +283,8 @@
       showLoader(false);
       if (data) {
         localStorage.setItem('sa_session', JSON.stringify(data));
-        document.getElementById('login-section').classList.add('hidden');
-        document.getElementById('dashboard-section').classList.remove('hidden');
+        document.getElementById('login-section').classList.add('!hidden');
+        document.getElementById('dashboard-section').classList.remove('!hidden');
         initDashboard();
       } else {
         alert('Login Gagal! Periksa kembali Username/Password.');
@@ -288,8 +294,8 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       if(localStorage.getItem('sa_session')) {
-        document.getElementById('login-section').classList.add('hidden');
-        document.getElementById('dashboard-section').classList.remove('hidden');
+        document.getElementById('login-section').classList.add('!hidden');
+        document.getElementById('dashboard-section').classList.remove('!hidden');
         initDashboard();
       }
     });
@@ -300,7 +306,6 @@
         loadAudit();
     }
 
-    // TABS
     function showTab(name) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
       document.getElementById('tab-' + name).classList.add('active');
@@ -308,16 +313,14 @@
       document.getElementById('btn-' + name).classList.add('active-tab');
     }
 
-    // ================= LOAD CLIENTS MAIN TABLE =================
+    // JALAN 2: Hanya ambil Organizations, jangan JOIN ke billing_settings
     async function loadClients() {
       const tbody = document.getElementById('clients-tbody');
       const mobileContainer = document.getElementById('clients-mobile-container');
       
-      // Ambil data Org sekalian join ke billing_settings
-      const { data } = await db.from('organizations').select('*, billing_settings(*)').order('created_at', { ascending: false });
+      const { data } = await db.from('organizations').select('*').order('created_at', { ascending: false });
       allOrgs = data || [];
       
-      // Update Dropdown Filter Audit Log
       const filterOrg = document.getElementById('filter-audit-org');
       filterOrg.innerHTML = '<option value="">Semua Klien</option>';
       allOrgs.forEach(o => filterOrg.innerHTML += `<option value="${o.id}">${o.display_name || o.nama}</option>`);
@@ -339,7 +342,6 @@
         const isExpired = end < now;
         const validityClass = isExpired ? 'text-red-500 font-bold' : 'text-slate-600';
         const validityIcon = isExpired ? '<i class="ph ph-warning-circle text-red-500"></i>' : '<i class="ph ph-calendar-check text-green-500"></i>';
-        const billingData = (org.billing_settings && org.billing_settings.length > 0) ? org.billing_settings[0] : null;
         
         const actionHtml = `
             <div class="flex justify-end gap-2">
@@ -347,7 +349,6 @@
                 <button onclick='openClientDrawer(${JSON.stringify(org).replace(/'/g, "&#39;")})' class="flex-1 sm:flex-none text-[11px] bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-2 rounded-lg font-bold transition flex items-center justify-center gap-1 shadow-sm"><i class="ph ph-gear"></i> Kelola</button>
             </div>`;
 
-        // 1. Render Desktop Row
         const row = document.createElement('tr');
         row.className = 'hover:bg-blue-50/50 transition duration-150';
         row.innerHTML = `
@@ -359,7 +360,6 @@
         `;
         tbody.appendChild(row);
 
-        // 2. Render Mobile Card
         const card = document.createElement('div');
         card.className = 'bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-3';
         card.innerHTML = `
@@ -384,29 +384,32 @@
       loadClients();
     }
 
-    // ================= DRAWER & KELOLA ADMIN =================
+    // DRAWER
     function openDrawer() { document.getElementById('drawer-overlay').classList.add('open'); document.getElementById('client-drawer').classList.add('open'); }
     function closeDrawer() { document.getElementById('drawer-overlay').classList.remove('open'); document.getElementById('client-drawer').classList.remove('open'); }
 
+    // JALAN 2: Manual Fetch Billing Setting disini
     async function openClientDrawer(org) {
       document.getElementById('drw-client-name').innerText = org.display_name || org.nama;
       document.getElementById('drw-client-code').innerText = org.client_code;
       document.getElementById('edit-org-id').value = org.id;
       
-      // Isi form edit
       document.getElementById('edit-wa').value = org.kontak_wa_admin || '';
       document.getElementById('edit-start').value = org.validity_start ? org.validity_start.split('T')[0] : '';
       document.getElementById('edit-end').value = org.validity_end ? org.validity_end.split('T')[0] : '';
 
-      // Simpan data billing global untuk invoice
-      currentBillingData = (org.billing_settings && org.billing_settings.length > 0) ? org.billing_settings[0] : null;
-
-      // Kosongkan form tambah admin
       document.getElementById('new-adm-user').value = ''; document.getElementById('new-adm-nama').value = ''; document.getElementById('new-adm-pass').value = '';
 
       openDrawer();
       showLoader(true);
       
+      // Murni mengambil data tagihan secara paksa dan langsung
+      currentBillingData = null;
+      const { data: billData } = await db.from('billing_settings').select('*').eq('organization_id', org.id);
+      if(billData && billData.length > 0) {
+          currentBillingData = billData[0];
+      }
+
       // Load Admins
       const { data } = await db.from('admin').select('*').eq('organization_id', org.id);
       const listContainer = document.getElementById('drw-admin-list');
@@ -432,21 +435,18 @@
        await db.from('organizations').update({ kontak_wa_admin: wa, validity_start: start, validity_end: end }).eq('id', orgId);
        showLoader(false);
        alert("Profil berhasil diupdate!");
-       loadClients(); // Refresh data utama
+       loadClients(); 
     }
 
-    // INVOICE PDF GENERATOR (Auto Kalkulasi PPN)
     function downloadInvoice() {
-       if(!currentBillingData) return alert("Data biaya/billing klien ini belum diatur!");
+       if(!currentBillingData) return alert("Data biaya/billing klien ini belum diatur di database!");
        
        const gross = parseFloat(currentBillingData.nominal_gross);
        const ppnPercent = parseFloat(currentBillingData.ppn_percentage);
        
-       // Perhitungan Mundur: DPP = Gross / (1 + (PPN/100))
        const dpp = gross / (1 + (ppnPercent / 100));
        const ppnAmount = gross - dpp;
        
-       // Inject Data ke HTML Tempalte PDF
        const orgName = document.getElementById('drw-client-name').innerText;
        document.getElementById('inv-date').innerText = new Date().toLocaleDateString('id-ID');
        document.getElementById('inv-client-name').innerText = orgName;
@@ -457,14 +457,13 @@
        document.getElementById('inv-ppn-amount').innerText = formatIDR(ppnAmount);
        document.getElementById('inv-total').innerText = formatIDR(gross);
        
-       // Render HTML ke PDF
        showLoader(true);
        const element = document.getElementById('invoice-template');
-       element.style.display = 'block'; // Tampilkan sebentar buat dirender
+       element.style.display = 'block'; 
        const opt = { margin: 0, filename: `Invoice_${orgName.replace(/\s+/g, '')}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } };
        
        html2pdf().set(opt).from(element).save().then(() => {
-           element.style.display = 'none'; // Sembunyikan lagi
+           element.style.display = 'none'; 
            showLoader(false);
        });
     }
@@ -478,7 +477,6 @@
         if(!u || !n || !p) return alert("Lengkapi data admin baru!");
         
         showLoader(true);
-        // Validasi Duplikat Manual sebelum Error DB
         const { data: cekExist } = await db.from('admin').select('id').eq('organization_id', orgId).eq('username', u);
         if(cekExist && cekExist.length > 0) {
             showLoader(false);
@@ -491,7 +489,6 @@
         
         if(error) return alert("Gagal tambah admin: " + error.message);
         
-        // Tutup laci lalu buka lagi agar refresh mulus
         const orgRefresh = allOrgs.find(o => o.id === orgId);
         if(orgRefresh) openClientDrawer(orgRefresh);
     }
@@ -506,15 +503,13 @@
         if(orgRefresh) openClientDrawer(orgRefresh);
     }
 
-    // ================= AUDIT LOG FILTERING =================
     async function loadAudit() {
       const orgFilter = document.getElementById('filter-audit-org').value;
       const actorFilter = document.getElementById('filter-audit-actor').value;
       
-      // Query Builder
       let query = db.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(100);
       if(orgFilter) query = query.eq('organization_id', orgFilter);
-      if(actorFilter) query = query.eq('actor_type', actorFilter); // Asumsi actor_type berisi 'superadmin','admin',dll
+      if(actorFilter) query = query.eq('actor_type', actorFilter); 
       
       showLoader(true);
       const { data } = await query;
@@ -551,7 +546,6 @@
       });
     }
 
-    // FORM SUBMIT CLIENT BARU (RPC + INSERT BILLING)
     document.getElementById('form-add-client').onsubmit = async function(e) {
       e.preventDefault();
       showLoader(true);
@@ -560,9 +554,8 @@
       const nominalGross = document.getElementById('reg-nominal').value;
       const ppnPercent = document.getElementById('reg-ppn').value;
 
-      // 1. Panggil RPC Bawaan Supabase
       const { error: errRpc } = await db.rpc('super_admin_create_org', {
-        p_nama: clientCode, // Masukkan ke kolom nama/code di RPC bawaan Anda
+        p_nama: clientCode, 
         p_display_name: document.getElementById('reg-display').value,
         p_alamat: '', p_kontak_wa: document.getElementById('reg-wa').value, 
         p_plan_tier: document.getElementById('reg-plan').value,
@@ -579,7 +572,6 @@
           return alert("Gagal Buat Klien: " + errRpc.message);
       }
 
-      // 2. Karena RPC tidak tahu soal tabel billing, kita cari Klien yg barusan dibuat dan Insert ke Billing
       const { data: newOrg } = await db.from('organizations').select('id').eq('nama', clientCode).order('created_at', {ascending: false}).limit(1).single();
       
       if(newOrg) {
@@ -596,7 +588,6 @@
       loadClients();
     };
 
-    // ================= SISA KODE SUPER ADMIN =================
     async function loadSuperAdmins() {
       const { data } = await db.from('super_admins').select('*');
       const tbody = document.getElementById('sa-tbody');
@@ -625,8 +616,8 @@
       loadSuperAdmins();
     }
 
-    function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
-    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+    function openModal(id) { document.getElementById(id).classList.remove('!hidden'); }
+    function closeModal(id) { document.getElementById(id).classList.add('!hidden'); }
   </script>
 </body>
 </html>
