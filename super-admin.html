@@ -4,13 +4,105 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Super Admin - DanaKita</title>
-  <!-- Tailwind & Supabase -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link rel="stylesheet" href="css/style.css">
   
+  <!-- ALL CSS INLINE - NO EXTERNAL FILE -->
   <style>
-    /* CSS PEMAKSA TABEL */
+    :root {
+      --tk-primary: #00A6ED;
+      --tk-primary-dark: #0089C9;
+      --tk-secondary: #FF6B35;
+      --tk-secondary-dark: #E55A2B;
+      --tk-success: #00B894;
+      --tk-danger: #FF4757;
+      --tk-bg: #F8F9FA;
+      --tk-card: #FFFFFF;
+      --tk-text-primary: #1A1A1A;
+      --tk-text-secondary: #666666;
+      --tk-text-tertiary: #999999;
+      --tk-border: #E6E8EA;
+    }
+    
+    * { box-sizing: border-box; }
+    body { 
+      background-color: var(--tk-bg); 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+      padding-bottom: 80px; 
+      margin: 0;
+    }
+    
+    /* UTILITIES */
+    .hidden { display: none !important; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; animation: fadeIn 0.2s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    
+    /* BUTTONS */
+    .btn-primary {
+      background: linear-gradient(135deg, var(--tk-primary), var(--tk-primary-dark));
+      color: white; font-weight: 700; padding: 14px 20px; border-radius: 12px;
+      border: none; cursor: pointer; transition: 0.2s; font-size: 14px; width: 100%;
+      box-shadow: 0 4px 12px rgba(0, 166, 237, 0.3);
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0, 166, 237, 0.4); }
+    .btn-secondary {
+      background: linear-gradient(135deg, var(--tk-secondary), var(--tk-secondary-dark));
+      color: white; font-weight: 700; padding: 10px 16px; border-radius: 10px;
+      border: none; cursor: pointer; font-size: 13px;
+    }
+    .btn-ghost {
+      background: transparent; color: var(--tk-text-secondary); font-weight: 500;
+      padding: 8px 12px; border-radius: 8px; border: none; cursor: pointer;
+    }
+    
+    /* CARDS */
+    .card {
+      background: white; border-radius: 16px; padding: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid var(--tk-border);
+    }
+    
+    /* INPUTS */
+    .input-field {
+      width: 100%; padding: 10px 14px; border: 1px solid var(--tk-border);
+      border-radius: 8px; font-size: 14px; outline: none;
+    }
+    .input-field:focus { border-color: var(--tk-primary); box-shadow: 0 0 0 2px rgba(0,166,237,0.2); }
+    
+    /* MODALS */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px); z-index: 100;
+      display: flex; align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal-content {
+      background: white; border-radius: 16px; padding: 24px;
+      width: 100%; max-width: 600px; box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+      animation: modalSlide 0.3s ease; max-height: 90vh; overflow-y: auto;
+    }
+    @keyframes modalSlide { from { opacity: 0; transform: translateY(20px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    
+    /* LOADER */
+    .loader {
+      border: 3px solid #f3f3f3; border-top: 3px solid var(--tk-primary);
+      border-radius: 50%; width: 24px; height: 24px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    
+    /* BADGES */
+    .badge {
+      display: inline-block; padding: 4px 10px; border-radius: 20px;
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+    }
+    .badge-starter { background: #e0f2fe; color: #0284c7; }
+    .badge-pro { background: #fef3c7; color: #d97706; }
+    .badge-enterprise { background: #f3e8ff; color: #9333ea; }
+    .badge-active { background: #dcfce7; color: #16a34a; }
+    .badge-inactive { background: #fee2e2; color: #dc2626; }
+    .badge-info { background: rgba(59, 130, 246, 0.12); color: #3b82f6; }
+    
+    /* TABLE - FORCE DISPLAY */
     .force-table {
       display: table !important;
       width: 100% !important;
@@ -21,20 +113,24 @@
       display: table-row !important;
       height: auto !important;
       min-height: 50px !important;
-      background: white !important;
     }
     .force-cell {
       display: table-cell !important;
       padding: 12px !important;
       border-bottom: 1px solid #e2e8f0 !important;
-      color: #1a1a1a !important;
-      font-size: 14px !important;
+      vertical-align: middle !important;
     }
-    /* Sembunyikan loader */
-    #loader.hidden { display: none !important; }
+    
+    /* NAV TABS */
+    .tab-btn {
+      transition: all 0.2s;
+    }
+    .tab-btn.bg-white {
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
   </style>
 </head>
-<body class="bg-slate-50 min-h-screen pb-20">
+<body>
 
   <!-- LOADER -->
   <div id="loader" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center">
@@ -47,12 +143,12 @@
       <h2 class="text-xl font-black text-center mb-6">🔐 Login Super Admin</h2>
       <input type="text" id="sa-email" placeholder="Username / Email" class="input-field mb-3">
       <input type="password" id="sa-pass" placeholder="Password" class="input-field mb-4">
-      <button onclick="handleLogin()" class="btn-primary w-full">Masuk</button>
+      <button onclick="handleLogin()" class="btn-primary">Masuk</button>
     </div>
   </div>
 
   <!-- DASHBOARD -->
-  <div id="dashboard-section" class="hidden min-h-screen">
+  <div id="dashboard-section" class="hidden">
     <header class="bg-white border-b sticky top-0 z-40 shadow-sm">
       <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
         <div class="flex items-center gap-3">
@@ -72,13 +168,11 @@
       </div>
 
       <!-- TAB: KLIEN -->
-      <div id="tab-clients" class="tab-content">
+      <div id="tab-clients" class="tab-content active">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xl font-black text-slate-800">Kelola Klien & Admin</h2>
-          <button onclick="openModal('modal-add-client')" class="btn-secondary text-sm">+ Registrasi Klien</button>
+          <button onclick="openModal('modal-add-client')" class="btn-secondary">+ Registrasi Klien</button>
         </div>
-        
-        <!-- Tabel dengan CSS Pemaksa -->
         <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
           <table class="force-table">
             <thead>
@@ -90,18 +184,16 @@
                 <th class="force-cell text-right">Aksi</th>
               </tr>
             </thead>
-            <tbody id="clients-tbody">
-              <!-- Data akan masuk di sini -->
-            </tbody>
+            <tbody id="clients-tbody"></tbody>
           </table>
         </div>
       </div>
 
       <!-- TAB: SUPER ADMIN -->
-      <div id="tab-superadmins" class="tab-content hidden">
+      <div id="tab-superadmins" class="tab-content">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xl font-black text-slate-800">Manajemen Super Admin</h2>
-          <button onclick="openModal('modal-add-sa')" class="btn-secondary text-sm">+ Tambah Super Admin</button>
+          <button onclick="openModal('modal-add-sa')" class="btn-secondary">+ Tambah Super Admin</button>
         </div>
         <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
           <table class="force-table">
@@ -119,7 +211,7 @@
       </div>
 
       <!-- TAB: AUDIT -->
-      <div id="tab-audit" class="tab-content hidden">
+      <div id="tab-audit" class="tab-content">
         <h2 class="text-xl font-black text-slate-800 mb-4">Audit Log Sistem</h2>
         <div class="bg-white rounded-xl shadow-sm border p-4"><ul id="audit-list" class="space-y-3 text-sm"></ul></div>
       </div>
@@ -128,28 +220,27 @@
 
   <!-- MODAL: ADD CLIENT -->
   <div id="modal-add-client" class="modal-overlay hidden">
-    <div class="modal-content" style="max-width: 600px;">
+    <div class="modal-content">
       <h3 class="text-lg font-black mb-4">🆕 Registrasi Klien Baru</h3>
       <form id="form-add-client" class="space-y-3">
         <div class="grid grid-cols-2 gap-3">
-          <div class="col-span-2"><label class="text-xs font-bold text-slate-600">Nama Organisasi</label><input type="text" id="reg-nama" required class="input-field mt-1"></div>
-          <div class="col-span-2"><label class="text-xs font-bold text-slate-600">Nama Tampil di App</label><input type="text" id="reg-display" required class="input-field mt-1"></div>
-          <div><label class="text-xs font-bold text-slate-600">WA Admin</label><input type="text" id="reg-wa" required class="input-field mt-1" placeholder="628..."></div>
-          <div><label class="text-xs font-bold text-slate-600">URL Logo</label><input type="url" id="reg-logo" class="input-field mt-1"></div>
-          <div><label class="text-xs font-bold text-slate-600">Paket</label><select id="reg-plan" class="input-field mt-1"><option value="starter">Starter</option><option value="pro">Pro</option><option value="enterprise">Enterprise</option></select></div>
-          <div><label class="text-xs font-bold text-slate-600">Berakhir</label><input type="date" id="reg-validity" required class="input-field mt-1"></div>
+          <div class="col-span-2"><label class="text-xs font-bold text-slate-600">Nama Organisasi</label><input type="text" id="reg-nama" required class="input-field"></div>
+          <div class="col-span-2"><label class="text-xs font-bold text-slate-600">Nama Tampil</label><input type="text" id="reg-display" required class="input-field"></div>
+          <div><label class="text-xs font-bold text-slate-600">WA Admin</label><input type="text" id="reg-wa" required class="input-field" placeholder="628..."></div>
+          <div><label class="text-xs font-bold text-slate-600">Paket</label><select id="reg-plan" class="input-field"><option value="starter">Starter</option><option value="pro">Pro</option><option value="enterprise">Enterprise</option></select></div>
+          <div class="col-span-2"><label class="text-xs font-bold text-slate-600">Berakhir</label><input type="date" id="reg-validity" required class="input-field"></div>
         </div>
-        <div class="bg-slate-50 p-3 rounded-lg mt-2">
-          <p class="text-xs font-bold text-slate-700 mb-2">Credential Admin Utama</p>
+        <div class="bg-slate-50 p-3 rounded-lg">
+          <p class="text-xs font-bold text-slate-700 mb-2">Credential Admin</p>
           <div class="grid grid-cols-2 gap-3">
             <div><input type="text" id="reg-admin-user" required placeholder="Username" class="input-field"></div>
             <div><input type="text" id="reg-admin-pass" required placeholder="Password" class="input-field"></div>
-            <div class="col-span-2"><input type="text" id="reg-admin-nama" required placeholder="Nama Lengkap Admin" class="input-field"></div>
+            <div class="col-span-2"><input type="text" id="reg-admin-nama" required placeholder="Nama Admin" class="input-field"></div>
           </div>
         </div>
         <div class="flex gap-3 mt-4">
           <button type="button" onclick="closeModal('modal-add-client')" class="flex-1 py-3 border rounded-xl font-bold text-slate-600">Batal</button>
-          <button type="submit" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700">Simpan</button>
+          <button type="submit" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold">Simpan</button>
         </div>
       </form>
     </div>
@@ -157,79 +248,71 @@
 
   <!-- MODAL: ADD SUPER ADMIN -->
   <div id="modal-add-sa" class="modal-overlay hidden">
-    <div class="modal-content">
+    <div class="modal-content" style="max-width: 400px;">
       <h3 class="text-lg font-black mb-4">👮 Tambah Super Admin</h3>
       <div class="space-y-3">
-        <div><label class="text-xs font-bold text-slate-600">Username / Email</label><input type="text" id="sa-new-user" required class="input-field mt-1"></div>
-        <div><label class="text-xs font-bold text-slate-600">Nama Lengkap</label><input type="text" id="sa-new-nama" required class="input-field mt-1"></div>
-        <div><label class="text-xs font-bold text-slate-600">Password</label><input type="text" id="sa-new-pass" required class="input-field mt-1"></div>
+        <div><label class="text-xs font-bold text-slate-600">Username</label><input type="text" id="sa-new-user" required class="input-field"></div>
+        <div><label class="text-xs font-bold text-slate-600">Nama</label><input type="text" id="sa-new-nama" required class="input-field"></div>
+        <div><label class="text-xs font-bold text-slate-600">Password</label><input type="text" id="sa-new-pass" required class="input-field"></div>
         <div class="flex gap-3 mt-4">
           <button onclick="closeModal('modal-add-sa')" class="flex-1 py-3 border rounded-xl font-bold text-slate-600">Batal</button>
-          <button onclick="addSuperAdmin()" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700">Simpan</button>
+          <button onclick="addSuperAdmin()" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold">Simpan</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- MODAL: PASSWORD RESET RESULT -->
+  <!-- MODAL: PASSWORD RESULT -->
   <div id="modal-pass-result" class="modal-overlay hidden">
-    <div class="modal-content text-center">
+    <div class="modal-content text-center" style="max-width: 400px;">
       <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4"><span class="text-3xl">🔑</span></div>
-      <h3 class="text-xl font-black text-slate-800 mb-2">Password Baru Generated!</h3>
-      <p class="text-sm text-slate-600 mb-4">Simpan password ini baik-baik. Ini hanya muncul sekali.</p>
-      <div class="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 mb-6 select-all">
-        <p class="text-xs text-blue-600 font-bold mb-1 uppercase">Password</p>
-        <p id="display-new-pass" class="text-2xl font-black text-blue-700 font-mono tracking-wider">Loading...</p>
+      <h3 class="text-xl font-black mb-2">Password Baru!</h3>
+      <p class="text-sm text-slate-600 mb-4">Simpan baik-baik. Hanya muncul sekali.</p>
+      <div class="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 mb-6">
+        <p class="text-xs text-blue-600 font-bold mb-1">Password</p>
+        <p id="display-new-pass" class="text-2xl font-black text-blue-700 font-mono"></p>
       </div>
-      <button onclick="copyNewPass()" class="btn-primary w-full mb-2">📋 Copy Password</button>
+      <button onclick="copyNewPass()" class="btn-primary mb-2">📋 Copy</button>
       <button onclick="closeModal('modal-pass-result')" class="btn-ghost w-full">Tutup</button>
     </div>
   </div>
 
   <script>
-    // ==========================================
     // INIT SUPABASE
-    // ==========================================
     window.dk = window.dk || {};
-    if (!window.dk.db) {
-      window.dk.db = window.supabase.createClient(
-        'https://tgcpyatrllswhlysqfer.supabase.co',
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRnY3B5YXRybGxzd2hseXNxZmVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MjI2ODMsImV4cCI6MjA5MTM5ODY4M30.BHY6R2e62YvXz-N_2n_qHossbKxPZxUX0y1lrNKketg'
-      );
-    }
+    window.dk.db = window.supabase.createClient(
+      'https://tgcpyatrllswhlysqfer.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRnY3B5YXRybGxzd2hseXNxZmVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MjI2ODMsImV4cCI6MjA5MTM5ODY4M30.BHY6R2e62YvXz-N_2n_qHossbKxPZxUX0y1lrNKketg'
+    );
     const db = window.dk.db;
     let expandedOrgs = {};
 
-    // ==========================================
-    // LOGIN & SESSION
-    // ==========================================
+    // LOGIN
     async function handleLogin() {
       const u = document.getElementById('sa-email').value;
       const p = document.getElementById('sa-pass').value;
       showLoader(true);
-      
-      const { data, error } = await db.from('super_admins').select('*').eq('username', u).eq('password', p).single();
+      const { data } = await db.from('super_admins').select('*').eq('username', u).eq('password', p).single();
       showLoader(false);
-
-      if (data && !error) {
+      if (data) {
         localStorage.setItem('sa_session', JSON.stringify(data));
         document.getElementById('login-section').classList.add('hidden');
         document.getElementById('dashboard-section').classList.remove('hidden');
         loadClients();
         loadSuperAdmins();
       } else {
-        alert('Login Gagal! Cek username/password.');
+        alert('Login Gagal!');
       }
     }
 
-    async function handleLogout() {
+    function handleLogout() {
       localStorage.removeItem('sa_session');
       location.reload();
     }
 
-    window.addEventListener('DOMContentLoaded', function() {
-      const session = localStorage.getItem('sa_session');
-      if(session) {
+    // CHECK SESSION
+    window.addEventListener('DOMContentLoaded', () => {
+      if(localStorage.getItem('sa_session')) {
         document.getElementById('login-section').classList.add('hidden');
         document.getElementById('dashboard-section').classList.remove('hidden');
         loadClients();
@@ -237,12 +320,10 @@
       }
     });
 
-    // ==========================================
-    // TAB NAVIGATION
-    // ==========================================
+    // TABS
     function showTab(name) {
-      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-      document.getElementById('tab-' + name).classList.remove('hidden');
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.getElementById('tab-' + name).classList.add('active');
       document.querySelectorAll('.tab-btn').forEach(btn => { 
         btn.classList.remove('bg-white', 'shadow'); 
         btn.classList.add('text-slate-500'); 
@@ -252,129 +333,81 @@
       if(name === 'audit') loadAudit();
     }
 
-    // ==========================================
-    // CLIENT MANAGEMENT - FIXED VERSION
-    // ==========================================
+    // LOAD CLIENTS
     async function loadClients() {
       console.log('🔄 Loading clients...');
       const tbody = document.getElementById('clients-tbody');
-      if (!tbody) return;
-
-      const { data, error } = await db.from('organizations').select('*').order('created_at', { ascending: false });
-      
-      if (error) {
-        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-red-500">Error: ${error.message}</td></tr>`;
-        return;
-      }
+      const { data } = await db.from('organizations').select('*').order('created_at', { ascending: false });
       
       if (!data || data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-slate-400">Belum ada klien.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-slate-400">Belum ada klien</td></tr>';
         return;
       }
       
-      // Clear tbody
       tbody.innerHTML = '';
-      
-      // Render row by row
-      data.forEach((org) => {
-        try {
-          const displayName = org.display_name || org.nama || 'Unknown';
-          const clientCode = org.client_code || '-';
-          const planTier = org.plan_tier || 'starter';
-          const isActive = org.is_active === true;
-          
-          // Baris Utama
-          const row = document.createElement('tr');
-          row.className = 'force-row hover:bg-slate-50';
-          
-          row.innerHTML = `
-            <td class="force-cell text-center cursor-pointer" onclick="toggleRow('${org.id}', '${displayName}')">▼</td>
-            <td class="force-cell">
-              <div class="font-bold text-slate-800">${displayName}</div>
-              <div class="text-[10px] text-slate-500 font-mono">${clientCode}</div>
-            </td>
-            <td class="force-cell"><span class="badge badge-${planTier}">${planTier.toUpperCase()}</span></td>
-            <td class="force-cell"><span class="badge ${isActive ? 'badge-active' : 'badge-inactive'}">${isActive ? 'Aktif' : 'Suspend'}</span></td>
-            <td class="force-cell text-right">
-              <button onclick="toggleStatus('${org.id}', ${!isActive})" class="text-xs ${isActive ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'} px-2 py-1 rounded font-bold">
-                ${isActive ? 'Suspend' : 'Activate'}
-              </button>
-            </td>
-          `;
-          
-          // Baris Expandable (Hidden by default)
-          const expandRow = document.createElement('tr');
-          expandRow.id = `row-${org.id}`;
-          expandRow.className = 'force-row bg-slate-50 border-b-4 border-slate-200';
-          expandRow.style.display = 'none';
-          expandRow.innerHTML = `<td colspan="5" class="p-4"><div id="admin-panel-${org.id}">Loading...</div></td>`;
-          
-          tbody.appendChild(row);
-          tbody.appendChild(expandRow);
-          
-        } catch (e) {
-          console.error('Error rendering row:', e);
-        }
+      data.forEach(org => {
+        const displayName = org.display_name || org.nama || 'Unknown';
+        const isActive = org.is_active === true;
+        
+        const row = document.createElement('tr');
+        row.className = 'force-row hover:bg-slate-50';
+        row.innerHTML = `
+          <td class="force-cell text-center cursor-pointer" onclick="toggleRow('${org.id}', '${displayName}')">▼</td>
+          <td class="force-cell"><div class="font-bold">${displayName}</div><div class="text-xs text-slate-500 font-mono">${org.client_code || '-'}</div></td>
+          <td class="force-cell"><span class="badge badge-${org.plan_tier || 'starter'}">${(org.plan_tier || 'starter').toUpperCase()}</span></td>
+          <td class="force-cell"><span class="badge ${isActive ? 'badge-active' : 'badge-inactive'}">${isActive ? 'Aktif' : 'Suspend'}</span></td>
+          <td class="force-cell text-right"><button onclick="toggleStatus('${org.id}', ${!isActive})" class="text-xs ${isActive ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'} px-2 py-1 rounded font-bold">${isActive ? 'Suspend' : 'Activate'}</button></td>
+        `;
+        
+        const expandRow = document.createElement('tr');
+        expandRow.id = `row-${org.id}`;
+        expandRow.className = 'force-row bg-slate-50';
+        expandRow.style.display = 'none';
+        expandRow.innerHTML = `<td colspan="5" class="p-4"><div id="admin-panel-${org.id}">Loading...</div></td>`;
+        
+        tbody.appendChild(row);
+        tbody.appendChild(expandRow);
       });
-      console.log('✅ Table rendering complete.');
+      console.log('✅ Table rendered:', data.length, 'rows');
     }
 
     async function toggleRow(orgId, orgName) {
       const row = document.getElementById(`row-${orgId}`);
       if (!row) return;
       
-      const isHidden = row.style.display === 'none';
+      document.querySelectorAll('.force-row[id^="row-"]').forEach(r => r.style.display = 'none');
       
-      // Close all other rows
-      document.querySelectorAll('.row-expand, .force-row[id^="row-"]').forEach(r => r.style.display = 'none');
-      
-      if (isHidden) {
+      if (row.style.display === 'none') {
         row.style.display = 'table-row';
-        loadAdminPanel(orgId, orgName);
+        if (!expandedOrgs[orgId]) {
+          const { data } = await db.from('admin').select('*').eq('organization_id', orgId);
+          expandedOrgs[orgId] = data || [];
+        }
+        renderAdminPanel(orgId, orgName, expandedOrgs[orgId]);
       }
-    }
-
-    async function loadAdminPanel(orgId, orgName) {
-      const panel = document.getElementById(`admin-panel-${orgId}`);
-      if (!panel) return;
-      
-      if (!expandedOrgs[orgId]) {
-        const { data } = await db.from('admin').select('id, username, nama_admin, role, is_active').eq('organization_id', orgId);
-        expandedOrgs[orgId] = data || [];
-      }
-      
-      renderAdminPanel(orgId, orgName, expandedOrgs[orgId]);
     }
 
     function renderAdminPanel(orgId, orgName, admins) {
       const panel = document.getElementById(`admin-panel-${orgId}`);
-      if (!panel) return;
+      const active = admins.filter(a => a.is_active);
       
-      const activeAdmins = admins.filter(a => a.is_active);
-      let html = `<div class="bg-white p-4 rounded border"><h4 class="font-bold mb-2">Admin: ${orgName}</h4>`;
-      
-      if (activeAdmins.length === 0) {
-        html += '<p class="text-slate-400">Tidak ada admin.</p>';
+      let html = `<div class="bg-white p-4 rounded border"><h4 class="font-bold mb-2">Admin: ${orgName} (${active.length})</h4>`;
+      if (active.length === 0) {
+        html += '<p class="text-slate-400">Tidak ada admin</p>';
       } else {
-        html += '<table class="w-full"><tbody>';
-        activeAdmins.forEach(admin => {
-          html += `
-            <tr class="border-b">
-              <td class="p-2 font-bold">${admin.username}</td>
-              <td class="p-2">${admin.nama_admin}</td>
-              <td class="p-2 text-right"><button onclick="resetAdminPass('${orgId}', '${admin.id}')" class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">Reset Pass</button></td>
-            </tr>`;
+        html += '<table class="w-full">';
+        active.forEach(a => {
+          html += `<tr class="border-b"><td class="p-2 font-bold">${a.username}</td><td class="p-2">${a.nama_admin}</td><td class="p-2 text-right"><button onclick="resetAdminPass('${orgId}', '${a.id}')" class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">Reset</button></td></tr>`;
         });
-        html += '</tbody></table>';
+        html += '</table>';
       }
       html += '</div>';
       panel.innerHTML = html;
     }
 
-    async function deleteClientAdmin(orgId, adminId) {
-      if (!confirm('Hapus admin?')) return;
-      await db.from('admin').update({ is_active: false }).eq('id', adminId);
-      loadAdminPanel(orgId, '...');
+    async function toggleStatus(id, status) {
+      await db.from('organizations').update({ is_active: status }).eq('id', id);
+      loadClients();
     }
 
     async function resetAdminPass(orgId, adminId) {
@@ -383,20 +416,12 @@
       const { data } = await db.rpc('hash_password', { raw_pass: pass });
       await db.from('admin').update({ password_hash: data }).eq('id', adminId);
       showLoader(false);
-      
       document.getElementById('display-new-pass').innerText = pass;
       document.getElementById('modal-pass-result').classList.remove('hidden');
       window.copyNewPass = () => navigator.clipboard.writeText(pass).then(() => alert('Copied!'));
     }
 
-    async function toggleStatus(id, status) {
-      await db.from('organizations').update({ is_active: status }).eq('id', id);
-      loadClients();
-    }
-
-    // ==========================================
-    // SUPER ADMIN MANAGEMENT
-    // ==========================================
+    // LOAD SUPER ADMINS
     async function loadSuperAdmins() {
       const { data } = await db.from('super_admins').select('*');
       const tbody = document.getElementById('sa-tbody');
@@ -418,54 +443,21 @@
       const u = document.getElementById('sa-new-user').value;
       const n = document.getElementById('sa-new-nama').value;
       const p = document.getElementById('sa-new-pass').value;
-      if(!u || !n || !p) return alert('Lengkapi field!');
+      if(!u || !n || !p) return alert('Lengkapi semua!');
       showLoader(true);
-      const { error } = await db.rpc('super_admin_add_super_admin', { p_username: u, p_nama: n, p_plain_pass: p });
+      await db.rpc('super_admin_add_super_admin', { p_username: u, p_nama: n, p_plain_pass: p });
       showLoader(false);
-      if(error) alert('Gagal: ' + error.message);
-      else {
-        closeModal('modal-add-sa');
-        loadSuperAdmins();
-      }
+      closeModal('modal-add-sa');
+      loadSuperAdmins();
     }
 
     async function deleteSuperAdmin(id) {
-      if(!confirm('Hapus Super Admin?')) return;
+      if(!confirm('Hapus?')) return;
       await db.from('super_admins').delete().eq('id', id);
       loadSuperAdmins();
     }
 
-    // ==========================================
-    // UTILS
-    // ==========================================
-    function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
-    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-    function showLoader(show) { document.getElementById('loader').classList.toggle('hidden', !show); }
-
-    document.getElementById('form-add-client').onsubmit = async function(e) {
-      e.preventDefault();
-      showLoader(true);
-      const res = await db.rpc('super_admin_create_org', {
-        p_nama: document.getElementById('reg-nama').value, 
-        p_display_name: document.getElementById('reg-display').value,
-        p_alamat: '', p_kontak_wa: document.getElementById('reg-wa').value, 
-        p_plan_tier: document.getElementById('reg-plan').value,
-        p_validity_start: new Date().toISOString(), 
-        p_validity_end: document.getElementById('reg-validity').value,
-        p_admin_username: document.getElementById('reg-admin-user').value, 
-        p_admin_nama: document.getElementById('reg-admin-nama').value,
-        p_admin_password: document.getElementById('reg-admin-pass').value, 
-        p_logo_url: document.getElementById('reg-logo').value || null
-      });
-      showLoader(false);
-      if(res.error) alert('Gagal: ' + res.error.message);
-      else {
-        alert('Berhasil!');
-        closeModal('modal-add-client');
-        loadClients();
-      }
-    };
-
+    // AUDIT LOG
     async function loadAudit() {
       const { data } = await db.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(50);
       const list = document.getElementById('audit-list');
@@ -477,6 +469,33 @@
         list.appendChild(li);
       });
     }
+
+    // UTILS
+    function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+    function showLoader(show) { document.getElementById('loader').classList.toggle('hidden', !show); }
+
+    // FORM SUBMIT
+    document.getElementById('form-add-client').onsubmit = async function(e) {
+      e.preventDefault();
+      showLoader(true);
+      await db.rpc('super_admin_create_org', {
+        p_nama: document.getElementById('reg-nama').value, 
+        p_display_name: document.getElementById('reg-display').value,
+        p_alamat: '', p_kontak_wa: document.getElementById('reg-wa').value, 
+        p_plan_tier: document.getElementById('reg-plan').value,
+        p_validity_start: new Date().toISOString(), 
+        p_validity_end: document.getElementById('reg-validity').value,
+        p_admin_username: document.getElementById('reg-admin-user').value, 
+        p_admin_nama: document.getElementById('reg-admin-nama').value,
+        p_admin_password: document.getElementById('reg-admin-pass').value, 
+        p_logo_url: null
+      });
+      showLoader(false);
+      alert('Berhasil!');
+      closeModal('modal-add-client');
+      loadClients();
+    };
   </script>
 </body>
 </html>
