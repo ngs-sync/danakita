@@ -62,7 +62,9 @@
                 <th class="px-4 py-3 text-right">Aksi</th>
               </tr>
             </thead>
-            <tbody id="clients-tbody" class="divide-y"></tbody>
+            <tbody id="clients-tbody" class="divide-y">
+              <!-- Data will be loaded here -->
+            </tbody>
           </table>
         </div>
       </div>
@@ -158,7 +160,7 @@
 
   <script>
     // ==========================================
-    // INIT SUPABASE & GLOBAL VARS
+    // INIT SUPABASE
     // ==========================================
     window.dk = window.dk || {};
     if (!window.dk.db) {
@@ -207,8 +209,6 @@
         document.getElementById('dashboard-section').classList.remove('hidden');
         loadClients();
         loadSuperAdmins();
-      } else {
-        console.log('❌ No session found');
       }
     });
 
@@ -228,28 +228,233 @@
     }
 
     // ==========================================
+    // CLIENT MANAGEMENT - FIXED VERSION
+    // ==========================================
+    async function loadClients() {
+      console.log('🔄 Loading clients...');
+      const tbody = document.getElementById('clients-tbody');
+      
+      if (!tbody) {
+        console.error('❌ Element clients-tbody tidak ditemukan!');
+        return;
+      }
+
+      const { data, error } = await db.from('organizations').select('*').order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('❌ Error loading clients:', error);
+        tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-red-500">Error: ' + error.message + '</td></tr>';
+        return;
+      }
+      
+      console.log('✅ Clients loaded:', data);
+      
+      if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-slate-400">Belum ada klien. Klik "+ Registrasi Klien" untuk menambah.</td></tr>';
+        return;
+      }
+      
+      // Clear tbody first
+      tbody.innerHTML = '';
+      
+      // Render row by row using forEach (lebih aman)
+      data.forEach((org, index) => {
+        try {
+          const displayName = org.display_name || org.nama || 'Unknown';
+          const clientCode = org.client_code || '-';
+          const planTier = org.plan_tier || 'starter';
+          const isActive = org.is_active === true;
+          
+          const row = document.createElement('tr');
+          row.className = 'hover:bg-slate-50 border-b';
+          
+          row.innerHTML = `
+            <td class="px-2 py-3 text-center cursor-pointer text-slate-400" onclick="toggleRow('${org.id}', '${displayName}')">▼</td>
+            <td class="px-4 py-3">
+              <div class="font-bold text-slate-800">${displayName}</div>
+              <div class="text-[10px] text-slate-500 font-mono">${clientCode}</div>
+            </td>
+            <td class="px-4 py-3"><span class="badge badge-${planTier}">${planTier.toUpperCase()}</span></td>
+            <td class="px-4 py-3"><span class="badge ${isActive ? 'badge-active' : 'badge-inactive'}">${isActive ? 'Aktif' : 'Suspend'}</span></td>
+            <td class="px-4 py-3 text-right">
+              <button onclick="toggleStatus('${org.id}', ${!isActive})" class="text-xs ${isActive ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'} px-2 py-1 rounded font-bold">
+                ${isActive ? 'Suspend' : 'Activate'}
+              </button>
+            </td>
+          `;
+          
+          // Expandable row
+          const expandRow = document.createElement('tr');
+          expandRow.id = `row-${org.id}`;
+          expandRow.className = 'row-expand bg-slate-50 border-b-4 border-slate-200';
+          expandRow.style.display = 'none';
+          expandRow.innerHTML = `
+            <td colspan="5" class="p-4">
+              <div id="admin-panel-${org.id}">Klik ▼ untuk lihat admin</div>
+            </td>
+          `;
+          
+          tbody.appendChild(row);
+          tbody.appendChild(expandRow);
+          
+          console.log(`✅ Row ${index + 1} rendered: ${displayName}`);
+          
+        } catch (e) {
+          console.error('❌ Error rendering org:', org, e);
+        }
+      });
+      
+      console.log('✅ Table rendering complete. Total rows:', data.length);
+    }
+
+    async function toggleRow(orgId, orgName) {
+      console.log('🔄 Toggling row for org:', orgId);
+      const row = document.getElementById(`row-${orgId}`);
+      
+      if (!row) {
+        console.error('❌ Row not found:', orgId);
+        return;
+      }
+      
+      const isHidden = row.style.display === 'none' || !row.style.display;
+      
+      // Close all other rows
+      document.querySelectorAll('.row-expand').forEach(r => r.style.display = 'none');
+      
+      if (isHidden) {
+        row.style.display = 'table-row';
+        loadAdminPanel(orgId, orgName);
+      }
+    }
+
+    async function loadAdminPanel(orgId, orgName) {
+      const panel = document.getElementById(`admin-panel-${orgId}`);
+      
+      if (!panel) return;
+      
+      console.log('📡 Fetching admins for org:', orgId);
+      
+      if (!expandedOrgs[orgId]) {
+        const { data } = await db.from('admin').select('id, username, nama_admin, role, is_active').eq('organization_id', orgId);
+        expandedOrgs[orgId] = data || [];
+      }
+      
+      renderAdminPanel(orgId, orgName, expandedOrgs[orgId]);
+    }
+
+    function renderAdminPanel(orgId, orgName, admins) {
+      const panel = document.getElementById(`admin-panel-${orgId}`);
+      if (!panel) return;
+      
+      const activeAdmins = admins.filter(a => a.is_active);
+      
+      let html = `
+        <div class="bg-white rounded-lg border shadow-sm p-4">
+          <div class="flex justify-between items-center mb-3">
+            <h4 class="font-bold text-slate-700">👥 Admin: ${orgName} (${activeAdmins.length} aktif)</h4>
+            <button onclick="alert('Fitur tambah admin coming soon')" class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold">+ Tambah Admin</button>
+          </div>
+      `;
+      
+      if (activeAdmins.length === 0) {
+        html += '<p class="text-center text-slate-400 py-4">Belum ada admin aktif</p>';
+      } else {
+        html += `
+          <table class="w-full nested-table">
+            <thead><tr><th class="text-left text-xs font-bold text-slate-600 uppercase">Username</th><th class="text-left text-xs font-bold text-slate-600 uppercase">Nama</th><th class="text-xs font-bold text-slate-600 uppercase">Role</th><th class="text-xs font-bold text-slate-600 uppercase">Password</th><th class="text-right text-xs font-bold text-slate-600 uppercase">Aksi</th></tr></thead>
+            <tbody>
+        `;
+        
+        activeAdmins.forEach(admin => {
+          html += `
+            <tr class="bg-white border-b">
+              <td class="p-2 font-bold text-sm">${admin.username}</td>
+              <td class="p-2 text-sm">${admin.nama_admin}</td>
+              <td class="p-2"><span class="badge badge-info text-[10px]">${admin.role || 'Admin'}</span></td>
+              <td class="p-2 text-center">
+                <span class="text-slate-400 text-xs italic mr-2">••••••</span>
+                <button onclick="resetAdminPass('${orgId}', '${admin.id}', '${admin.username}')" class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded font-bold">🔑 Reset</button>
+              </td>
+              <td class="p-2 text-right">
+                <button onclick="deleteClientAdmin('${orgId}', '${admin.id}')" class="text-red-600 text-xs font-bold hover:underline">Hapus</button>
+              </td>
+            </tr>
+          `;
+        });
+        
+        html += '</tbody></table>';
+      }
+      
+      html += '</div>';
+      panel.innerHTML = html;
+    }
+
+    async function deleteClientAdmin(orgId, adminId) {
+      if (!expandedOrgs[orgId]) return;
+      
+      const activeCount = expandedOrgs[orgId].filter(a => a.is_active).length;
+      if (activeCount <= 1) return alert('❌ Tidak bisa menghapus admin terakhir!');
+      if (!confirm('Hapus admin ini? (Soft delete)')) return;
+
+      await db.from('admin').update({ is_active: false }).eq('id', adminId);
+      await loadAdminPanel(orgId, '...');
+    }
+
+    async function resetAdminPass(orgId, adminId, username) {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#';
+      let pass = '';
+      for(let i=0; i<10; i++) pass += chars.charAt(Math.floor(Math.random() * chars.length));
+
+      showLoader(true);
+      const { data } = await db.rpc('hash_password', { raw_pass: pass });
+      await db.from('admin').update({ password_hash: data }).eq('id', adminId);
+      showLoader(false);
+
+      document.getElementById('display-new-pass').innerText = pass;
+      document.getElementById('modal-pass-result').classList.remove('hidden');
+      
+      window.copyNewPass = () => {
+        navigator.clipboard.writeText(pass).then(() => alert('Password copied!'));
+      };
+    }
+
+    async function toggleStatus(id, status) {
+      showLoader(true);
+      await db.from('organizations').update({ is_active: status }).eq('id', id);
+      showLoader(false);
+      loadClients();
+    }
+
+    // ==========================================
     // SUPER ADMIN MANAGEMENT
     // ==========================================
     async function loadSuperAdmins() {
       console.log('🔄 Loading super admins...');
       const { data, error } = await db.from('super_admins').select('*');
       
-      if(error) {
-        console.error('❌ Error loading super admins:', error);
+      if (error) {
+        console.error('❌ Error:', error);
         return;
       }
       
-      console.log('✅ Super admins loaded:', data);
-      document.getElementById('sa-tbody').innerHTML = data.map(sa => `
-        <tr class="hover:bg-slate-50">
+      console.log('✅ Super admins:', data);
+      
+      const tbody = document.getElementById('sa-tbody');
+      tbody.innerHTML = '';
+      
+      data.forEach(sa => {
+        const row = document.createElement('tr');
+        row.className = 'hover:bg-slate-50 border-b';
+        row.innerHTML = `
           <td class="px-4 py-3 font-bold">${sa.username}</td>
           <td class="px-4 py-3">${sa.nama}</td>
-          <td class="px-4 py-3 font-mono text-blue-600 font-bold">${sa.password}</td>
+          <td class="px-4 py-3 font-mono text-blue-600 font-bold text-sm">${sa.password}</td>
           <td class="px-4 py-3 text-right">
             <button onclick="deleteSuperAdmin('${sa.id}')" class="text-red-600 hover:text-red-800 text-xs font-bold">Hapus</button>
           </td>
-        </tr>
-      `).join('');
+        `;
+        tbody.appendChild(row);
+      });
     }
 
     async function addSuperAdmin() {
@@ -279,138 +484,24 @@
     }
 
     // ==========================================
-    // CLIENT MANAGEMENT
-    // ==========================================
-    async function loadClients() {
-      console.log('🔄 Loading clients...');
-      const { data, error } = await db.from('organizations').select('*').order('created_at', { ascending: false });
-      
-      if(error) {
-        console.error('❌ Error loading clients:', error);
-        return;
-      }
-      
-      console.log('✅ Clients loaded:', data);
-      
-      if(!data || data.length === 0) {
-        document.getElementById('clients-tbody').innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-slate-400">Belum ada klien. Klik "+ Registrasi Klien" untuk menambah.</td></tr>';
-        return;
-      }
-      
-      document.getElementById('clients-tbody').innerHTML = data.map(org => `
-        <tr class="hover:bg-slate-50">
-          <td class="px-2 py-3 text-center cursor-pointer text-slate-400" onclick="toggleRow('${org.id}', '${org.display_name}')">▼</td>
-          <td class="px-4 py-3"><div class="font-bold text-slate-800">${org.display_name}</div><div class="text-[10px] text-slate-500 font-mono">${org.client_code}</div></td>
-          <td class="px-4 py-3"><span class="badge badge-${org.plan_tier}">${org.plan_tier.toUpperCase()}</span></td>
-          <td class="px-4 py-3"><span class="badge ${org.is_active ? 'badge-active' : 'badge-inactive'}">${org.is_active ? 'Aktif' : 'Suspend'}</span></td>
-          <td class="px-4 py-3 text-right">
-            <button onclick="toggleStatus('${org.id}', ${!org.is_active})" class="text-xs ${org.is_active ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'} px-2 py-1 rounded">${org.is_active ? 'Suspend' : 'Activate'}</button>
-          </td>
-        </tr>
-        <tr id="row-${org.id}" class="row-expand bg-slate-50 border-b-4 border-slate-200">
-          <td colspan="5" class="p-4">
-            <div id="admin-panel-${org.id}">Loading admins...</div>
-          </td>
-        </tr>
-      `).join('');
-    }
-
-    async function toggleRow(orgId, orgName) {
-      console.log('🔄 Toggling row for org:', orgId);
-      const row = document.getElementById(`row-${orgId}`);
-      const isHidden = row.style.display === 'none' || !row.style.display;
-      
-      // Close all rows
-      document.querySelectorAll('.row-expand').forEach(r => r.style.display = 'none');
-      
-      if(isHidden) {
-        row.style.display = 'table-row';
-        if(!expandedOrgs[orgId]) {
-          console.log('📡 Fetching admins for org:', orgId);
-          const { data } = await db.from('admin').select('id, username, nama_admin, role, is_active').eq('organization_id', orgId);
-          expandedOrgs[orgId] = data || [];
-          console.log('✅ Admins loaded:', expandedOrgs[orgId]);
-          renderAdminPanel(orgId, orgName, expandedOrgs[orgId]);
-        } else {
-          console.log('💾 Using cached admins:', expandedOrgs[orgId]);
-          renderAdminPanel(orgId, orgName, expandedOrgs[orgId]);
-        }
-      }
-    }
-
-    function renderAdminPanel(orgId, orgName, admins) {
-      const panel = document.getElementById(`admin-panel-${orgId}`);
-      
-      let adminRows = admins.filter(a => a.is_active).map(a => `
-        <tr class="bg-white border-b">
-          <td class="p-2 font-bold text-sm">${a.username}</td>
-          <td class="p-2 text-sm">${a.nama_admin}</td>
-          <td class="p-2"><span class="badge badge-info text-[10px]">${a.role}</span></td>
-          <td class="p-2 text-center">
-            <span class="text-slate-400 text-xs italic mr-2">••••••</span>
-            <button onclick="resetAdminPass('${orgId}', '${a.id}', '${a.username}')" class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded font-bold">🔑 Reset</button>
-          </td>
-          <td class="p-2 text-right">
-            <button onclick="deleteClientAdmin('${orgId}', '${a.id}')" class="text-red-600 text-xs font-bold hover:underline">Hapus</button>
-          </td>
-        </tr>
-      `).join('');
-
-      panel.innerHTML = `
-        <div class="bg-white rounded-lg border shadow-sm p-4">
-          <div class="flex justify-between items-center mb-3">
-            <h4 class="font-bold text-slate-700">👥 Admin: ${orgName}</h4>
-            <button onclick="openModal('modal-add-admin')" class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold">+ Tambah Admin</button>
-          </div>
-          ${admins.filter(a=>!a.is_active).length > 0 ? '<p class="text-[10px] text-slate-400 mb-2">(' + admins.filter(a=>!a.is_active).length + ' admin nonaktif)</p>' : ''}
-          <table class="w-full nested-table">
-            <thead><tr><th class="text-left">Username</th><th class="text-left">Nama</th><th>Role</th><th>Password</th><th class="text-right">Aksi</th></tr></thead>
-            <tbody>${adminRows || '<tr><td colspan="5" class="p-4 text-center text-slate-400">Belum ada admin aktif.</td></tr>'}</tbody>
-          </table>
-        </div>
-      `;
-    }
-
-    async function deleteClientAdmin(orgId, adminId) {
-      const activeCount = expandedOrgs[orgId].filter(a => a.is_active).length;
-      if(activeCount <= 1) return alert('❌ Tidak bisa menghapus admin terakhir!');
-      if(!confirm('Hapus admin ini? (Soft delete)')) return;
-
-      await db.from('admin').update({ is_active: false }).eq('id', adminId);
-      const { data } = await db.from('admin').select('id, username, nama_admin, role, is_active').eq('organization_id', orgId);
-      expandedOrgs[orgId] = data;
-      renderAdminPanel(orgId, '...', expandedOrgs[orgId]);
-    }
-
-    async function resetAdminPass(orgId, adminId, username) {
-      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#';
-      let pass = '';
-      for(let i=0; i<10; i++) pass += chars.charAt(Math.floor(Math.random() * chars.length));
-
-      showLoader(true);
-      const hash = await db.rpc('hash_password', { raw_pass: pass });
-      await db.from('admin').update({ password_hash: hash }).eq('id', adminId);
-      showLoader(false);
-
-      document.getElementById('display-new-pass').innerText = pass;
-      document.getElementById('modal-pass-result').classList.remove('hidden');
-      
-      window.copyNewPass = () => {
-        navigator.clipboard.writeText(pass).then(() => alert('Password copied!'));
-      };
-    }
-
-    // ==========================================
     // UTILS & MODALS
     // ==========================================
-    function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
-    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-    function showLoader(show) { document.getElementById('loader').classList.toggle('hidden', !show); }
+    function openModal(id) { 
+      console.log('Opening modal:', id);
+      document.getElementById(id).classList.remove('hidden'); 
+    }
+    function closeModal(id) { 
+      document.getElementById(id).classList.add('hidden'); 
+    }
+    function showLoader(show) { 
+      document.getElementById('loader').classList.toggle('hidden', !show); 
+    }
 
     // Add Client Form Submit
     document.getElementById('form-add-client').onsubmit = async function(e) {
       e.preventDefault();
       showLoader(true);
+      
       const res = await db.rpc('super_admin_create_org', {
         p_nama: document.getElementById('reg-nama').value, 
         p_display_name: document.getElementById('reg-display').value,
@@ -424,26 +515,39 @@
         p_admin_password: document.getElementById('reg-admin-pass').value, 
         p_logo_url: document.getElementById('reg-logo').value || null
       });
+      
       showLoader(false);
-      if(res.error) alert('Gagal: ' + res.error.message);
-      else {
-        alert('Klien berhasil dibuat!');
+      
+      if(res.error) {
+        alert('Gagal: ' + res.error.message);
+      } else {
+        alert('✅ Klien berhasil dibuat!');
         closeModal('modal-add-client');
         loadClients();
+        // Reset form
+        document.getElementById('form-add-client').reset();
       }
     };
-    
-    function toggleStatus(id, status) {
-      db.from('organizations').update({ is_active: status }).eq('id', id).then(() => loadClients());
-    }
 
+    // Audit Log
     async function loadAudit() {
       const { data } = await db.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(50);
-      document.getElementById('audit-list').innerHTML = data.map(log => `
-        <li class="bg-slate-50 p-3 rounded-lg border-l-4 ${log.action.includes('CREATE') ? 'border-green-500' : 'border-blue-500'}">
-          <div class="flex justify-between text-xs text-slate-500 mb-1"><span>${new Date(log.created_at).toLocaleString('id-ID')}</span><span class="font-bold">${log.actor_name}</span></div>
-          <p class="font-bold text-slate-700 text-sm">${log.action}</p><p class="text-xs text-slate-500">Tabel: ${log.table_name}</p>
-        </li>`).join('');
+      const list = document.getElementById('audit-list');
+      list.innerHTML = '';
+      
+      if (data && data.length > 0) {
+        data.forEach(log => {
+          const li = document.createElement('li');
+          li.className = 'bg-slate-50 p-3 rounded-lg border-l-4 ' + (log.action.includes('CREATE') ? 'border-green-500' : 'border-blue-500');
+          li.innerHTML = `
+            <div class="flex justify-between text-xs text-slate-500 mb-1"><span>${new Date(log.created_at).toLocaleString('id-ID')}</span><span class="font-bold">${log.actor_name}</span></div>
+            <p class="font-bold text-slate-700 text-sm">${log.action}</p><p class="text-xs text-slate-500">Tabel: ${log.table_name}</p>
+          `;
+          list.appendChild(li);
+        });
+      } else {
+        list.innerHTML = '<p class="text-center text-slate-400 py-4">Belum ada audit log</p>';
+      }
     }
   </script>
 </body>
