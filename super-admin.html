@@ -4,9 +4,35 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Super Admin - DanaKita</title>
+  <!-- Tailwind & Supabase -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="css/style.css">
+  
+  <style>
+    /* CSS PEMAKSA TABEL */
+    .force-table {
+      display: table !important;
+      width: 100% !important;
+      border-collapse: collapse !important;
+      background: white !important;
+    }
+    .force-row {
+      display: table-row !important;
+      height: auto !important;
+      min-height: 50px !important;
+      background: white !important;
+    }
+    .force-cell {
+      display: table-cell !important;
+      padding: 12px !important;
+      border-bottom: 1px solid #e2e8f0 !important;
+      color: #1a1a1a !important;
+      font-size: 14px !important;
+    }
+    /* Sembunyikan loader */
+    #loader.hidden { display: none !important; }
+  </style>
 </head>
 <body class="bg-slate-50 min-h-screen pb-20">
 
@@ -51,19 +77,21 @@
           <h2 class="text-xl font-black text-slate-800">Kelola Klien & Admin</h2>
           <button onclick="openModal('modal-add-client')" class="btn-secondary text-sm">+ Registrasi Klien</button>
         </div>
+        
+        <!-- Tabel dengan CSS Pemaksa -->
         <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
-          <table class="w-full text-sm text-left">
-            <thead class="bg-slate-50 text-slate-600 font-bold uppercase text-xs">
-              <tr>
-                <th class="px-4 py-3 w-8"></th>
-                <th class="px-4 py-3">Klien</th>
-                <th class="px-4 py-3">Plan</th>
-                <th class="px-4 py-3">Status</th>
-                <th class="px-4 py-3 text-right">Aksi</th>
+          <table class="force-table">
+            <thead>
+              <tr class="bg-slate-50 border-b">
+                <th class="force-cell w-8 text-center">▼</th>
+                <th class="force-cell text-left">Klien</th>
+                <th class="force-cell text-left">Plan</th>
+                <th class="force-cell text-left">Status</th>
+                <th class="force-cell text-right">Aksi</th>
               </tr>
             </thead>
-            <tbody id="clients-tbody" class="divide-y">
-              <!-- Data will be loaded here -->
+            <tbody id="clients-tbody">
+              <!-- Data akan masuk di sini -->
             </tbody>
           </table>
         </div>
@@ -76,16 +104,16 @@
           <button onclick="openModal('modal-add-sa')" class="btn-secondary text-sm">+ Tambah Super Admin</button>
         </div>
         <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
-          <table class="w-full text-sm text-left">
-            <thead class="bg-slate-50 text-slate-600 font-bold uppercase text-xs">
-              <tr>
-                <th class="px-4 py-3">Username</th>
-                <th class="px-4 py-3">Nama</th>
-                <th class="px-4 py-3">Password</th>
-                <th class="px-4 py-3 text-right">Aksi</th>
+          <table class="force-table">
+            <thead>
+              <tr class="bg-slate-50 border-b">
+                <th class="force-cell text-left">Username</th>
+                <th class="force-cell text-left">Nama</th>
+                <th class="force-cell text-left">Password</th>
+                <th class="force-cell text-right">Aksi</th>
               </tr>
             </thead>
-            <tbody id="sa-tbody" class="divide-y"></tbody>
+            <tbody id="sa-tbody"></tbody>
           </table>
         </div>
       </div>
@@ -199,12 +227,9 @@
       location.reload();
     }
 
-    // Check Session on Page Load
     window.addEventListener('DOMContentLoaded', function() {
-      console.log('🔍 Checking session...');
       const session = localStorage.getItem('sa_session');
       if(session) {
-        console.log('✅ Session found');
         document.getElementById('login-section').classList.add('hidden');
         document.getElementById('dashboard-section').classList.remove('hidden');
         loadClients();
@@ -233,93 +258,75 @@
     async function loadClients() {
       console.log('🔄 Loading clients...');
       const tbody = document.getElementById('clients-tbody');
-      
-      if (!tbody) {
-        console.error('❌ Element clients-tbody tidak ditemukan!');
-        return;
-      }
+      if (!tbody) return;
 
       const { data, error } = await db.from('organizations').select('*').order('created_at', { ascending: false });
       
       if (error) {
-        console.error('❌ Error loading clients:', error);
-        tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-red-500">Error: ' + error.message + '</td></tr>';
+        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-red-500">Error: ${error.message}</td></tr>`;
         return;
       }
-      
-      console.log('✅ Clients loaded:', data);
       
       if (!data || data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-slate-400">Belum ada klien. Klik "+ Registrasi Klien" untuk menambah.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-slate-400">Belum ada klien.</td></tr>';
         return;
       }
       
-      // Clear tbody first
+      // Clear tbody
       tbody.innerHTML = '';
       
-      // Render row by row using forEach (lebih aman)
-      data.forEach((org, index) => {
+      // Render row by row
+      data.forEach((org) => {
         try {
           const displayName = org.display_name || org.nama || 'Unknown';
           const clientCode = org.client_code || '-';
           const planTier = org.plan_tier || 'starter';
           const isActive = org.is_active === true;
           
+          // Baris Utama
           const row = document.createElement('tr');
-          row.className = 'hover:bg-slate-50 border-b';
+          row.className = 'force-row hover:bg-slate-50';
           
           row.innerHTML = `
-            <td class="px-2 py-3 text-center cursor-pointer text-slate-400" onclick="toggleRow('${org.id}', '${displayName}')">▼</td>
-            <td class="px-4 py-3">
+            <td class="force-cell text-center cursor-pointer" onclick="toggleRow('${org.id}', '${displayName}')">▼</td>
+            <td class="force-cell">
               <div class="font-bold text-slate-800">${displayName}</div>
               <div class="text-[10px] text-slate-500 font-mono">${clientCode}</div>
             </td>
-            <td class="px-4 py-3"><span class="badge badge-${planTier}">${planTier.toUpperCase()}</span></td>
-            <td class="px-4 py-3"><span class="badge ${isActive ? 'badge-active' : 'badge-inactive'}">${isActive ? 'Aktif' : 'Suspend'}</span></td>
-            <td class="px-4 py-3 text-right">
+            <td class="force-cell"><span class="badge badge-${planTier}">${planTier.toUpperCase()}</span></td>
+            <td class="force-cell"><span class="badge ${isActive ? 'badge-active' : 'badge-inactive'}">${isActive ? 'Aktif' : 'Suspend'}</span></td>
+            <td class="force-cell text-right">
               <button onclick="toggleStatus('${org.id}', ${!isActive})" class="text-xs ${isActive ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'} px-2 py-1 rounded font-bold">
                 ${isActive ? 'Suspend' : 'Activate'}
               </button>
             </td>
           `;
           
-          // Expandable row
+          // Baris Expandable (Hidden by default)
           const expandRow = document.createElement('tr');
           expandRow.id = `row-${org.id}`;
-          expandRow.className = 'row-expand bg-slate-50 border-b-4 border-slate-200';
+          expandRow.className = 'force-row bg-slate-50 border-b-4 border-slate-200';
           expandRow.style.display = 'none';
-          expandRow.innerHTML = `
-            <td colspan="5" class="p-4">
-              <div id="admin-panel-${org.id}">Klik ▼ untuk lihat admin</div>
-            </td>
-          `;
+          expandRow.innerHTML = `<td colspan="5" class="p-4"><div id="admin-panel-${org.id}">Loading...</div></td>`;
           
           tbody.appendChild(row);
           tbody.appendChild(expandRow);
           
-          console.log(`✅ Row ${index + 1} rendered: ${displayName}`);
-          
         } catch (e) {
-          console.error('❌ Error rendering org:', org, e);
+          console.error('Error rendering row:', e);
         }
       });
-      
-      console.log('✅ Table rendering complete. Total rows:', data.length);
+      console.log('✅ Table rendering complete.');
     }
 
     async function toggleRow(orgId, orgName) {
-      console.log('🔄 Toggling row for org:', orgId);
       const row = document.getElementById(`row-${orgId}`);
+      if (!row) return;
       
-      if (!row) {
-        console.error('❌ Row not found:', orgId);
-        return;
-      }
-      
-      const isHidden = row.style.display === 'none' || !row.style.display;
+      const isHidden = row.style.display === 'none';
       
       // Close all other rows
-      document.querySelectorAll('.row-expand').forEach(r => r.style.display = 'none');
+      document.querySelectorAll('.row-expand, .force-row[id^="row-"]').forEach(r => r.style.display = 'none');
       
       if (isHidden) {
         row.style.display = 'table-row';
@@ -329,10 +336,7 @@
 
     async function loadAdminPanel(orgId, orgName) {
       const panel = document.getElementById(`admin-panel-${orgId}`);
-      
       if (!panel) return;
-      
-      console.log('📡 Fetching admins for org:', orgId);
       
       if (!expandedOrgs[orgId]) {
         const { data } = await db.from('admin').select('id, username, nama_admin, role, is_active').eq('organization_id', orgId);
@@ -347,81 +351,46 @@
       if (!panel) return;
       
       const activeAdmins = admins.filter(a => a.is_active);
-      
-      let html = `
-        <div class="bg-white rounded-lg border shadow-sm p-4">
-          <div class="flex justify-between items-center mb-3">
-            <h4 class="font-bold text-slate-700">👥 Admin: ${orgName} (${activeAdmins.length} aktif)</h4>
-            <button onclick="alert('Fitur tambah admin coming soon')" class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold">+ Tambah Admin</button>
-          </div>
-      `;
+      let html = `<div class="bg-white p-4 rounded border"><h4 class="font-bold mb-2">Admin: ${orgName}</h4>`;
       
       if (activeAdmins.length === 0) {
-        html += '<p class="text-center text-slate-400 py-4">Belum ada admin aktif</p>';
+        html += '<p class="text-slate-400">Tidak ada admin.</p>';
       } else {
-        html += `
-          <table class="w-full nested-table">
-            <thead><tr><th class="text-left text-xs font-bold text-slate-600 uppercase">Username</th><th class="text-left text-xs font-bold text-slate-600 uppercase">Nama</th><th class="text-xs font-bold text-slate-600 uppercase">Role</th><th class="text-xs font-bold text-slate-600 uppercase">Password</th><th class="text-right text-xs font-bold text-slate-600 uppercase">Aksi</th></tr></thead>
-            <tbody>
-        `;
-        
+        html += '<table class="w-full"><tbody>';
         activeAdmins.forEach(admin => {
           html += `
-            <tr class="bg-white border-b">
-              <td class="p-2 font-bold text-sm">${admin.username}</td>
-              <td class="p-2 text-sm">${admin.nama_admin}</td>
-              <td class="p-2"><span class="badge badge-info text-[10px]">${admin.role || 'Admin'}</span></td>
-              <td class="p-2 text-center">
-                <span class="text-slate-400 text-xs italic mr-2">••••••</span>
-                <button onclick="resetAdminPass('${orgId}', '${admin.id}', '${admin.username}')" class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded font-bold">🔑 Reset</button>
-              </td>
-              <td class="p-2 text-right">
-                <button onclick="deleteClientAdmin('${orgId}', '${admin.id}')" class="text-red-600 text-xs font-bold hover:underline">Hapus</button>
-              </td>
-            </tr>
-          `;
+            <tr class="border-b">
+              <td class="p-2 font-bold">${admin.username}</td>
+              <td class="p-2">${admin.nama_admin}</td>
+              <td class="p-2 text-right"><button onclick="resetAdminPass('${orgId}', '${admin.id}')" class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">Reset Pass</button></td>
+            </tr>`;
         });
-        
         html += '</tbody></table>';
       }
-      
       html += '</div>';
       panel.innerHTML = html;
     }
 
     async function deleteClientAdmin(orgId, adminId) {
-      if (!expandedOrgs[orgId]) return;
-      
-      const activeCount = expandedOrgs[orgId].filter(a => a.is_active).length;
-      if (activeCount <= 1) return alert('❌ Tidak bisa menghapus admin terakhir!');
-      if (!confirm('Hapus admin ini? (Soft delete)')) return;
-
+      if (!confirm('Hapus admin?')) return;
       await db.from('admin').update({ is_active: false }).eq('id', adminId);
-      await loadAdminPanel(orgId, '...');
+      loadAdminPanel(orgId, '...');
     }
 
-    async function resetAdminPass(orgId, adminId, username) {
-      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#';
-      let pass = '';
-      for(let i=0; i<10; i++) pass += chars.charAt(Math.floor(Math.random() * chars.length));
-
+    async function resetAdminPass(orgId, adminId) {
+      const pass = Math.random().toString(36).slice(-10);
       showLoader(true);
       const { data } = await db.rpc('hash_password', { raw_pass: pass });
       await db.from('admin').update({ password_hash: data }).eq('id', adminId);
       showLoader(false);
-
+      
       document.getElementById('display-new-pass').innerText = pass;
       document.getElementById('modal-pass-result').classList.remove('hidden');
-      
-      window.copyNewPass = () => {
-        navigator.clipboard.writeText(pass).then(() => alert('Password copied!'));
-      };
+      window.copyNewPass = () => navigator.clipboard.writeText(pass).then(() => alert('Copied!'));
     }
 
     async function toggleStatus(id, status) {
-      showLoader(true);
       await db.from('organizations').update({ is_active: status }).eq('id', id);
-      showLoader(false);
       loadClients();
     }
 
@@ -429,29 +398,17 @@
     // SUPER ADMIN MANAGEMENT
     // ==========================================
     async function loadSuperAdmins() {
-      console.log('🔄 Loading super admins...');
-      const { data, error } = await db.from('super_admins').select('*');
-      
-      if (error) {
-        console.error('❌ Error:', error);
-        return;
-      }
-      
-      console.log('✅ Super admins:', data);
-      
+      const { data } = await db.from('super_admins').select('*');
       const tbody = document.getElementById('sa-tbody');
       tbody.innerHTML = '';
-      
       data.forEach(sa => {
         const row = document.createElement('tr');
-        row.className = 'hover:bg-slate-50 border-b';
+        row.className = 'force-row hover:bg-slate-50';
         row.innerHTML = `
-          <td class="px-4 py-3 font-bold">${sa.username}</td>
-          <td class="px-4 py-3">${sa.nama}</td>
-          <td class="px-4 py-3 font-mono text-blue-600 font-bold text-sm">${sa.password}</td>
-          <td class="px-4 py-3 text-right">
-            <button onclick="deleteSuperAdmin('${sa.id}')" class="text-red-600 hover:text-red-800 text-xs font-bold">Hapus</button>
-          </td>
+          <td class="force-cell font-bold">${sa.username}</td>
+          <td class="force-cell">${sa.nama}</td>
+          <td class="force-cell font-mono text-blue-600">${sa.password}</td>
+          <td class="force-cell text-right"><button onclick="deleteSuperAdmin('${sa.id}')" class="text-red-600 font-bold text-xs">Hapus</button></td>
         `;
         tbody.appendChild(row);
       });
@@ -461,52 +418,37 @@
       const u = document.getElementById('sa-new-user').value;
       const n = document.getElementById('sa-new-nama').value;
       const p = document.getElementById('sa-new-pass').value;
-      if(!u || !n || !p) return alert('Lengkapi semua field!');
-
+      if(!u || !n || !p) return alert('Lengkapi field!');
       showLoader(true);
       const { error } = await db.rpc('super_admin_add_super_admin', { p_username: u, p_nama: n, p_plain_pass: p });
       showLoader(false);
-
       if(error) alert('Gagal: ' + error.message);
       else {
         closeModal('modal-add-sa');
         loadSuperAdmins();
-        document.getElementById('sa-new-user').value = '';
-        document.getElementById('sa-new-nama').value = '';
-        document.getElementById('sa-new-pass').value = '';
       }
     }
 
     async function deleteSuperAdmin(id) {
-      if(!confirm('Hapus Super Admin ini?')) return;
+      if(!confirm('Hapus Super Admin?')) return;
       await db.from('super_admins').delete().eq('id', id);
       loadSuperAdmins();
     }
 
     // ==========================================
-    // UTILS & MODALS
+    // UTILS
     // ==========================================
-    function openModal(id) { 
-      console.log('Opening modal:', id);
-      document.getElementById(id).classList.remove('hidden'); 
-    }
-    function closeModal(id) { 
-      document.getElementById(id).classList.add('hidden'); 
-    }
-    function showLoader(show) { 
-      document.getElementById('loader').classList.toggle('hidden', !show); 
-    }
+    function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+    function showLoader(show) { document.getElementById('loader').classList.toggle('hidden', !show); }
 
-    // Add Client Form Submit
     document.getElementById('form-add-client').onsubmit = async function(e) {
       e.preventDefault();
       showLoader(true);
-      
       const res = await db.rpc('super_admin_create_org', {
         p_nama: document.getElementById('reg-nama').value, 
         p_display_name: document.getElementById('reg-display').value,
-        p_alamat: '', 
-        p_kontak_wa: document.getElementById('reg-wa').value, 
+        p_alamat: '', p_kontak_wa: document.getElementById('reg-wa').value, 
         p_plan_tier: document.getElementById('reg-plan').value,
         p_validity_start: new Date().toISOString(), 
         p_validity_end: document.getElementById('reg-validity').value,
@@ -515,39 +457,25 @@
         p_admin_password: document.getElementById('reg-admin-pass').value, 
         p_logo_url: document.getElementById('reg-logo').value || null
       });
-      
       showLoader(false);
-      
-      if(res.error) {
-        alert('Gagal: ' + res.error.message);
-      } else {
-        alert('✅ Klien berhasil dibuat!');
+      if(res.error) alert('Gagal: ' + res.error.message);
+      else {
+        alert('Berhasil!');
         closeModal('modal-add-client');
         loadClients();
-        // Reset form
-        document.getElementById('form-add-client').reset();
       }
     };
 
-    // Audit Log
     async function loadAudit() {
       const { data } = await db.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(50);
       const list = document.getElementById('audit-list');
       list.innerHTML = '';
-      
-      if (data && data.length > 0) {
-        data.forEach(log => {
-          const li = document.createElement('li');
-          li.className = 'bg-slate-50 p-3 rounded-lg border-l-4 ' + (log.action.includes('CREATE') ? 'border-green-500' : 'border-blue-500');
-          li.innerHTML = `
-            <div class="flex justify-between text-xs text-slate-500 mb-1"><span>${new Date(log.created_at).toLocaleString('id-ID')}</span><span class="font-bold">${log.actor_name}</span></div>
-            <p class="font-bold text-slate-700 text-sm">${log.action}</p><p class="text-xs text-slate-500">Tabel: ${log.table_name}</p>
-          `;
-          list.appendChild(li);
-        });
-      } else {
-        list.innerHTML = '<p class="text-center text-slate-400 py-4">Belum ada audit log</p>';
-      }
+      if (data) data.forEach(log => {
+        const li = document.createElement('li');
+        li.className = 'bg-slate-50 p-3 rounded-lg border-l-4 ' + (log.action.includes('CREATE') ? 'border-green-500' : 'border-blue-500');
+        li.innerHTML = `<div class="flex justify-between text-xs text-slate-500"><span>${new Date(log.created_at).toLocaleString()}</span><span class="font-bold">${log.actor_name}</span></div><p class="font-bold text-sm">${log.action}</p>`;
+        list.appendChild(li);
+      });
     }
   </script>
 </body>
