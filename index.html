@@ -8,32 +8,22 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
-    :root {
-      --tk-primary: #00A6ED; --tk-primary-dark: #0089C9;
-      --tk-secondary: #FF6B35; --tk-secondary-dark: #E55A2B;
-      --tk-success: #00B894; --tk-danger: #FF4757;
-      --tk-bg: #F8F9FA; --tk-card: #FFFFFF;
-      --tk-text-primary: #1A1A1A; --tk-text-secondary: #666666; --tk-text-tertiary: #999999;
-      --tk-border: #E6E8EA; --tk-shadow: 0 2px 8px rgba(0,0,0,0.08); --tk-shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
-      --tk-radius: 12px; --tk-radius-lg: 16px; --tk-radius-xl: 20px;
-    }
+    /* ... (Style sama seperti sebelumnya, copy dari jawaban sebelumnya) ... */
+    :root { --tk-primary: #00A6ED; --tk-primary-dark: #0089C9; --tk-secondary: #FF6B35; --tk-secondary-dark: #E55A2B; --tk-success: #00B894; --tk-danger: #FF4757; --tk-bg: #F8F9FA; --tk-card: #FFFFFF; --tk-text-primary: #1A1A1A; --tk-text-secondary: #666666; --tk-text-tertiary: #999999; --tk-border: #E6E8EA; --tk-shadow: 0 2px 8px rgba(0,0,0,0.08); --tk-shadow-lg: 0 8px 24px rgba(0,0,0,0.12); --tk-radius: 12px; --tk-radius-lg: 16px; --tk-radius-xl: 20px; }
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body { background-color: var(--tk-bg); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: var(--tk-text-primary); line-height: 1.5; padding-bottom: 80px; }
     .tab-content { display: none; } .tab-content.active { display: block; animation: fadeIn 0.2s ease-out; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
     .nav-active { color: var(--tk-primary) !important; font-weight: 700 !important; }
     .nav-admin-active { color: var(--tk-secondary) !important; font-weight: 700 !important; }
-    
     input, select, textarea { width: 100%; padding: 14px 16px; border: 1px solid var(--tk-border); background: var(--tk-card); border-radius: var(--tk-radius); font-size: 14px; color: var(--tk-text-primary); transition: 0.2s; outline: none; }
     input:focus, select:focus { border-color: var(--tk-primary); box-shadow: 0 0 0 3px rgba(0, 166, 237, 0.15); background: #fff; }
-    
     .btn-primary { background: linear-gradient(135deg, var(--tk-primary), var(--tk-primary-dark)); color: white; font-weight: 700; padding: 14px 20px; border-radius: var(--tk-radius); border: none; cursor: pointer; transition: 0.2s; font-size: 14px; width: 100%; box-shadow: 0 4px 12px rgba(0, 166, 237, 0.3); display: flex; align-items: center; justify-content: center; gap: 6px; }
     .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0, 166, 237, 0.4); }
     .btn-secondary { background: linear-gradient(135deg, var(--tk-secondary), var(--tk-secondary-dark)); color: white; font-weight: 700; padding: 14px 20px; border-radius: var(--tk-radius); border: none; cursor: pointer; transition: 0.2s; font-size: 14px; width: 100%; box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3); }
     .btn-danger { background: var(--tk-danger); color: white; font-weight: 700; padding: 12px 16px; border-radius: var(--tk-radius); border: none; cursor: pointer; transition: 0.2s; font-size: 13px; width: auto; }
     .btn-ghost { background: transparent; color: var(--tk-text-secondary); font-weight: 500; padding: 8px 12px; border-radius: 8px; border: none; cursor: pointer; transition: 0.2s; font-size: 13px; }
     .btn-ghost:hover { background: rgba(0,0,0,0.04); color: var(--tk-text-primary); }
-    
     .card { background: var(--tk-card); border-radius: var(--tk-radius-lg); padding: 20px; box-shadow: var(--tk-shadow); border: 1px solid var(--tk-border); margin-bottom: 16px; }
     .card-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 1px solid var(--tk-border); margin-bottom: 16px; }
     .card-title { font-size: 15px; font-weight: 700; color: var(--tk-text-primary); margin: 0; }
@@ -45,18 +35,14 @@
     .card-hero .stat-item { flex: 1; background: rgba(255,255,255,0.15); padding: 12px; border-radius: 10px; backdrop-filter: blur(4px); }
     .card-hero .stat-label { font-size: 10px; opacity: 0.85; margin-bottom: 4px; text-transform: uppercase; }
     .card-hero .stat-value { font-size: 14px; font-weight: 700; }
-    
     .list-item { display: flex; align-items: center; padding: 14px 16px; background: var(--tk-card); border-radius: var(--tk-radius); border: 1px solid var(--tk-border); margin-bottom: 10px; transition: 0.2s; cursor: pointer; }
     .list-item:hover { border-color: var(--tk-primary); box-shadow: 0 2px 8px rgba(0, 166, 237, 0.1); transform: translateX(2px); }
-    
     .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 20px; }
     .modal-content { background: var(--tk-card); border-radius: var(--tk-radius-xl); padding: 24px; width: 100%; max-width: 400px; box-shadow: var(--tk-shadow-lg); animation: modalSlide 0.3s ease; }
     @keyframes modalSlide { from { opacity: 0; transform: translateY(20px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
-    
     .loader-overlay { position: fixed; inset: 0; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px); z-index: 200; display: flex; align-items: center; justify-content: center; }
     .loader-spinner { width: 48px; height: 48px; border: 4px solid var(--tk-border); border-top-color: var(--tk-primary); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 16px; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    
     .app-header { background: var(--tk-card); border-bottom: 1px solid var(--tk-border); padding: 12px 16px; position: sticky; top: 0; z-index: 50; box-shadow: 0 1px 0 var(--tk-border); }
     .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--tk-card); border-top: 1px solid var(--tk-border); display: flex; justify-content: space-around; padding: 8px 0 20px; z-index: 40; box-shadow: 0 -2px 12px rgba(0,0,0,0.04); }
     .bottom-nav.admin { background: #1A1A1A; border-top-color: #333; }
@@ -67,7 +53,6 @@
     .nav-item:hover { color: var(--tk-primary); }
     .nav-item.nav-active { color: var(--tk-primary); }
     .nav-item.nav-active span:first-child { transform: scale(1.15); }
-    
     .hidden { display: none !important; }
     .badge { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
     .badge-success { background: rgba(0, 184, 148, 0.12); color: var(--tk-success); }
@@ -82,39 +67,52 @@
     <div style="text-align: center;"><div class="loader-spinner"></div><p style="font-size: 13px; font-weight: 600; color: var(--tk-text-secondary);">Memproses...</p></div>
   </div>
 
-  <!-- LOGIN MODALS -->
-  <div id="loginModal" class="modal-overlay hidden">
+  <!-- MODAL STEP 1: KODE ORGANISASI -->
+  <div id="modal-kode" class="modal-overlay">
     <div class="modal-content">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h2 style="font-size: 18px; font-weight: 800; color: var(--tk-text-primary); margin: 0;">🔐 Login Pengurus</h2>
-        <button onclick="toggleModal(false)" style="background: none; border: none; font-size: 24px; color: var(--tk-text-tertiary); cursor: pointer;">&times;</button>
-      </div>
-      <div style="display: flex; flex-direction: column; gap: 14px;">
-        <div><label style="display: block; font-size: 13px; font-weight: 600; color: var(--tk-text-secondary); margin-bottom: 6px;">Username</label><input type="text" id="inpUser" placeholder="Masukkan username"></div>
-        <div><label style="display: block; font-size: 13px; font-weight: 600; color: var(--tk-text-secondary); margin-bottom: 6px;">Password</label><input type="password" id="inpPass" placeholder="Masukkan password"></div>
-        <p id="loginError" style="color: var(--tk-danger); font-size: 12px; font-weight: 500; display: none; margin: 0;"></p>
-        <button onclick="fnLoginAdmin()" class="btn-primary">Masuk Panel Admin</button>
-      </div>
-      <div style="margin-top: 20px; padding-top: 20px; border-top: 1px dashed var(--tk-border); text-align: center;">
-        <button onclick="switchLoginTab('warga')" class="btn-ghost" style="width: auto; font-size: 13px;">👤 Login sebagai Warga</button>
-      </div>
+      <h2 style="font-size: 18px; font-weight: 800; color: var(--tk-text-primary); margin-bottom: 20px;">🔑 Kode Organisasi</h2>
+      <p style="font-size: 13px; color: var(--tk-text-secondary); margin-bottom: 16px;">Masukkan kode unik RT/RW Anda.</p>
+      <input type="text" id="inpKode" placeholder="Contoh: DKT-KOMPLE-xyz" style="text-transform: uppercase; margin-bottom: 16px;">
+      <p id="errorKode" style="color: var(--tk-danger); font-size: 12px; display: none; margin-bottom: 12px;"></p>
+      <button onclick="fnValidateKode()" class="btn-primary">Lanjutkan</button>
     </div>
   </div>
 
-  <div id="loginModalWarga" class="modal-overlay hidden">
+  <!-- MODAL STEP 2: LOGIN (Admin & Warga) -->
+  <div id="loginModal" class="modal-overlay hidden">
     <div class="modal-content">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h2 style="font-size: 18px; font-weight: 800; color: var(--tk-text-primary); margin: 0;">👤 Login Warga</h2>
-        <button onclick="toggleModalWarga(false)" style="background: none; border: none; font-size: 24px; color: var(--tk-text-tertiary); cursor: pointer;">&times;</button>
+        <div>
+          <h2 style="font-size: 18px; font-weight: 800; color: var(--tk-text-primary); margin: 0;" id="modal-title">🔐 Login Pengurus</h2>
+          <p style="font-size: 12px; color: var(--tk-primary); font-weight: 600; margin-top: 4px;" id="modal-org-name">-</p>
+        </div>
+        <button onclick="fnBackToKode()" style="background: none; border: none; font-size: 12px; color: var(--tk-text-tertiary); cursor: pointer; text-decoration: underline;">Ganti Kode</button>
       </div>
-      <div style="display: flex; flex-direction: column; gap: 14px;">
-        <div><label style="display: block; font-size: 13px; font-weight: 600; color: var(--tk-text-secondary); margin-bottom: 6px;">No. Rumah</label><input type="text" id="inpRumah" placeholder="Contoh: A-12" style="text-transform: uppercase;"></div>
-        <div><label style="display: block; font-size: 13px; font-weight: 600; color: var(--tk-text-secondary); margin-bottom: 6px;">PIN (4-6 digit)</label><input type="password" id="inpPin" placeholder="••••••" maxlength="6" style="letter-spacing: 4px; text-align: center;"></div>
-        <p id="loginErrorWarga" style="color: var(--tk-danger); font-size: 12px; font-weight: 500; display: none; margin: 0;"></p>
-        <button onclick="fnLoginWarga()" class="btn-secondary">Masuk Portal Warga</button>
+      
+      <!-- Tab Switcher -->
+      <div style="display: flex; gap: 4px; background: var(--tk-bg); padding: 4px; border-radius: 10px; margin-bottom: 20px;">
+        <button onclick="switchLoginTab('admin')" id="tab-admin" class="flex-1 py-2 rounded-lg text-sm font-bold bg-white shadow text-blue-600">Pengurus</button>
+        <button onclick="switchLoginTab('warga')" id="tab-warga" class="flex-1 py-2 rounded-lg text-sm font-bold text-slate-500">Warga</button>
       </div>
-      <div style="margin-top: 20px; padding-top: 20px; border-top: 1px dashed var(--tk-border); text-align: center;">
-        <button onclick="switchLoginTab('admin')" class="btn-ghost" style="width: auto; font-size: 13px;">🔐 Login sebagai Pengurus</button>
+
+      <!-- Form Admin -->
+      <div id="form-admin">
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+          <div><label style="display: block; font-size: 13px; font-weight: 600; color: var(--tk-text-secondary); margin-bottom: 6px;">Username</label><input type="text" id="inpUser" placeholder="Masukkan username"></div>
+          <div><label style="display: block; font-size: 13px; font-weight: 600; color: var(--tk-text-secondary); margin-bottom: 6px;">Password</label><input type="password" id="inpPass" placeholder="Masukkan password"></div>
+          <p id="loginError" style="color: var(--tk-danger); font-size: 12px; font-weight: 500; display: none; margin: 0;"></p>
+          <button onclick="fnLoginAdmin()" class="btn-primary">Masuk Panel Admin</button>
+        </div>
+      </div>
+
+      <!-- Form Warga -->
+      <div id="form-warga" class="hidden">
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+          <div><label style="display: block; font-size: 13px; font-weight: 600; color: var(--tk-text-secondary); margin-bottom: 6px;">No. Rumah</label><input type="text" id="inpRumah" placeholder="Contoh: A-12" style="text-transform: uppercase;"></div>
+          <div><label style="display: block; font-size: 13px; font-weight: 600; color: var(--tk-text-secondary); margin-bottom: 6px;">PIN (4-6 digit)</label><input type="password" id="inpPin" placeholder="••••••" maxlength="6" style="letter-spacing: 4px; text-align: center;"></div>
+          <p id="loginErrorWarga" style="color: var(--tk-danger); font-size: 12px; font-weight: 500; display: none; margin: 0;"></p>
+          <button onclick="fnLoginWarga()" class="btn-secondary">Masuk Portal Warga</button>
+        </div>
       </div>
     </div>
   </div>
@@ -146,7 +144,7 @@
         <p id="org-display-name" style="font-size: 11px; color: var(--tk-text-secondary); font-weight: 600; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Memuat...</p>
       </div>
       <div style="display: flex; gap: 8px; align-items: center;">
-        <button id="authBtn" onclick="toggleModal(true)" style="background: #f1f5f9; padding: 8px; border-radius: 10px; border: none; cursor: pointer; font-size: 18px;">👤</button>
+        <button id="authBtn" onclick="fnBackToKode()" style="background: #f1f5f9; padding: 8px; border-radius: 10px; border: none; cursor: pointer; font-size: 18px;">👤</button>
         <button id="logoutBtn" onclick="fnLogout()" style="display: none; background: #fee2e2; color: #ef4444; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; border: none; cursor: pointer;">Keluar</button>
       </div>
     </div>
@@ -325,7 +323,7 @@
     const db = window.dk.db;
     window.dk.state = { 
       orgId: null, user: null, 
-      data: { warga:[], project:[], pembayaran:[], detail:[], pengeluaran:[], danaLain:[] }, 
+       { warga:[], project:[], pembayaran:[], detail:[], pengeluaran:[], danaLain:[] }, 
       selectedCart: {}, expenseItems: [{ket:'', nom:''}] 
     };
     const months = ['01','02','03','04','05','06','07','08','09','10','11','12'];
@@ -339,7 +337,8 @@
         window.dk.state.user = s.user;
         fnShowApp();
       } else {
-        toggleModal(true);
+        // Tampilkan modal kode organisasi
+        document.getElementById('modal-kode').classList.remove('hidden');
       }
     });
 
@@ -351,14 +350,77 @@
     function genId(p) { return p + '-' + Date.now() + '-' + Math.floor(Math.random()*100); }
     function formatBulan(p) { if(p==='SEKALI') return 'Sekali Bayar'; const parts=p.split('-'); if(parts.length<2) return p; return `${monthNames[parseInt(parts[1])-1]} ${parts[0]}`; }
     function formatWA(n) { if(!n) return ''; let c=n.replace(/\D/g,''); if(c.startsWith('0')) c='62'+c.substring(1); return c; }
-    function toggleModal(show) { document.getElementById('loginModal').classList.toggle('hidden', !show); document.getElementById('loginModalWarga').classList.add('hidden'); }
-    function toggleModalWarga(show) { document.getElementById('loginModalWarga').classList.toggle('hidden', !show); document.getElementById('loginModal').classList.add('hidden'); }
-    function switchLoginTab(type) { if(type==='admin') { toggleModal(true); toggleModalWarga(false); } else { toggleModal(false); toggleModalWarga(true); } }
+    
+    function fnBackToKode() {
+      localStorage.removeItem('dk_session');
+      window.dk.state = { orgId: null, user: null, data: { warga:[], project:[], pembayaran:[], detail:[], pengeluaran:[], danaLain:[] }, selectedCart: {}, expenseItems: [{ket:'', nom:''}] };
+      document.getElementById('loginModal').classList.add('hidden');
+      document.getElementById('modal-kode').classList.remove('hidden');
+      document.getElementById('inpKode').value = '';
+      document.getElementById('errorKode').style.display = 'none';
+      location.reload();
+    }
+
     function closeStrukModal() { document.getElementById('strukModal').classList.add('hidden'); }
+
+    // ==========================================
+    // STEP 1: VALIDASI KODE ORGANISASI
+    // ==========================================
+    window.fnValidateKode = async function() {
+      const kode = document.getElementById('inpKode').value.trim().toUpperCase();
+      const err = document.getElementById('errorKode');
+      err.style.display = 'none';
+
+      if(!kode) { err.textContent = 'Kode organisasi wajib diisi!'; err.style.display = 'block'; return; }
+
+      showLoader(true);
+      // Cek apakah kode organisasi ada
+      const { data: org, error } = await db.from('organizations').select('id, display_name, logo_url, nama').eq('client_code', kode).single();
+      showLoader(false);
+
+      if(error || !org) {
+        err.textContent = 'Kode organisasi tidak ditemukan!';
+        err.style.display = 'block';
+      } else {
+        // Simpan ID organisasi
+        window.dk.state.orgId = org.id;
+        
+        // Update UI Header
+        document.getElementById('org-display-name').innerText = org.display_name || org.nama;
+        if(org.logo_url) {
+          document.getElementById('org-logo').src = org.logo_url;
+          document.getElementById('org-logo').style.display = 'block';
+          document.getElementById('org-logo-fallback').style.display = 'none';
+        }
+
+        // Pindah ke modal login
+        document.getElementById('modal-kode').classList.add('hidden');
+        document.getElementById('loginModal').classList.remove('hidden');
+        document.getElementById('modal-org-name').innerText = org.display_name || org.nama;
+      }
+    };
 
     // ==========================================
     // AUTH & SESSION
     // ==========================================
+    function switchLoginTab(type) {
+      const tabAdm = document.getElementById('tab-admin'), tabWrg = document.getElementById('tab-warga');
+      const formAdm = document.getElementById('form-admin'), formWrg = document.getElementById('form-warga');
+      const title = document.getElementById('modal-title');
+
+      if(type === 'admin') {
+        tabAdm.className = 'flex-1 py-2 rounded-lg text-sm font-bold bg-white shadow text-blue-600';
+        tabWrg.className = 'flex-1 py-2 rounded-lg text-sm font-bold text-slate-500';
+        formAdm.classList.remove('hidden'); formWrg.classList.add('hidden');
+        title.innerText = '🔐 Login Pengurus';
+      } else {
+        tabWrg.className = 'flex-1 py-2 rounded-lg text-sm font-bold bg-white shadow text-green-600';
+        tabAdm.className = 'flex-1 py-2 rounded-lg text-sm font-bold text-slate-500';
+        formWrg.classList.remove('hidden'); formAdm.classList.add('hidden');
+        title.innerText = '👤 Login Warga';
+      }
+    }
+
     window.fnLoginAdmin = async function() {
       const u = document.getElementById('inpUser').value.trim(), p = document.getElementById('inpPass').value;
       const err = document.getElementById('loginError'); err.style.display = 'none';
@@ -368,7 +430,7 @@
       showLoader(false);
       if(data?.success) {
         window.dk.state.user = { type:'admin', id:data.data.id, name:data.data.nama_admin };
-        toggleModal(false);
+        document.getElementById('loginModal').classList.add('hidden');
         document.getElementById('inpUser').value = ''; document.getElementById('inpPass').value = '';
         fnShowApp();
       } else { err.textContent = 'Login gagal: ' + (data?.msg || 'Credential salah'); err.style.display = 'block'; }
@@ -383,7 +445,7 @@
       showLoader(false);
       if(data?.success) {
         window.dk.state.user = { type:'warga', id:data.data.id, name:data.data.nama, noRumah:data.data.no_rumah };
-        toggleModalWarga(false);
+        document.getElementById('loginModal').classList.add('hidden');
         document.getElementById('inpRumah').value = ''; document.getElementById('inpPin').value = '';
         fnShowApp();
       } else { err.textContent = 'Login gagal: ' + (data?.msg || 'Credential salah'); err.style.display = 'block'; }
@@ -408,7 +470,7 @@
         document.querySelector('.app-header').style.background = '#1A1A1A';
         document.querySelector('.app-header h1').style.color = 'white';
         document.querySelector('.app-header p').style.color = '#999';
-        fnLoadData().then(() => { fnRenderAdminVerify(); fnRenderMaster(); fnRenderKas(); fnRenderLaporan(); fnPopulateWargaSelect(); loadOrgHeaderInfo(); });
+        fnLoadData().then(() => { fnRenderAdminVerify(); fnRenderMaster(); fnRenderKas(); fnRenderLaporan(); fnPopulateWargaSelect(); });
       } else {
         document.getElementById('areaWarga').style.display = 'block';
         document.getElementById('areaAdmin').style.display = 'none';
@@ -420,23 +482,7 @@
         document.querySelector('.app-header').style.background = 'var(--tk-card)';
         document.querySelector('.app-header h1').style.color = 'var(--tk-text-primary)';
         document.querySelector('.app-header p').style.color = 'var(--tk-text-tertiary)';
-        fnLoadData().then(() => { fnRenderWargaDash(); fnRenderIuran(); fnRenderRiwayat(); fnPopulateWargaSelect(); loadOrgHeaderInfo(); });
-      }
-    }
-
-    // Load Header Info (Logo + Display Name)
-    async function loadOrgHeaderInfo() {
-      if(!window.dk.state.orgId) return;
-      const {  org } = await db.from('organizations').select('display_name, logo_url, nama').eq('id', window.dk.state.orgId).single();
-      if(org) {
-        document.getElementById('org-display-name').innerText = org.display_name || org.nama || 'Portal';
-        const logoImg = document.getElementById('org-logo');
-        const fallback = document.getElementById('org-logo-fallback');
-        if(org.logo_url) {
-          logoImg.src = org.logo_url;
-          logoImg.style.display = 'block';
-          fallback.style.display = 'none';
-        }
+        fnLoadData().then(() => { fnRenderWargaDash(); fnRenderIuran(); fnRenderRiwayat(); fnPopulateWargaSelect(); });
       }
     }
 
