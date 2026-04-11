@@ -96,7 +96,6 @@
         </div>
         
         <div class="grid grid-cols-1 sm:grid-cols-2 md:hidden gap-4" id="clients-mobile-container"></div>
-
         <div class="hidden md:block bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
           <table class="w-full text-left border-collapse">
             <thead>
@@ -179,7 +178,7 @@
       <form id="form-add-client" class="space-y-4">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-200">
           <div class="sm:col-span-2"><label class="text-[10px] font-black tracking-widest uppercase text-slate-500 ml-1">Nama Organisasi (Display)</label><input type="text" id="reg-display" required class="input-field mt-1" placeholder="Cth: RT 01 / Komplek Mawar"></div>
-          <div><label class="text-[10px] font-black tracking-widest uppercase text-slate-500 ml-1">Client Code (ID Login)</label><input type="text" id="reg-code" required class="input-field mt-1 font-mono text-blue-600 font-bold" placeholder="Cth: rt01_mawar"></div>
+          <div><label class="text-[10px] font-black tracking-widest uppercase text-slate-500 ml-1">Client Code (Bebas Kustomisasi)</label><input type="text" id="reg-code" required class="input-field mt-1 font-mono text-blue-600 font-bold" placeholder="Cth: KPI-01"></div>
           <div><label class="text-[10px] font-black tracking-widest uppercase text-slate-500 ml-1">No WA Pengurus</label><input type="text" id="reg-wa" required class="input-field mt-1" placeholder="628..."></div>
         </div>
 
@@ -259,6 +258,14 @@
     let currentBillingData = null; 
     let allOrgs = []; 
 
+    // Helper: Tarik Nama Asli Super Admin dari Sesi Browser
+    function getActiveActorName() {
+        try {
+            const session = JSON.parse(localStorage.getItem('sa_session'));
+            return session ? session.nama : 'Super Admin System';
+        } catch(e) { return 'Super Admin System'; }
+    }
+
     const formatDate = (dateStr) => {
       if(!dateStr) return '-';
       const d = new Date(dateStr);
@@ -266,13 +273,9 @@
     };
     function formatIDR(num) { return 'Rp ' + Number(num||0).toLocaleString('id-ID'); }
     
-    // Tweak to ensure loaders and modals behave safely
     function showLoader(show) { 
-        if(show) {
-            document.getElementById('loader').classList.remove('!hidden');
-        } else {
-            document.getElementById('loader').classList.add('!hidden');
-        }
+        if(show) document.getElementById('loader').classList.remove('!hidden');
+        else document.getElementById('loader').classList.add('!hidden');
     }
 
     async function handleLogin() {
@@ -286,6 +289,9 @@
         document.getElementById('login-section').classList.add('!hidden');
         document.getElementById('dashboard-section').classList.remove('!hidden');
         initDashboard();
+        
+        // Log Login Action
+        await db.from('audit_logs').insert([{ actor_type: 'superadmin', actor_name: data.nama, action: 'SUPER_ADMIN_LOGIN' }]);
       } else {
         alert('Login Gagal! Periksa kembali Username/Password.');
       }
@@ -313,7 +319,6 @@
       document.getElementById('btn-' + name).classList.add('active-tab');
     }
 
-    // JALAN 2: Hanya ambil Organizations, jangan JOIN ke billing_settings
     async function loadClients() {
       const tbody = document.getElementById('clients-tbody');
       const mobileContainer = document.getElementById('clients-mobile-container');
@@ -380,6 +385,7 @@
     async function toggleStatus(id, status) {
       showLoader(true);
       await db.from('organizations').update({ is_active: status }).eq('id', id);
+      await db.from('audit_logs').insert([{ organization_id: id, actor_type: 'superadmin', actor_name: getActiveActorName(), action: status ? 'ACTIVATE_CLIENT' : 'SUSPEND_CLIENT' }]);
       showLoader(false);
       loadClients();
     }
@@ -388,7 +394,6 @@
     function openDrawer() { document.getElementById('drawer-overlay').classList.add('open'); document.getElementById('client-drawer').classList.add('open'); }
     function closeDrawer() { document.getElementById('drawer-overlay').classList.remove('open'); document.getElementById('client-drawer').classList.remove('open'); }
 
-    // JALAN 2: Manual Fetch Billing Setting disini
     async function openClientDrawer(org) {
       document.getElementById('drw-client-name').innerText = org.display_name || org.nama;
       document.getElementById('drw-client-code').innerText = org.client_code;
@@ -403,14 +408,12 @@
       openDrawer();
       showLoader(true);
       
-      // Murni mengambil data tagihan secara paksa dan langsung
       currentBillingData = null;
       const { data: billData } = await db.from('billing_settings').select('*').eq('organization_id', org.id);
       if(billData && billData.length > 0) {
           currentBillingData = billData[0];
       }
 
-      // Load Admins
       const { data } = await db.from('admin').select('*').eq('organization_id', org.id);
       const listContainer = document.getElementById('drw-admin-list');
       listContainer.innerHTML = '';
@@ -433,6 +436,7 @@
        
        showLoader(true);
        await db.from('organizations').update({ kontak_wa_admin: wa, validity_start: start, validity_end: end }).eq('id', orgId);
+       await db.from('audit_logs').insert([{ organization_id: orgId, actor_type: 'superadmin', actor_name: getActiveActorName(), action: 'UPDATE_CLIENT_PROFILE' }]);
        showLoader(false);
        alert("Profil berhasil diupdate!");
        loadClients(); 
@@ -484,9 +488,11 @@
         }
 
         const { data: hashedPass } = await db.rpc('hash_password', { raw_pass: p });
-        const { error } = await db.from('admin').insert([{ organization_id: orgId, username: u, nama_admin: n, password_hash: hashedPass, role: 'admin' }]);
-        showLoader(false);
+        const { error } = await db.from('admin').insert([{ organization_id: orgId, username: u, nama_admin: n, password_hash: hashedPass || p, role: 'admin' }]);
         
+        await db.from('audit_logs').insert([{ organization_id: orgId, actor_type: 'superadmin', actor_name: getActiveActorName(), action: 'ADD_CLIENT_ADMIN' }]);
+        
+        showLoader(false);
         if(error) return alert("Gagal tambah admin: " + error.message);
         
         const orgRefresh = allOrgs.find(o => o.id === orgId);
@@ -498,6 +504,7 @@
         const orgId = document.getElementById('edit-org-id').value;
         showLoader(true);
         await db.from('admin').delete().eq('id', adminId);
+        await db.from('audit_logs').insert([{ organization_id: orgId, actor_type: 'superadmin', actor_name: getActiveActorName(), action: 'DELETE_CLIENT_ADMIN' }]);
         showLoader(false);
         const orgRefresh = allOrgs.find(o => o.id === orgId);
         if(orgRefresh) openClientDrawer(orgRefresh);
@@ -546,6 +553,7 @@
       });
     }
 
+    // ================= FRONTEND TAKEOVER (BYPASS SQL RPC) =================
     document.getElementById('form-add-client').onsubmit = async function(e) {
       e.preventDefault();
       showLoader(true);
@@ -554,33 +562,53 @@
       const nominalGross = document.getElementById('reg-nominal').value;
       const ppnPercent = document.getElementById('reg-ppn').value;
 
-      const { error: errRpc } = await db.rpc('super_admin_create_org', {
-        p_nama: clientCode, 
-        p_display_name: document.getElementById('reg-display').value,
-        p_alamat: '', p_kontak_wa: document.getElementById('reg-wa').value, 
-        p_plan_tier: document.getElementById('reg-plan').value,
-        p_validity_start: document.getElementById('reg-start').value, 
-        p_validity_end: document.getElementById('reg-validity').value,
-        p_admin_username: document.getElementById('reg-admin-user').value, 
-        p_admin_nama: document.getElementById('reg-admin-nama').value,
-        p_admin_password: document.getElementById('reg-admin-pass').value, 
-        p_logo_url: null
-      });
-
-      if(errRpc) {
+      // 1. Validasi Kode Klien (Biar tidak ada yang dobel)
+      const { data: checkCode } = await db.from('organizations').select('id').eq('client_code', clientCode);
+      if(checkCode && checkCode.length > 0) {
           showLoader(false);
-          return alert("Gagal Buat Klien: " + errRpc.message);
+          return alert("Gagal: Client Code '" + clientCode + "' sudah dipakai! Silakan gunakan kode lain.");
       }
 
-      const { data: newOrg } = await db.from('organizations').select('id').eq('nama', clientCode).order('created_at', {ascending: false}).limit(1).single();
-      
-      if(newOrg) {
-          await db.from('billing_settings').insert({
-              organization_id: newOrg.id,
-              nominal_gross: nominalGross,
-              ppn_percentage: ppnPercent
-          });
+      // 2. Insert Klien (Dengan Client Code sesuai ketikan Admin)
+      const { data: newOrg, error: errOrg } = await db.from('organizations').insert([{
+          client_code: clientCode,
+          nama: clientCode, 
+          display_name: document.getElementById('reg-display').value,
+          kontak_wa_admin: document.getElementById('reg-wa').value,
+          plan_tier: document.getElementById('reg-plan').value,
+          validity_start: document.getElementById('reg-start').value,
+          validity_end: document.getElementById('reg-validity').value
+      }]).select().single();
+
+      if(errOrg || !newOrg) {
+          showLoader(false);
+          return alert("Gagal Buat Klien: " + (errOrg ? errOrg.message : 'Unknown Error'));
       }
+
+      // 3. Insert Tagihan (Billing)
+      await db.from('billing_settings').insert([{
+          organization_id: newOrg.id,
+          nominal_gross: nominalGross,
+          ppn_percentage: ppnPercent
+      }]);
+
+      // 4. Enkripsi Password & Insert Admin Klien Pertama
+      const { data: hashedPass } = await db.rpc('hash_password', { raw_pass: document.getElementById('reg-admin-pass').value });
+      await db.from('admin').insert([{
+          organization_id: newOrg.id,
+          username: document.getElementById('reg-admin-user').value,
+          nama_admin: document.getElementById('reg-admin-nama').value,
+          password_hash: hashedPass || document.getElementById('reg-admin-pass').value,
+          role: 'admin'
+      }]);
+
+      // 5. Catat Log Pintar (Suntikkan Nama Asli Super Admin)
+      await db.from('audit_logs').insert([{
+          organization_id: newOrg.id,
+          actor_type: 'superadmin',
+          actor_name: getActiveActorName(),
+          action: 'CREATE_ORG_NEW'
+      }]);
 
       showLoader(false);
       closeModal('modal-add-client');
@@ -605,6 +633,7 @@
       if(!u || !n || !p) return alert('Lengkapi semua!');
       showLoader(true);
       await db.rpc('super_admin_add_super_admin', { p_username: u, p_nama: n, p_plain_pass: p });
+      await db.from('audit_logs').insert([{ actor_type: 'superadmin', actor_name: getActiveActorName(), action: 'ADD_NEW_SUPERADMIN' }]);
       showLoader(false);
       closeModal('modal-add-sa');
       loadSuperAdmins();
@@ -612,7 +641,10 @@
 
     async function deleteSuperAdmin(id) {
       if(!confirm('Hapus akses Super Admin ini?')) return;
-      showLoader(true); await db.from('super_admins').delete().eq('id', id); showLoader(false);
+      showLoader(true); 
+      await db.from('super_admins').delete().eq('id', id); 
+      await db.from('audit_logs').insert([{ actor_type: 'superadmin', actor_name: getActiveActorName(), action: 'DELETE_SUPERADMIN' }]);
+      showLoader(false);
       loadSuperAdmins();
     }
 
