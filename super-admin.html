@@ -6,105 +6,56 @@
   <title>Super Admin - DanaKita</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
   
   <style>
     :root {
-      --tk-primary: #00A6ED;
-      --tk-primary-dark: #0089C9;
-      --tk-secondary: #FF6B35;
-      --tk-secondary-dark: #E55A2B;
-      --tk-bg: #F5F7FA;
-      --tk-border: #E2E8F0;
+      --tk-primary: #00A6ED; --tk-primary-dark: #0089C9;
+      --tk-secondary: #FF6B35; --tk-secondary-dark: #E55A2B;
+      --tk-bg: #F5F7FA; --tk-border: #E2E8F0;
     }
     
     * { box-sizing: border-box; }
-    body { 
-      background-color: var(--tk-bg); 
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
-      padding-bottom: 80px; 
-      margin: 0;
-    }
+    body { background-color: var(--tk-bg); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding-bottom: 80px; margin: 0; }
     
-    /* UTILITIES */
     .hidden { display: none !important; }
     .tab-content { display: none; }
     .tab-content.active { display: block; animation: fadeIn 0.3s ease-out; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     
     /* BUTTONS */
-    .btn-primary {
-      background: linear-gradient(135deg, var(--tk-primary), var(--tk-primary-dark));
-      color: white; font-weight: 700; padding: 12px 20px; border-radius: 12px;
-      border: none; cursor: pointer; transition: all 0.2s ease; font-size: 14px;
-      box-shadow: 0 4px 12px rgba(0, 166, 237, 0.25);
-    }
+    .btn-primary { background: linear-gradient(135deg, var(--tk-primary), var(--tk-primary-dark)); color: white; font-weight: 700; padding: 12px 20px; border-radius: 12px; border: none; cursor: pointer; transition: all 0.2s ease; font-size: 14px; box-shadow: 0 4px 12px rgba(0, 166, 237, 0.25); }
     .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0, 166, 237, 0.35); }
-    .btn-primary:active { transform: translateY(0); }
-    
-    .btn-secondary {
-      background: linear-gradient(135deg, var(--tk-secondary), var(--tk-secondary-dark));
-      color: white; font-weight: 700; padding: 10px 16px; border-radius: 10px;
-      border: none; cursor: pointer; font-size: 13px; transition: all 0.2s ease;
-      box-shadow: 0 4px 10px rgba(255, 107, 53, 0.2);
-    }
+    .btn-secondary { background: linear-gradient(135deg, var(--tk-secondary), var(--tk-secondary-dark)); color: white; font-weight: 700; padding: 10px 16px; border-radius: 10px; border: none; cursor: pointer; font-size: 13px; transition: all 0.2s ease; box-shadow: 0 4px 10px rgba(255, 107, 53, 0.2); }
     .btn-secondary:hover { transform: translateY(-1px); box-shadow: 0 6px 12px rgba(255, 107, 53, 0.3); }
     
-    /* CARDS & INPUTS */
-    .card {
-      background: white; border-radius: 20px; padding: 24px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.03); border: 1px solid var(--tk-border);
-    }
-    .input-field {
-      width: 100%; padding: 12px 16px; border: 1px solid var(--tk-border); background: #F8FAFC;
-      border-radius: 12px; font-size: 14px; outline: none; transition: all 0.2s;
-    }
+    /* INPUTS */
+    .input-field { width: 100%; padding: 12px 16px; border: 1px solid var(--tk-border); background: #F8FAFC; border-radius: 12px; font-size: 14px; outline: none; transition: all 0.2s; }
     .input-field:focus { border-color: var(--tk-primary); background: white; box-shadow: 0 0 0 3px rgba(0,166,237,0.15); }
     
-    /* MODALS */
-    .modal-overlay {
-      position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6);
-      backdrop-filter: blur(4px); z-index: 100;
-      display: flex; align-items: center; justify-content: center; padding: 20px;
-    }
-    .modal-content {
-      background: white; border-radius: 24px; padding: 24px;
-      width: 100%; max-width: 500px; box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-      animation: modalSlide 0.3s cubic-bezier(0.16, 1, 0.3, 1); max-height: 90vh; overflow-y: auto;
-    }
+    /* MODALS & DRAWER */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .modal-content { background: white; border-radius: 24px; padding: 24px; width: 100%; max-width: 500px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); animation: modalSlide 0.3s cubic-bezier(0.16, 1, 0.3, 1); max-height: 90vh; overflow-y: auto; }
     @keyframes modalSlide { from { opacity: 0; transform: translateY(30px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
     
-    /* DRAWER (SLIDE OVER) */
-    .drawer-overlay {
-      position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(2px); z-index: 90;
-      transition: opacity 0.3s ease; opacity: 0; pointer-events: none;
-    }
+    .drawer-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(2px); z-index: 90; transition: opacity 0.3s ease; opacity: 0; pointer-events: none; }
     .drawer-overlay.open { opacity: 1; pointer-events: auto; }
-    
-    .drawer {
-      position: fixed; top: 0; right: 0; bottom: 0; width: 100%; max-width: 480px;
-      background: white; z-index: 100; box-shadow: -10px 0 30px rgba(0,0,0,0.1);
-      transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-      display: flex; flex-direction: column;
-    }
+    .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: 100%; max-width: 480px; background: white; z-index: 100; box-shadow: -10px 0 30px rgba(0,0,0,0.1); transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); display: flex; flex-direction: column; }
     .drawer.open { transform: translateX(0); }
     
-    /* LOADER */
-    .loader {
-      border: 3px solid #E2E8F0; border-top: 3px solid var(--tk-primary);
-      border-radius: 50%; width: 28px; height: 28px; animation: spin 0.8s linear infinite;
-    }
+    .loader { border: 3px solid #E2E8F0; border-top: 3px solid var(--tk-primary); border-radius: 50%; width: 28px; height: 28px; animation: spin 0.8s linear infinite; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     
     /* BADGES */
-    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 800; letter-spacing: 0.5px; }
+    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 800; letter-spacing: 0.5px; }
     .badge-starter { background: #E0F2FE; color: #0284C7; }
     .badge-pro { background: #FEF3C7; color: #D97706; }
     .badge-enterprise { background: #F3E8FF; color: #9333EA; }
     .badge-active { background: #DCFCE7; color: #16A34A; }
     .badge-inactive { background: #FEE2E2; color: #DC2626; }
     
-    /* NAV TABS */
+    /* TABS */
     .tab-btn { transition: all 0.2s; border: 1px solid transparent; }
     .tab-btn.active-tab { background: white; color: var(--tk-primary); box-shadow: 0 2px 10px rgba(0,0,0,0.05); border-color: var(--tk-border); }
   </style>
@@ -112,73 +63,46 @@
 <body>
 
   <div id="loader" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[200] hidden flex items-center justify-center">
-    <div class="bg-white p-5 rounded-2xl shadow-2xl flex flex-col items-center">
-      <div class="loader mb-3"></div><p class="text-xs text-slate-500 font-bold tracking-widest uppercase">Memproses</p>
-    </div>
+    <div class="bg-white p-5 rounded-2xl shadow-2xl flex flex-col items-center"><div class="loader mb-3"></div><p class="text-xs text-slate-500 font-bold tracking-widest uppercase">Memproses</p></div>
   </div>
 
   <div id="login-section" class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-slate-100">
-    <div class="card w-full max-w-sm border-0 shadow-2xl">
-      <div class="text-center mb-8">
-        <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <i class="ph ph-shield-check text-4xl"></i>
-        </div>
-        <h2 class="text-2xl font-black text-slate-800">Sistem Pusat</h2>
-        <p class="text-xs font-bold tracking-widest text-slate-400 uppercase mt-1">Otorisasi Super Admin</p>
-      </div>
-      <div class="space-y-4">
-        <div class="relative">
-          <i class="ph ph-user absolute left-4 top-3.5 text-slate-400 text-lg"></i>
-          <input type="text" id="sa-email" placeholder="Username" class="input-field pl-11">
-        </div>
-        <div class="relative">
-          <i class="ph ph-lock-key absolute left-4 top-3.5 text-slate-400 text-lg"></i>
-          <input type="password" id="sa-pass" placeholder="Password" class="input-field pl-11">
-        </div>
-        <button onclick="handleLogin()" class="btn-primary w-full mt-2">Masuk Panel Utama</button>
-      </div>
+    <div class="bg-white rounded-3xl p-8 w-full max-w-sm border-0 shadow-2xl">
+      <div class="text-center mb-8"><div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4"><i class="ph ph-shield-check text-4xl"></i></div><h2 class="text-2xl font-black text-slate-800">Sistem Pusat</h2><p class="text-xs font-bold tracking-widest text-slate-400 uppercase mt-1">Otorisasi Super Admin</p></div>
+      <div class="space-y-4"><div class="relative"><i class="ph ph-user absolute left-4 top-3.5 text-slate-400 text-lg"></i><input type="text" id="sa-email" placeholder="Username" class="input-field pl-11"></div><div class="relative"><i class="ph ph-lock-key absolute left-4 top-3.5 text-slate-400 text-lg"></i><input type="password" id="sa-pass" placeholder="Password" class="input-field pl-11"></div><button onclick="handleLogin()" class="btn-primary w-full mt-2">Masuk Panel Utama</button></div>
     </div>
   </div>
 
   <div id="dashboard-section" class="hidden">
     <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
       <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 bg-gradient-to-br from-[#00A6ED] to-[#0089C9] text-white rounded-xl flex items-center justify-center shadow-lg shadow-blue-200">
-            <i class="ph ph-buildings text-2xl"></i>
-          </div>
-          <div><h1 class="text-lg font-black text-slate-800 leading-tight">DanaKita Super</h1><p class="text-[10px] font-bold text-[#FF6B35] tracking-widest uppercase">Console Management</p></div>
-        </div>
-        <button onclick="handleLogout()" class="flex items-center gap-2 text-slate-500 hover:text-red-500 font-bold text-sm bg-slate-100 hover:bg-red-50 px-4 py-2 rounded-xl transition">
-          <i class="ph ph-sign-out text-lg"></i> Keluar
-        </button>
+        <div class="flex items-center gap-3"><div class="w-10 h-10 bg-gradient-to-br from-[#00A6ED] to-[#0089C9] text-white rounded-xl flex items-center justify-center shadow-lg shadow-blue-200"><i class="ph ph-buildings text-2xl"></i></div><div><h1 class="text-lg font-black text-slate-800 leading-tight">DanaKita Super</h1><p class="text-[10px] font-bold text-[#FF6B35] tracking-widest uppercase">Console Management</p></div></div>
+        <button onclick="handleLogout()" class="flex items-center gap-2 text-slate-500 hover:text-red-500 font-bold text-sm bg-slate-100 hover:bg-red-50 px-4 py-2 rounded-xl transition"><i class="ph ph-sign-out text-lg"></i> <span class="hidden sm:inline">Keluar</span></button>
       </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-4 py-8">
-      <div class="flex gap-2 mb-6 bg-slate-200 p-1.5 rounded-2xl w-fit">
-        <button onclick="showTab('clients')" class="tab-btn active-tab px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 text-slate-600" id="btn-clients"><i class="ph ph-users-three text-lg"></i> Manajemen Klien</button>
-        <button onclick="showTab('superadmins')" class="tab-btn px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 text-slate-600" id="btn-superadmins"><i class="ph ph-police-car text-lg"></i> Akses Sistem</button>
+    <main class="max-w-7xl mx-auto px-4 py-6 sm:py-8">
+      <div class="overflow-x-auto pb-2 mb-4 sm:mb-6">
+        <div class="flex gap-2 bg-slate-200 p-1.5 rounded-2xl w-max">
+          <button onclick="showTab('clients')" class="tab-btn active-tab px-4 sm:px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 text-slate-600" id="btn-clients"><i class="ph ph-users-three text-lg"></i> Klien</button>
+          <button onclick="showTab('superadmins')" class="tab-btn px-4 sm:px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 text-slate-600" id="btn-superadmins"><i class="ph ph-police-car text-lg"></i> Super Admin</button>
+          <button onclick="showTab('audit')" class="tab-btn px-4 sm:px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 text-slate-600" id="btn-audit"><i class="ph ph-file-search text-lg"></i> Audit Log</button>
+        </div>
       </div>
 
       <div id="tab-clients" class="tab-content active">
-        <div class="flex justify-between items-center mb-6">
-          <div>
-            <h2 class="text-2xl font-black text-slate-800">Daftar Komunitas / RT</h2>
-            <p class="text-sm text-slate-500 font-medium">Kelola pelanggan SaaS, masa aktif, dan admin pengurus.</p>
-          </div>
-          <button onclick="openModal('modal-add-client')" class="btn-secondary flex items-center gap-2"><i class="ph ph-plus-circle text-lg"></i> Klien Baru</button>
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+          <div><h2 class="text-2xl font-black text-slate-800">Manajemen Klien</h2><p class="text-sm text-slate-500 font-medium">Kelola pelanggan SaaS dan masa aktif.</p></div>
+          <button onclick="openModal('modal-add-client')" class="btn-secondary w-full sm:w-auto flex items-center justify-center gap-2"><i class="ph ph-plus-circle text-lg"></i> Klien Baru</button>
         </div>
         
-        <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:hidden gap-4" id="clients-mobile-container"></div>
+
+        <div class="hidden md:block bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
           <table class="w-full text-left border-collapse">
             <thead>
               <tr class="bg-slate-50 border-b border-slate-200 text-xs uppercase tracking-widest text-slate-500">
-                <th class="p-4 font-black">Informasi Klien</th>
-                <th class="p-4 font-black">Paket Layanan</th>
-                <th class="p-4 font-black">Masa Aktif (Validity)</th>
-                <th class="p-4 font-black">Status</th>
-                <th class="p-4 font-black text-right">Tindakan</th>
+                <th class="p-4 font-black">Informasi Klien</th><th class="p-4 font-black">SaaS Plan</th><th class="p-4 font-black">Masa Aktif</th><th class="p-4 font-black">Status</th><th class="p-4 font-black text-right">Tindakan</th>
               </tr>
             </thead>
             <tbody id="clients-tbody" class="text-sm divide-y divide-slate-100"></tbody>
@@ -187,22 +111,31 @@
       </div>
 
       <div id="tab-superadmins" class="tab-content">
-        <div class="flex justify-between items-center mb-6">
-          <h2 class="text-2xl font-black text-slate-800">Daftar Super Admin</h2>
-          <button onclick="openModal('modal-add-sa')" class="btn-secondary flex items-center gap-2"><i class="ph ph-plus-circle text-lg"></i> Tambah Akses</button>
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+          <h2 class="text-2xl font-black text-slate-800">Super Admin</h2>
+          <button onclick="openModal('modal-add-sa')" class="btn-secondary w-full sm:w-auto flex items-center justify-center gap-2"><i class="ph ph-plus-circle text-lg"></i> Tambah Akses</button>
         </div>
         <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
           <table class="w-full text-left border-collapse">
             <thead>
-              <tr class="bg-slate-50 border-b border-slate-200 text-xs uppercase tracking-widest text-slate-500">
-                <th class="p-4 font-black">Username</th>
-                <th class="p-4 font-black">Nama Lengkap</th>
-                <th class="p-4 font-black">Aksi</th>
-              </tr>
+              <tr class="bg-slate-50 border-b border-slate-200 text-xs uppercase tracking-widest text-slate-500"><th class="p-4 font-black">Username</th><th class="p-4 font-black">Nama Lengkap</th><th class="p-4 font-black text-right">Aksi</th></tr>
             </thead>
             <tbody id="sa-tbody" class="text-sm divide-y divide-slate-100"></tbody>
           </table>
         </div>
+      </div>
+
+      <div id="tab-audit" class="tab-content">
+        <h2 class="text-2xl font-black text-slate-800 mb-2">Audit Log</h2>
+        <p class="text-sm text-slate-500 mb-6">Pantau semua pergerakan di dalam sistem.</p>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+          <div><label class="text-[10px] font-black uppercase text-slate-500 tracking-widest">Filter Klien</label><select id="filter-audit-org" onchange="loadAudit()" class="input-field mt-1 !p-2"><option value="">Semua Klien</option></select></div>
+          <div><label class="text-[10px] font-black uppercase text-slate-500 tracking-widest">Filter Aktor</label><select id="filter-audit-actor" onchange="loadAudit()" class="input-field mt-1 !p-2"><option value="">Semua Aktor</option><option value="superadmin">Super Admin</option><option value="admin">Admin Pengurus</option><option value="warga">Warga</option></select></div>
+          <div class="flex items-end"><button onclick="loadAudit()" class="btn-primary w-full !py-2.5 flex items-center justify-center gap-2"><i class="ph ph-arrows-clockwise"></i> Refresh</button></div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border p-4"><ul id="audit-list" class="space-y-3 text-sm"></ul></div>
       </div>
     </main>
   </div>
@@ -210,90 +143,68 @@
   <div id="drawer-overlay" class="drawer-overlay" onclick="closeDrawer()"></div>
   <div id="client-drawer" class="drawer">
     <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-      <div>
-        <h3 class="font-black text-lg text-slate-800" id="drw-client-name">Nama Klien</h3>
-        <p class="text-xs font-bold text-[#00A6ED] tracking-widest uppercase font-mono" id="drw-client-code">KODE</p>
-      </div>
+      <div><h3 class="font-black text-lg text-slate-800" id="drw-client-name">Nama Klien</h3><p class="text-xs font-bold text-[#00A6ED] tracking-widest uppercase font-mono" id="drw-client-code">KODE</p></div>
       <button onclick="closeDrawer()" class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 shadow-sm transition"><i class="ph ph-x text-xl font-bold"></i></button>
     </div>
     
     <div class="p-6 overflow-y-auto flex-1 bg-white">
-      <div class="grid grid-cols-2 gap-4 mb-8">
-        <div class="p-4 rounded-2xl bg-slate-50 border border-slate-100">
-          <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Masa Aktif</p>
-          <p class="text-sm font-bold text-slate-700" id="drw-validity">-</p>
-        </div>
-        <div class="p-4 rounded-2xl bg-slate-50 border border-slate-100">
-          <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Kontak WA</p>
-          <p class="text-sm font-bold text-slate-700" id="drw-wa">-</p>
+      <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100 mb-6">
+        <div class="flex justify-between items-center mb-4"><h4 class="font-black text-slate-800 flex items-center gap-2"><i class="ph ph-buildings text-[#00A6ED] text-lg"></i> Profil Klien</h4><button onclick="downloadInvoice()" class="text-[10px] bg-white border border-slate-200 shadow-sm px-3 py-1.5 rounded-lg font-bold text-slate-600 hover:text-blue-600 flex items-center gap-1"><i class="ph ph-file-pdf text-sm"></i> Invoice</button></div>
+        <input type="hidden" id="edit-org-id">
+        <div class="space-y-3">
+          <div><label class="text-[10px] font-black tracking-widest text-slate-500 uppercase">Kontak WA</label><input type="text" id="edit-wa" class="input-field !p-2 !text-sm mt-1"></div>
+          <div class="grid grid-cols-2 gap-2">
+            <div><label class="text-[10px] font-black tracking-widest text-slate-500 uppercase">Mulai</label><input type="date" id="edit-start" class="input-field !p-2 !text-sm mt-1"></div>
+            <div><label class="text-[10px] font-black tracking-widest text-slate-500 uppercase">Berakhir</label><input type="date" id="edit-end" class="input-field !p-2 !text-sm mt-1"></div>
+          </div>
+          <button onclick="updateClientProfile()" class="btn-primary w-full !py-2 !text-sm shadow-none mt-2">Simpan Perubahan</button>
         </div>
       </div>
 
-      <div class="flex justify-between items-end mb-4 border-b border-slate-200 pb-2">
-        <h4 class="font-black text-slate-800 flex items-center gap-2"><i class="ph ph-user-gear text-[#FF6B35] text-xl"></i> Admin Pengurus</h4>
-      </div>
-      
-      <div id="drw-admin-list" class="space-y-3 mb-6">
-        </div>
-
-      <div class="bg-blue-50/50 p-5 rounded-2xl border border-blue-100">
+      <h4 class="font-black text-slate-800 flex items-center gap-2 mb-3 border-b border-slate-200 pb-2"><i class="ph ph-user-gear text-[#FF6B35] text-xl"></i> Admin Pengurus</h4>
+      <div id="drw-admin-list" class="space-y-3 mb-6"></div> <div class="bg-blue-50/50 p-5 rounded-2xl border border-blue-100">
         <h5 class="text-xs font-black text-blue-800 uppercase tracking-widest mb-4 flex items-center gap-1"><i class="ph ph-plus"></i> Tambah Admin Baru</h5>
         <div class="space-y-3">
-          <input type="text" id="new-adm-user" placeholder="Username" class="input-field text-sm">
-          <input type="text" id="new-adm-nama" placeholder="Nama Lengkap" class="input-field text-sm">
-          <input type="text" id="new-adm-pass" placeholder="Password Sementara" class="input-field text-sm">
-          <input type="hidden" id="new-adm-org-id">
-          <button onclick="addClientAdmin()" class="btn-primary w-full py-2.5 text-sm shadow-none">Simpan Admin</button>
+          <input type="text" id="new-adm-user" placeholder="Username (Harus Unik)" class="input-field text-sm !p-2">
+          <input type="text" id="new-adm-nama" placeholder="Nama Lengkap" class="input-field text-sm !p-2">
+          <input type="text" id="new-adm-pass" placeholder="Password Sementara" class="input-field text-sm !p-2">
+          <button onclick="addClientAdmin()" class="btn-primary w-full !py-2 text-sm shadow-none">Simpan Admin</button>
         </div>
       </div>
     </div>
   </div>
 
   <div id="modal-add-client" class="modal-overlay hidden">
-    <div class="modal-content">
-      <div class="flex justify-between items-center mb-6 border-b pb-4">
-        <h3 class="text-xl font-black text-slate-800 flex items-center gap-2"><i class="ph ph-buildings text-[#00A6ED]"></i> Klien Baru</h3>
-        <button onclick="closeModal('modal-add-client')" class="text-slate-400 hover:text-red-500"><i class="ph ph-x text-2xl"></i></button>
-      </div>
+    <div class="modal-content !max-w-2xl">
+      <div class="flex justify-between items-center mb-6 border-b pb-4"><h3 class="text-xl font-black text-slate-800 flex items-center gap-2"><i class="ph ph-buildings text-[#00A6ED]"></i> Registrasi Klien Baru</h3><button onclick="closeModal('modal-add-client')" class="text-slate-400 hover:text-red-500"><i class="ph ph-x text-2xl"></i></button></div>
       <form id="form-add-client" class="space-y-4">
-        <div class="grid grid-cols-2 gap-4">
-          <div class="col-span-2">
-            <label class="text-[10px] font-black tracking-widest uppercase text-slate-500 ml-1">Nama Komunitas/RT (Display)</label>
-            <input type="text" id="reg-display" required class="input-field mt-1" placeholder="Cth: RT 01 / Komplek Mawar">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+          <div class="sm:col-span-2"><label class="text-[10px] font-black tracking-widest uppercase text-slate-500 ml-1">Nama Organisasi (Display)</label><input type="text" id="reg-display" required class="input-field mt-1" placeholder="Cth: RT 01 / Komplek Mawar"></div>
+          <div><label class="text-[10px] font-black tracking-widest uppercase text-slate-500 ml-1">Client Code (ID Login)</label><input type="text" id="reg-code" required class="input-field mt-1 font-mono text-blue-600 font-bold" placeholder="Cth: rt01_mawar"></div>
+          <div><label class="text-[10px] font-black tracking-widest uppercase text-slate-500 ml-1">No WA Pengurus</label><input type="text" id="reg-wa" required class="input-field mt-1" placeholder="628..."></div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-orange-50/50 p-4 rounded-2xl border border-orange-100">
+          <div><label class="text-[10px] font-black tracking-widest uppercase text-orange-600 ml-1">Paket SaaS</label><select id="reg-plan" class="input-field mt-1 font-bold text-slate-700"><option value="starter">Starter</option><option value="pro">Pro</option><option value="enterprise">Enterprise</option></select></div>
+          <div class="sm:col-span-2 flex gap-2">
+            <div class="flex-1"><label class="text-[10px] font-black tracking-widest uppercase text-orange-600 ml-1">Nominal (Termasuk PPN)</label><input type="number" id="reg-nominal" required class="input-field mt-1" placeholder="Cth: 150000"></div>
+            <div class="w-1/3"><label class="text-[10px] font-black tracking-widest uppercase text-orange-600 ml-1">PPN (%)</label><input type="number" id="reg-ppn" required class="input-field mt-1" value="11"></div>
           </div>
-          <div>
-            <label class="text-[10px] font-black tracking-widest uppercase text-slate-500 ml-1">ID Sistem (Unik)</label>
-            <input type="text" id="reg-nama" required class="input-field mt-1" placeholder="Cth: rt01_mawar">
-          </div>
-          <div>
-            <label class="text-[10px] font-black tracking-widest uppercase text-slate-500 ml-1">WA Pengurus</label>
-            <input type="text" id="reg-wa" required class="input-field mt-1" placeholder="628...">
-          </div>
-          <div>
-            <label class="text-[10px] font-black tracking-widest uppercase text-slate-500 ml-1">Mulai Langganan</label>
-            <input type="date" id="reg-start" required class="input-field mt-1">
-          </div>
-          <div>
-            <label class="text-[10px] font-black tracking-widest uppercase text-slate-500 ml-1">Batas Langganan</label>
-            <input type="date" id="reg-validity" required class="input-field mt-1">
-          </div>
-          <div class="col-span-2">
-            <label class="text-[10px] font-black tracking-widest uppercase text-slate-500 ml-1">Paket SaaS</label>
-            <select id="reg-plan" class="input-field mt-1 font-bold text-slate-700">
-              <option value="starter">Starter</option><option value="pro">Pro</option><option value="enterprise">Enterprise</option>
-            </select>
+          <div class="sm:col-span-3 grid grid-cols-2 gap-2 mt-2">
+            <div><label class="text-[10px] font-black tracking-widest uppercase text-slate-500 ml-1">Tgl Mulai</label><input type="date" id="reg-start" required class="input-field mt-1"></div>
+            <div><label class="text-[10px] font-black tracking-widest uppercase text-slate-500 ml-1">Tgl Berakhir</label><input type="date" id="reg-validity" required class="input-field mt-1"></div>
           </div>
         </div>
         
-        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 mt-2">
-          <p class="text-[10px] font-black tracking-widest uppercase text-slate-500 mb-3 flex items-center gap-1"><i class="ph ph-key"></i> Akun Admin Pertama</p>
-          <div class="grid grid-cols-2 gap-3">
-            <input type="text" id="reg-admin-user" required placeholder="Username" class="input-field">
+        <div class="bg-blue-50 p-4 rounded-2xl border border-blue-200">
+          <p class="text-[10px] font-black tracking-widest uppercase text-blue-600 mb-3 flex items-center gap-1"><i class="ph ph-key"></i> Akun Admin Pertama</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <input type="text" id="reg-admin-user" required placeholder="Username Admin" class="input-field">
             <input type="text" id="reg-admin-pass" required placeholder="Password" class="input-field">
-            <div class="col-span-2"><input type="text" id="reg-admin-nama" required placeholder="Nama Lengkap Admin" class="input-field"></div>
+            <div class="sm:col-span-2"><input type="text" id="reg-admin-nama" required placeholder="Nama Lengkap Admin" class="input-field"></div>
           </div>
         </div>
-        <button type="submit" class="btn-primary w-full mt-4 py-4 text-base">Buat Organisasi & Admin</button>
+        <button type="submit" class="btn-primary w-full py-4 text-base">Buat Klien & Akun</button>
       </form>
     </div>
   </div>
@@ -302,9 +213,9 @@
     <div class="modal-content" style="max-width: 400px;">
       <h3 class="text-lg font-black mb-4 flex items-center gap-2"><i class="ph ph-shield-plus text-[#00A6ED]"></i> Super Admin Baru</h3>
       <div class="space-y-4">
-        <div><label class="text-xs font-bold text-slate-600 ml-1">Username</label><input type="text" id="sa-new-user" required class="input-field mt-1"></div>
-        <div><label class="text-xs font-bold text-slate-600 ml-1">Nama</label><input type="text" id="sa-new-nama" required class="input-field mt-1"></div>
-        <div><label class="text-xs font-bold text-slate-600 ml-1">Password</label><input type="text" id="sa-new-pass" required class="input-field mt-1"></div>
+        <div><label class="text-[10px] font-black tracking-widest text-slate-500 uppercase ml-1">Username</label><input type="text" id="sa-new-user" required class="input-field mt-1"></div>
+        <div><label class="text-[10px] font-black tracking-widest text-slate-500 uppercase ml-1">Nama Lengkap</label><input type="text" id="sa-new-nama" required class="input-field mt-1"></div>
+        <div><label class="text-[10px] font-black tracking-widest text-slate-500 uppercase ml-1">Password</label><input type="text" id="sa-new-pass" required class="input-field mt-1"></div>
         <div class="flex gap-3 mt-6">
           <button onclick="closeModal('modal-add-sa')" class="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition">Batal</button>
           <button onclick="addSuperAdmin()" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-md shadow-blue-200">Simpan</button>
@@ -313,18 +224,25 @@
     </div>
   </div>
 
-  <div id="modal-pass-result" class="modal-overlay hidden z-[200]">
-    <div class="modal-content text-center" style="max-width: 350px;">
-      <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 text-green-600"><i class="ph ph-check-circle text-4xl"></i></div>
-      <h3 class="text-xl font-black mb-1">Berhasil Direset!</h3>
-      <p class="text-xs text-slate-500 mb-6">Silakan copy password di bawah ini dan berikan ke admin yang bersangkutan.</p>
-      <div class="bg-slate-50 border border-slate-200 rounded-2xl p-5 mb-6">
-        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Password Baru</p>
-        <p id="display-new-pass" class="text-2xl font-black text-slate-800 font-mono tracking-wider"></p>
-      </div>
-      <button onclick="copyNewPass()" class="btn-primary w-full py-3 mb-2 flex justify-center items-center gap-2"><i class="ph ph-copy"></i> Salin Password</button>
-      <button onclick="closeModal('modal-pass-result')" class="w-full py-3 text-slate-500 font-bold hover:bg-slate-50 rounded-xl transition">Tutup</button>
-    </div>
+  <div id="invoice-template" style="display:none; padding: 40px; background: white; font-family: sans-serif; color: #1e293b; width: 800px;">
+     <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #00A6ED; padding-bottom: 20px; margin-bottom: 30px;">
+         <div><h1 style="color: #00A6ED; font-size: 32px; margin: 0;">INVOICE</h1><p style="font-size: 12px; color: #64748b; margin-top: 5px;">Layanan SaaS DanaKita - Pusat</p></div>
+         <div style="text-align: right;"><p style="font-size: 12px; color: #64748b; margin: 0;">Tanggal: <span id="inv-date" style="color:#0f172a; font-weight:bold;"></span></p></div>
+     </div>
+     <div style="margin-bottom: 40px;">
+         <p style="font-size: 12px; color: #64748b; margin: 0 0 5px 0;">DITAGIHKAN KEPADA:</p>
+         <h2 id="inv-client-name" style="margin: 0; font-size: 20px; color: #0f172a;">-</h2>
+         <p id="inv-client-code" style="margin: 5px 0 0 0; font-size: 14px; color: #64748b; font-family: monospace;">-</p>
+     </div>
+     <table style="width: 100%; border-collapse: collapse; margin-bottom: 40px;">
+         <thead><tr style="background: #f8fafc; text-align: left; font-size: 12px; color: #64748b;"><th style="padding: 12px; border-bottom: 1px solid #e2e8f0;">DESKRIPSI LAYANAN</th><th style="padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: right;">JUMLAH</th></tr></thead>
+         <tbody>
+             <tr><td style="padding: 16px 12px; border-bottom: 1px solid #e2e8f0; font-size: 14px;">Langganan Sistem DanaKita (DPP)</td><td id="inv-dpp" style="padding: 16px 12px; border-bottom: 1px solid #e2e8f0; text-align: right; font-size: 14px; font-weight: bold;">-</td></tr>
+             <tr><td style="padding: 16px 12px; border-bottom: 1px solid #e2e8f0; font-size: 14px;" id="inv-ppn-text">Pajak PPN</td><td id="inv-ppn-amount" style="padding: 16px 12px; border-bottom: 1px solid #e2e8f0; text-align: right; font-size: 14px; font-weight: bold;">-</td></tr>
+         </tbody>
+         <tfoot><tr><td style="padding: 16px 12px; font-size: 16px; font-weight: bold; color: #0f172a;">TOTAL TAGIHAN</td><td id="inv-total" style="padding: 16px 12px; text-align: right; font-size: 20px; font-weight: bold; color: #00A6ED;">-</td></tr></tfoot>
+     </table>
+     <div style="font-size: 11px; color: #94a3b8; text-align: center; margin-top: 50px; border-top: 1px solid #e2e8f0; padding-top: 20px;">* Invoice ini sah dan diterbitkan otomatis oleh Sistem DanaKita. Harga tagihan sudah termasuk PPN.</div>
   </div>
 
   <script>
@@ -339,14 +257,19 @@
     const db = window.dk.db;
     // =======================================================================
 
+    let currentBillingData = null; // Menyimpan data billing klien yg sedang dibuka
+    let allOrgs = []; // Cache list klien
+
     // UTILS FORMATTER
     const formatDate = (dateStr) => {
       if(!dateStr) return '-';
       const d = new Date(dateStr);
       return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
     };
+    function formatIDR(num) { return 'Rp ' + Number(num||0).toLocaleString('id-ID'); }
+    function showLoader(show) { document.getElementById('loader').classList.toggle('hidden', !show); }
 
-    // LOGIN
+    // LOGIN & INIT
     async function handleLogin() {
       const u = document.getElementById('sa-email').value;
       const p = document.getElementById('sa-pass').value;
@@ -357,92 +280,101 @@
         localStorage.setItem('sa_session', JSON.stringify(data));
         document.getElementById('login-section').classList.add('hidden');
         document.getElementById('dashboard-section').classList.remove('hidden');
-        loadClients();
-        loadSuperAdmins();
+        initDashboard();
       } else {
         alert('Login Gagal! Periksa kembali Username/Password.');
       }
     }
-
-    function handleLogout() {
-      localStorage.removeItem('sa_session');
-      location.reload();
-    }
+    function handleLogout() { localStorage.removeItem('sa_session'); location.reload(); }
 
     window.addEventListener('DOMContentLoaded', () => {
       if(localStorage.getItem('sa_session')) {
         document.getElementById('login-section').classList.add('hidden');
         document.getElementById('dashboard-section').classList.remove('hidden');
-        loadClients();
-        loadSuperAdmins();
+        initDashboard();
       }
     });
+
+    function initDashboard() {
+        loadClients();
+        loadSuperAdmins();
+        loadAudit();
+    }
 
     // TABS
     function showTab(name) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
       document.getElementById('tab-' + name).classList.add('active');
-      document.querySelectorAll('.tab-btn').forEach(btn => { 
-        btn.classList.remove('active-tab'); 
-      });
+      document.querySelectorAll('.tab-btn').forEach(btn => { btn.classList.remove('active-tab'); });
       document.getElementById('btn-' + name).classList.add('active-tab');
     }
 
     // ================= LOAD CLIENTS MAIN TABLE =================
     async function loadClients() {
       const tbody = document.getElementById('clients-tbody');
-      const { data } = await db.from('organizations').select('*').order('created_at', { ascending: false });
+      const mobileContainer = document.getElementById('clients-mobile-container');
       
-      if (!data || data.length === 0) {
+      // Ambil data Org sekalian join ke billing_settings
+      const { data } = await db.from('organizations').select('*, billing_settings(*)').order('created_at', { ascending: false });
+      allOrgs = data || [];
+      
+      // Update Dropdown Filter Audit Log
+      const filterOrg = document.getElementById('filter-audit-org');
+      filterOrg.innerHTML = '<option value="">Semua Klien</option>';
+      allOrgs.forEach(o => filterOrg.innerHTML += `<option value="${o.id}">${o.display_name || o.nama}</option>`);
+
+      if (allOrgs.length === 0) {
         tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-slate-400 font-bold">Belum ada klien terdaftar.</td></tr>';
+        mobileContainer.innerHTML = '<div class="p-8 text-center text-slate-400 font-bold bg-white rounded-2xl border">Kosong</div>';
         return;
       }
       
       tbody.innerHTML = '';
-      data.forEach(org => {
+      mobileContainer.innerHTML = '';
+
+      allOrgs.forEach(org => {
         const displayName = org.display_name || org.nama || 'Unknown';
         const isActive = org.is_active === true;
-        
-        // Status Pengecekan Expired
         const end = new Date(org.validity_end);
         const now = new Date();
         const isExpired = end < now;
         const validityClass = isExpired ? 'text-red-500 font-bold' : 'text-slate-600';
         const validityIcon = isExpired ? '<i class="ph ph-warning-circle text-red-500"></i>' : '<i class="ph ph-calendar-check text-green-500"></i>';
+        const billingData = (org.billing_settings && org.billing_settings.length > 0) ? org.billing_settings[0] : null;
         
+        const actionHtml = `
+            <div class="flex justify-end gap-2">
+                <button onclick="toggleStatus('${org.id}', ${!isActive})" class="flex-1 sm:flex-none text-[11px] ${isActive ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-green-50 text-green-600 hover:bg-green-100'} px-3 py-2 rounded-lg font-bold transition flex items-center justify-center gap-1"><i class="ph ph-power"></i> ${isActive ? 'Suspend' : 'Aktifkan'}</button>
+                <button onclick='openClientDrawer(${JSON.stringify(org).replace(/'/g, "&#39;")})' class="flex-1 sm:flex-none text-[11px] bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-2 rounded-lg font-bold transition flex items-center justify-center gap-1 shadow-sm"><i class="ph ph-gear"></i> Kelola</button>
+            </div>`;
+
+        // 1. Render Desktop Row
         const row = document.createElement('tr');
         row.className = 'hover:bg-blue-50/50 transition duration-150';
         row.innerHTML = `
-          <td class="p-4 align-top">
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-400 font-black shadow-sm">${displayName.charAt(0).toUpperCase()}</div>
-              <div>
-                <p class="font-black text-slate-800 text-base">${displayName}</p>
-                <p class="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-widest mt-0.5">${org.client_code}</p>
-              </div>
-            </div>
-          </td>
+          <td class="p-4 align-top"><div class="flex items-center gap-3"><div class="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-400 font-black shadow-sm">${displayName.charAt(0).toUpperCase()}</div><div><p class="font-black text-slate-800 text-base">${displayName}</p><p class="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-widest mt-0.5">${org.client_code}</p></div></div></td>
           <td class="p-4 align-top"><span class="badge badge-${org.plan_tier || 'starter'}"><i class="ph ph-sparkle"></i> ${(org.plan_tier || 'starter').toUpperCase()}</span></td>
-          <td class="p-4 align-top">
-            <div class="text-xs ${validityClass} flex items-center gap-1.5 mt-1">
-              ${validityIcon} ${formatDate(org.validity_start)} - ${formatDate(org.validity_end)}
-            </div>
-          </td>
-          <td class="p-4 align-top">
-             <span class="badge ${isActive ? 'badge-active' : 'badge-inactive'}">${isActive ? '<i class="ph ph-check-circle"></i> Aktif' : '<i class="ph ph-prohibit"></i> Suspend'}</span>
-          </td>
-          <td class="p-4 align-top text-right">
-             <div class="flex justify-end gap-2">
-                <button onclick="toggleStatus('${org.id}', ${!isActive})" class="text-[11px] ${isActive ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-green-50 text-green-600 hover:bg-green-100'} px-3 py-2 rounded-lg font-bold transition flex items-center gap-1">
-                  ${isActive ? '<i class="ph ph-power"></i> Matikan' : '<i class="ph ph-play-circle"></i> Aktifkan'}
-                </button>
-                <button onclick="openClientDrawer('${org.id}', '${displayName.replace(/'/g, "\\'")}', '${org.client_code}', '${formatDate(org.validity_start)} - ${formatDate(org.validity_end)}', '${org.kontak_wa_admin || '-'}')" class="text-[11px] bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-2 rounded-lg font-bold transition flex items-center gap-1 shadow-sm">
-                  <i class="ph ph-gear"></i> Kelola
-                </button>
-             </div>
-          </td>
+          <td class="p-4 align-top"><div class="text-xs ${validityClass} flex items-center gap-1.5 mt-1">${validityIcon} ${formatDate(org.validity_start)} - ${formatDate(org.validity_end)}</div></td>
+          <td class="p-4 align-top"><span class="badge ${isActive ? 'badge-active' : 'badge-inactive'}">${isActive ? '<i class="ph ph-check-circle"></i> Aktif' : '<i class="ph ph-prohibit"></i> Suspend'}</span></td>
+          <td class="p-4 align-top text-right">${actionHtml}</td>
         `;
         tbody.appendChild(row);
+
+        // 2. Render Mobile Card
+        const card = document.createElement('div');
+        card.className = 'bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-3';
+        card.innerHTML = `
+          <div class="flex justify-between items-start">
+             <div><p class="font-black text-slate-800">${displayName}</p><p class="text-[10px] font-mono text-slate-400 uppercase tracking-widest">${org.client_code}</p></div>
+             <span class="badge ${isActive ? 'badge-active' : 'badge-inactive'}">${isActive ? 'Aktif' : 'Suspend'}</span>
+          </div>
+          <div class="flex justify-between text-xs items-center bg-slate-50 p-2 rounded-lg border border-slate-100">
+             <span class="badge badge-${org.plan_tier || 'starter'} !text-[9px]">${(org.plan_tier || 'starter').toUpperCase()}</span>
+             <span class="${validityClass} font-bold">${validityIcon} ${formatDate(org.validity_end)}</span>
+          </div>
+          <div class="mt-1">${actionHtml}</div>
+        `;
+        mobileContainer.appendChild(card);
       });
     }
 
@@ -453,34 +385,31 @@
       loadClients();
     }
 
-    // ================= DRAWER & KELOLA ADMIN KLIEN =================
-    function openDrawer() { 
-        document.getElementById('drawer-overlay').classList.add('open');
-        document.getElementById('client-drawer').classList.add('open');
-    }
-    function closeDrawer() { 
-        document.getElementById('drawer-overlay').classList.remove('open');
-        document.getElementById('client-drawer').classList.remove('open');
-    }
+    // ================= DRAWER & KELOLA ADMIN =================
+    function openDrawer() { document.getElementById('drawer-overlay').classList.add('open'); document.getElementById('client-drawer').classList.add('open'); }
+    function closeDrawer() { document.getElementById('drawer-overlay').classList.remove('open'); document.getElementById('client-drawer').classList.remove('open'); }
 
-    async function openClientDrawer(orgId, orgName, clientCode, validity, wa) {
-      // Set UI Info
-      document.getElementById('drw-client-name').innerText = orgName;
-      document.getElementById('drw-client-code').innerText = clientCode;
-      document.getElementById('drw-validity').innerText = validity;
-      document.getElementById('drw-wa').innerText = wa;
-      document.getElementById('new-adm-org-id').value = orgId;
+    async function openClientDrawer(org) {
+      document.getElementById('drw-client-name').innerText = org.display_name || org.nama;
+      document.getElementById('drw-client-code').innerText = org.client_code;
+      document.getElementById('edit-org-id').value = org.id;
       
+      // Isi form edit
+      document.getElementById('edit-wa').value = org.kontak_wa_admin || '';
+      document.getElementById('edit-start').value = org.validity_start ? org.validity_start.split('T')[0] : '';
+      document.getElementById('edit-end').value = org.validity_end ? org.validity_end.split('T')[0] : '';
+
+      // Simpan data billing global untuk invoice
+      currentBillingData = (org.billing_settings && org.billing_settings.length > 0) ? org.billing_settings[0] : null;
+
       // Kosongkan form tambah admin
-      document.getElementById('new-adm-user').value = '';
-      document.getElementById('new-adm-nama').value = '';
-      document.getElementById('new-adm-pass').value = '';
+      document.getElementById('new-adm-user').value = ''; document.getElementById('new-adm-nama').value = ''; document.getElementById('new-adm-pass').value = '';
 
       openDrawer();
       showLoader(true);
       
-      // Fetch data admin pengurus untuk klien ini
-      const { data } = await db.from('admin').select('*').eq('organization_id', orgId);
+      // Load Admins
+      const { data } = await db.from('admin').select('*').eq('organization_id', org.id);
       const listContainer = document.getElementById('drw-admin-list');
       listContainer.innerHTML = '';
       
@@ -488,27 +417,61 @@
           listContainer.innerHTML = '<p class="text-xs text-slate-400 italic text-center p-4 bg-slate-50 rounded-xl border border-dashed">Belum ada admin terdaftar.</p>';
       } else {
           data.forEach(adm => {
-              listContainer.innerHTML += `
-              <div class="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm flex justify-between items-center group hover:border-[#00A6ED] transition">
-                <div class="flex items-center gap-3">
-                  <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex flex-col items-center justify-center font-black shadow-inner"><i class="ph ph-user text-xl"></i></div>
-                  <div>
-                    <p class="font-black text-slate-800 text-sm">${adm.nama_admin}</p>
-                    <p class="text-[10px] text-slate-500 font-mono bg-slate-100 px-1.5 py-0.5 rounded inline-block mt-1">@${adm.username}</p>
-                  </div>
-                </div>
-                <div class="flex gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition">
-                  <button onclick="resetAdminPass('${orgId}', '${adm.id}')" title="Reset Password" class="w-8 h-8 rounded-lg bg-orange-50 text-[#FF6B35] hover:bg-[#FF6B35] hover:text-white flex items-center justify-center transition"><i class="ph ph-key text-lg"></i></button>
-                  <button onclick="deleteClientAdmin('${adm.id}', '${orgId}', '${orgName.replace(/'/g, "\\'")}', '${clientCode}', '${validity}', '${wa}')" title="Hapus Admin" class="w-8 h-8 rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition"><i class="ph ph-trash text-lg"></i></button>
-                </div>
-              </div>`;
+              listContainer.innerHTML += `<div class="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm flex justify-between items-center"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-black shadow-inner"><i class="ph ph-user text-xl"></i></div><div><p class="font-black text-slate-800 text-sm">${adm.nama_admin}</p><p class="text-[10px] text-slate-500 font-mono bg-slate-100 px-1.5 py-0.5 rounded inline-block mt-1">@${adm.username}</p></div></div><div class="flex gap-2"><button onclick="resetAdminPass('${org.id}', '${adm.id}')" title="Reset Password" class="w-8 h-8 rounded-lg bg-orange-50 text-[#FF6B35] hover:bg-[#FF6B35] hover:text-white flex items-center justify-center transition"><i class="ph ph-key text-lg"></i></button><button onclick="deleteClientAdmin('${adm.id}')" title="Hapus Admin" class="w-8 h-8 rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition"><i class="ph ph-trash text-lg"></i></button></div></div>`;
           });
       }
       showLoader(false);
     }
 
+    async function updateClientProfile() {
+       const orgId = document.getElementById('edit-org-id').value;
+       const wa = document.getElementById('edit-wa').value;
+       const start = document.getElementById('edit-start').value;
+       const end = document.getElementById('edit-end').value;
+       
+       showLoader(true);
+       await db.from('organizations').update({ kontak_wa_admin: wa, validity_start: start, validity_end: end }).eq('id', orgId);
+       showLoader(false);
+       alert("Profil berhasil diupdate!");
+       loadClients(); // Refresh data utama
+    }
+
+    // INVOICE PDF GENERATOR (Auto Kalkulasi PPN)
+    function downloadInvoice() {
+       if(!currentBillingData) return alert("Data biaya/billing klien ini belum diatur!");
+       
+       const gross = parseFloat(currentBillingData.nominal_gross);
+       const ppnPercent = parseFloat(currentBillingData.ppn_percentage);
+       
+       // Perhitungan Mundur: DPP = Gross / (1 + (PPN/100))
+       const dpp = gross / (1 + (ppnPercent / 100));
+       const ppnAmount = gross - dpp;
+       
+       // Inject Data ke HTML Tempalte PDF
+       const orgName = document.getElementById('drw-client-name').innerText;
+       document.getElementById('inv-date').innerText = new Date().toLocaleDateString('id-ID');
+       document.getElementById('inv-client-name').innerText = orgName;
+       document.getElementById('inv-client-code').innerText = document.getElementById('drw-client-code').innerText;
+       
+       document.getElementById('inv-dpp').innerText = formatIDR(dpp);
+       document.getElementById('inv-ppn-text').innerText = `Pajak PPN (${ppnPercent}%)`;
+       document.getElementById('inv-ppn-amount').innerText = formatIDR(ppnAmount);
+       document.getElementById('inv-total').innerText = formatIDR(gross);
+       
+       // Render HTML ke PDF
+       showLoader(true);
+       const element = document.getElementById('invoice-template');
+       element.style.display = 'block'; // Tampilkan sebentar buat dirender
+       const opt = { margin: 0, filename: `Invoice_${orgName.replace(/\s+/g, '')}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } };
+       
+       html2pdf().set(opt).from(element).save().then(() => {
+           element.style.display = 'none'; // Sembunyikan lagi
+           showLoader(false);
+       });
+    }
+
     async function addClientAdmin() {
-        const orgId = document.getElementById('new-adm-org-id').value;
+        const orgId = document.getElementById('edit-org-id').value;
         const u = document.getElementById('new-adm-user').value;
         const n = document.getElementById('new-adm-nama').value;
         const p = document.getElementById('new-adm-pass').value;
@@ -516,100 +479,91 @@
         if(!u || !n || !p) return alert("Lengkapi data admin baru!");
         
         showLoader(true);
-        // Hashing password lewat RPC Supabase (sesuai skema)
+        // Validasi Duplikat Manual sebelum Error DB
+        const { data: cekExist } = await db.from('admin').select('id').eq('organization_id', orgId).eq('username', u);
+        if(cekExist && cekExist.length > 0) {
+            showLoader(false);
+            return alert("Gagal: Username '" + u + "' sudah dipakai di komunitas ini! Gunakan username lain.");
+        }
+
         const { data: hashedPass } = await db.rpc('hash_password', { raw_pass: p });
-        
-        // Insert ke tabel admin
-        const { error } = await db.from('admin').insert([{
-            organization_id: orgId,
-            username: u,
-            nama_admin: n,
-            password_hash: hashedPass,
-            role: 'admin'
-        }]);
-        
+        const { error } = await db.from('admin').insert([{ organization_id: orgId, username: u, nama_admin: n, password_hash: hashedPass, role: 'admin' }]);
         showLoader(false);
+        
         if(error) return alert("Gagal tambah admin: " + error.message);
         
-        // Refresh Drawer
-        const name = document.getElementById('drw-client-name').innerText;
-        const code = document.getElementById('drw-client-code').innerText;
-        const val = document.getElementById('drw-validity').innerText;
-        const wa = document.getElementById('drw-wa').innerText;
-        openClientDrawer(orgId, name, code, val, wa);
+        // Tutup laci lalu buka lagi agar refresh mulus
+        const orgRefresh = allOrgs.find(o => o.id === orgId);
+        if(orgRefresh) openClientDrawer(orgRefresh);
     }
 
-    async function deleteClientAdmin(adminId, orgId, orgName, clientCode, validity, wa) {
+    async function deleteClientAdmin(adminId) {
         if(!confirm("Yakin ingin mencabut hak akses admin ini secara permanen?")) return;
+        const orgId = document.getElementById('edit-org-id').value;
         showLoader(true);
         await db.from('admin').delete().eq('id', adminId);
         showLoader(false);
-        openClientDrawer(orgId, orgName, clientCode, validity, wa);
+        const orgRefresh = allOrgs.find(o => o.id === orgId);
+        if(orgRefresh) openClientDrawer(orgRefresh);
     }
 
-    async function resetAdminPass(orgId, adminId) {
-      const pass = Math.random().toString(36).slice(-8); // 8 Karakter random
-      showLoader(true);
-      const { data } = await db.rpc('hash_password', { raw_pass: pass });
-      await db.from('admin').update({ password_hash: data }).eq('id', adminId);
-      showLoader(false);
+    // ================= AUDIT LOG FILTERING =================
+    async function loadAudit() {
+      const orgFilter = document.getElementById('filter-audit-org').value;
+      const actorFilter = document.getElementById('filter-audit-actor').value;
       
-      document.getElementById('display-new-pass').innerText = pass;
-      document.getElementById('modal-pass-result').classList.remove('hidden');
-      window.copyNewPass = () => navigator.clipboard.writeText(pass).then(() => {
-          document.querySelector('#modal-pass-result button.btn-primary').innerHTML = '<i class="ph ph-check-circle"></i> Tersalin!';
-          setTimeout(()=> { document.querySelector('#modal-pass-result button.btn-primary').innerHTML = '<i class="ph ph-copy"></i> Salin Password'; }, 2000);
-      });
-    }
+      // Query Builder
+      let query = db.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(100);
+      if(orgFilter) query = query.eq('organization_id', orgFilter);
+      if(actorFilter) query = query.eq('actor_type', actorFilter); // Asumsi actor_type berisi 'superadmin','admin',dll
+      
+      showLoader(true);
+      const { data } = await query;
+      showLoader(false);
 
-    // ================= LOAD SUPER ADMINS =================
-    async function loadSuperAdmins() {
-      const { data } = await db.from('super_admins').select('*');
-      const tbody = document.getElementById('sa-tbody');
-      tbody.innerHTML = '';
-      data.forEach(sa => {
-        const row = document.createElement('tr');
-        row.className = 'hover:bg-slate-50 transition border-b border-slate-100';
-        row.innerHTML = `
-          <td class="p-4"><div class="font-bold text-slate-800 bg-slate-100 px-2 py-1 rounded-md inline-block">@${sa.username}</div></td>
-          <td class="p-4 font-bold text-slate-600">${sa.nama}</td>
-          <td class="p-4 text-right"><button onclick="deleteSuperAdmin('${sa.id}')" class="w-8 h-8 rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition ml-auto"><i class="ph ph-trash text-lg"></i></button></td>
+      const list = document.getElementById('audit-list');
+      list.innerHTML = '';
+      
+      if (!data || data.length === 0) {
+          list.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">Tidak ada log aktivitas.</p>';
+          return;
+      }
+
+      data.forEach(log => {
+        let orgName = '-';
+        if(log.organization_id) {
+           const findOrg = allOrgs.find(o => o.id === log.organization_id);
+           orgName = findOrg ? (findOrg.display_name || findOrg.nama) : 'Unknown Org';
+        }
+
+        const li = document.createElement('li');
+        li.className = 'bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-col gap-2';
+        li.innerHTML = `
+          <div class="flex justify-between items-start text-xs border-b border-slate-200 pb-2">
+            <span class="font-black text-blue-600 bg-blue-100 px-2 py-0.5 rounded uppercase tracking-widest">${orgName}</span>
+            <span class="text-slate-400 font-bold">${new Date(log.created_at).toLocaleString('id-ID')}</span>
+          </div>
+          <div>
+            <p class="font-bold text-slate-800 text-sm">${log.action}</p>
+            <p class="text-[10px] text-slate-500 font-mono mt-1">Oleh: <span class="font-bold text-orange-600">${log.actor_name || 'System'}</span></p>
+          </div>
         `;
-        tbody.appendChild(row);
+        list.appendChild(li);
       });
     }
 
-    async function addSuperAdmin() {
-      const u = document.getElementById('sa-new-user').value;
-      const n = document.getElementById('sa-new-nama').value;
-      const p = document.getElementById('sa-new-pass').value;
-      if(!u || !n || !p) return alert('Lengkapi semua!');
-      showLoader(true);
-      await db.rpc('super_admin_add_super_admin', { p_username: u, p_nama: n, p_plain_pass: p });
-      showLoader(false);
-      closeModal('modal-add-sa');
-      loadSuperAdmins();
-    }
-
-    async function deleteSuperAdmin(id) {
-      if(!confirm('Hapus akses Super Admin ini?')) return;
-      showLoader(true);
-      await db.from('super_admins').delete().eq('id', id);
-      showLoader(false);
-      loadSuperAdmins();
-    }
-
-    // UTILS MODALS
-    function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
-    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-    function showLoader(show) { document.getElementById('loader').classList.toggle('hidden', !show); }
-
-    // FORM SUBMIT CLIENT
+    // FORM SUBMIT CLIENT BARU (RPC + INSERT BILLING)
     document.getElementById('form-add-client').onsubmit = async function(e) {
       e.preventDefault();
       showLoader(true);
-      await db.rpc('super_admin_create_org', {
-        p_nama: document.getElementById('reg-nama').value, 
+      
+      const clientCode = document.getElementById('reg-code').value;
+      const nominalGross = document.getElementById('reg-nominal').value;
+      const ppnPercent = document.getElementById('reg-ppn').value;
+
+      // 1. Panggil RPC Bawaan Supabase
+      const { error: errRpc } = await db.rpc('super_admin_create_org', {
+        p_nama: clientCode, // Masukkan ke kolom nama/code di RPC bawaan Anda
         p_display_name: document.getElementById('reg-display').value,
         p_alamat: '', p_kontak_wa: document.getElementById('reg-wa').value, 
         p_plan_tier: document.getElementById('reg-plan').value,
@@ -620,10 +574,60 @@
         p_admin_password: document.getElementById('reg-admin-pass').value, 
         p_logo_url: null
       });
+
+      if(errRpc) {
+          showLoader(false);
+          return alert("Gagal Buat Klien: " + errRpc.message);
+      }
+
+      // 2. Karena RPC tidak tahu soal tabel billing, kita cari Klien yg barusan dibuat dan Insert ke Billing
+      const { data: newOrg } = await db.from('organizations').select('id').eq('nama', clientCode).order('created_at', {ascending: false}).limit(1).single();
+      
+      if(newOrg) {
+          await db.from('billing_settings').insert({
+              organization_id: newOrg.id,
+              nominal_gross: nominalGross,
+              ppn_percentage: ppnPercent
+          });
+      }
+
       showLoader(false);
       closeModal('modal-add-client');
+      alert("Klien Baru Berhasil Didaftarkan!");
       loadClients();
     };
+
+    // ================= SISA KODE SUPER ADMIN =================
+    async function loadSuperAdmins() {
+      const { data } = await db.from('super_admins').select('*');
+      const tbody = document.getElementById('sa-tbody');
+      tbody.innerHTML = '';
+      data.forEach(sa => {
+        const row = document.createElement('tr');
+        row.className = 'hover:bg-slate-50 transition border-b border-slate-100';
+        row.innerHTML = `<td class="p-4"><div class="font-bold text-slate-800 bg-slate-100 px-2 py-1 rounded-md inline-block">@${sa.username}</div></td><td class="p-4 font-bold text-slate-600">${sa.nama}</td><td class="p-4 text-right"><button onclick="deleteSuperAdmin('${sa.id}')" class="w-8 h-8 rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition ml-auto"><i class="ph ph-trash text-lg"></i></button></td>`;
+        tbody.appendChild(row);
+      });
+    }
+
+    async function addSuperAdmin() {
+      const u = document.getElementById('sa-new-user').value; const n = document.getElementById('sa-new-nama').value; const p = document.getElementById('sa-new-pass').value;
+      if(!u || !n || !p) return alert('Lengkapi semua!');
+      showLoader(true);
+      await db.rpc('super_admin_add_super_admin', { p_username: u, p_nama: n, p_plain_pass: p });
+      showLoader(false);
+      closeModal('modal-add-sa');
+      loadSuperAdmins();
+    }
+
+    async function deleteSuperAdmin(id) {
+      if(!confirm('Hapus akses Super Admin ini?')) return;
+      showLoader(true); await db.from('super_admins').delete().eq('id', id); showLoader(false);
+      loadSuperAdmins();
+    }
+
+    function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
   </script>
 </body>
 </html>
