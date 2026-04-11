@@ -363,7 +363,7 @@
           </div>
 
           <h4 style="font-weight: 800; color: var(--tk-text-secondary); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--tk-border);">Daftar Warga Aktif</h4>
-          <div id="listWarga" style="display: flex; flex-direction: column; gap: 12px; max-height: 400px; overflow-y: auto; padding-right: 8px;"></div>
+          <div id="listWarga" style="display: flex; flex-direction: column; gap: 12px;"></div>
         </div>
 
         <div class="card">
@@ -422,7 +422,7 @@
         
         <div class="card">
           <h4 style="font-weight: 900; color: var(--tk-text-primary); font-size: 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;"><i class="ph ph-list-dashes text-xl text-slate-400"></i> Mutasi Kas Terakhir</h4>
-          <div id="kasList" style="display: flex; flex-direction: column; gap: 12px; max-height: 400px; overflow-y: auto; padding-right: 8px;"></div>
+          <div id="kasList" style="display: flex; flex-direction: column; gap: 12px;"></div>
         </div>
       </div>
 
@@ -441,7 +441,7 @@
             <i class="ph ph-magnifying-glass absolute left-4 top-3.5 text-slate-400 text-lg"></i>
             <input type="text" id="searchRekap" onkeyup="fnRenderLaporan()" placeholder="Cari Nama atau Blok..." class="pl-11 bg-slate-50 border-slate-200">
           </div>
-          <div id="rekapList" style="display: flex; flex-direction: column; gap: 16px; max-height: 500px; overflow-y: auto; padding-right:8px;"></div>
+          <div id="rekapList" style="display: flex; flex-direction: column; gap: 16px;"></div>
         </div>
       </div>
     </div>
@@ -599,38 +599,30 @@
     };
 
     // LOGIN WARGA CASE-INSENSITIVE (VIA RPC)
-   window.fnGantiPinWarga = async function() {
-        const oldPin = document.getElementById('profPinOld').value;
-        const newPin = document.getElementById('profPinNew').value;
-        const confirmPin = document.getElementById('profPinConfirm').value;
-        
-        if(!oldPin || !newPin || !confirmPin) return alert('Semua kolom PIN wajib diisi!');
-        if(newPin.length < 4) return alert('PIN baru minimal 4 karakter!');
-        if(newPin !== confirmPin) return alert('Konfirmasi PIN baru tidak sama!');
-        
-        showLoader(true);
-        
-        // 1. TRIK CERDAS: Pura-pura login pakai PIN lama untuk validasi Bcrypt
-        const { data: loginCheck } = await db.rpc('rpc_login_warga', { 
-            p_no_rumah: window.dk.state.user.noRumah, 
-            p_pin: oldPin, 
-            p_org_id: window.dk.state.orgId 
-        });
-        
-        // 2. Jika pura-pura login sukses, berarti PIN Lama VALID
-        if(loginCheck && loginCheck.success) {
-            const { data: newHash } = await db.rpc('hash_password', { raw_pass: newPin });
-            await db.from('warga').update({ pin_hash: newHash || newPin }).eq('id', window.dk.state.user.id);
-            
-            document.getElementById('profPinOld').value=''; 
-            document.getElementById('profPinNew').value=''; 
-            document.getElementById('profPinConfirm').value='';
-            showLoader(false);
-            alert('✅ PIN Keamanan berhasil diperbarui!');
-        } else {
-            showLoader(false);
-            alert('Gagal: PIN Lama yang Anda masukkan salah!');
-        }
+    window.fnLoginWarga = async function() {
+      const r = document.getElementById('inpRumah').value.trim();
+      const pin = document.getElementById('inpPin').value;
+      const err = document.getElementById('loginErrorWarga'); err.style.display = 'none';
+      
+      if(!r || !pin || pin.length < 4) { err.textContent='Isi No. Rumah & PIN (min. 4 digit)!'; err.style.display='block'; return; }
+      showLoader(true);
+      
+      const { data, error } = await db.rpc('rpc_login_warga', { p_no_rumah: r, p_pin: pin, p_org_id: window.dk.state.orgId });
+      showLoader(false);
+      
+      if(error) {
+         err.textContent = 'Terjadi kesalahan sistem: ' + error.message; err.style.display = 'block'; return;
+      }
+      
+      if(data?.success) {
+        window.dk.state.user = { type:'warga', id:data.data.id, name:data.data.nama, noRumah:data.data.no_rumah, wa:data.data.no_wa };
+        document.getElementById('loginModal').classList.add('hidden');
+        document.getElementById('inpRumah').value = ''; document.getElementById('inpPin').value = '';
+        fnShowApp();
+      } else {
+        err.textContent = 'Login gagal: ' + (data?.msg || 'Blok/No Rumah atau PIN salah.');
+        err.style.display = 'block';
+      }
     };
 
     window.fnLogout = function() {
@@ -1098,6 +1090,7 @@
         }
     };
     
+    // PERBAIKAN FITUR GANTI PIN (MENGGUNAKAN PURA-PURA LOGIN)
     window.fnGantiPinWarga = async function() {
         const oldPin = document.getElementById('profPinOld').value;
         const newPin = document.getElementById('profPinNew').value;
@@ -1108,14 +1101,20 @@
         if(newPin !== confirmPin) return alert('Konfirmasi PIN baru tidak sama!');
         
         showLoader(true);
-        // Validasi PIN lama
-        const { data: wData } = await db.from('warga').select('pin_hash').eq('id', window.dk.state.user.id).single();
-        const { data: oldHashCek } = await db.rpc('hash_password', { raw_pass: oldPin });
         
-        if(wData && (wData.pin_hash === oldHashCek || wData.pin_hash === oldPin)) {
+        const { data: loginCheck } = await db.rpc('rpc_login_warga', { 
+            p_no_rumah: window.dk.state.user.noRumah, 
+            p_pin: oldPin, 
+            p_org_id: window.dk.state.orgId 
+        });
+        
+        if(loginCheck && loginCheck.success) {
             const { data: newHash } = await db.rpc('hash_password', { raw_pass: newPin });
             await db.from('warga').update({ pin_hash: newHash || newPin }).eq('id', window.dk.state.user.id);
-            document.getElementById('profPinOld').value=''; document.getElementById('profPinNew').value=''; document.getElementById('profPinConfirm').value='';
+            
+            document.getElementById('profPinOld').value=''; 
+            document.getElementById('profPinNew').value=''; 
+            document.getElementById('profPinConfirm').value='';
             showLoader(false);
             alert('✅ PIN Keamanan berhasil diperbarui!');
         } else {
