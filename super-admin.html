@@ -6,308 +6,410 @@
   <title>Super Admin - DanaKita</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script> <!-- For CSV -->
   <style>
     body { background-color: #f1f5f9; font-family: ui-sans-serif, system-ui, sans-serif; }
     .hidden { display: none !important; }
-    .loader { border: 3px solid #f3f3f3; border-top: 3px solid #1e293b; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+    .card { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; margin-bottom: 20px; }
+    .btn-primary { background: #00A6ED; color: white; padding: 10px 16px; border-radius: 10px; font-weight: 700; cursor: pointer; border: none; transition: 0.2s; }
+    .btn-primary:hover { background: #0089C9; }
+    .btn-secondary { background: #FF6B35; color: white; padding: 10px 16px; border-radius: 10px; font-weight: 700; cursor: pointer; border: none; }
+    .input-field { width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; outline: none; }
+    .input-field:focus { border-color: #00A6ED; box-shadow: 0 0 0 2px rgba(0,166,237,0.2); }
+    .badge { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; }
+    .badge-starter { background: #e0f2fe; color: #0284c7; }
+    .badge-pro { background: #fef3c7; color: #d97706; }
+    .badge-enterprise { background: #f3e8ff; color: #9333ea; }
+    .badge-active { background: #dcfce7; color: #16a34a; }
+    .badge-inactive { background: #fee2e2; color: #dc2626; }
+    .loader { border: 3px solid #f3f3f3; border-top: 3px solid #00A6ED; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   </style>
 </head>
-<body class="min-h-screen">
+<body>
 
+  <!-- LOADER -->
   <div id="loader" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center">
-    <div class="bg-white p-6 rounded-xl flex flex-col items-center gap-3">
-      <div class="loader"></div>
-      <p class="text-sm font-bold text-slate-700">Memproses...</p>
-    </div>
+    <div class="bg-white p-4 rounded-xl"><div class="loader mx-auto"></div><p class="text-sm mt-2 text-slate-600 font-bold">Memproses...</p></div>
   </div>
 
+  <!-- LOGIN -->
   <div id="login-section" class="min-h-screen flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
-      <div class="text-center mb-8">
-        <h1 class="text-2xl font-black text-slate-800 mb-2">🔐 Super Admin</h1>
-        <p class="text-slate-500 text-sm">DanaKita Management Panel</p>
-      </div>
-      <div class="space-y-4">
-        <div>
-          <label class="block text-sm font-bold text-slate-700 mb-2">Email</label>
-          <input type="email" id="admin-email" value="arz.fom@gmail.com" class="w-full p-3 border border-slate-300 rounded-xl">
-        </div>
-        <div>
-          <label class="block text-sm font-bold text-slate-700 mb-2">Password</label>
-          <input type="password" id="admin-password" value="SuperAdmin2026!" class="w-full p-3 border border-slate-300 rounded-xl">
-        </div>
-        <button onclick="handleSuperAdminLogin()" class="w-full bg-slate-800 text-white font-bold py-3 rounded-xl hover:bg-slate-900">Masuk</button>
-        <p class="text-xs text-slate-400 text-center"><a href="/" class="text-blue-600 hover:underline">← Kembali ke App Utama</a></p>
-      </div>
+    <div class="card w-full max-w-sm">
+      <h2 class="text-xl font-black text-center mb-6">🔐 Super Admin</h2>
+      <input type="email" id="sa-email" placeholder="Email" class="input-field mb-3">
+      <input type="password" id="sa-pass" placeholder="Password" class="input-field mb-4">
+      <button onclick="handleLogin()" class="btn-primary w-full">Masuk</button>
     </div>
   </div>
 
-  <div id="dashboard-section" class="hidden">
+  <!-- DASHBOARD -->
+  <div id="dashboard-section" class="hidden min-h-screen pb-20">
+    <!-- Header -->
     <header class="bg-white border-b sticky top-0 z-40">
-      <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-        <div><h1 class="text-xl font-black text-slate-800">🎛️ Super Admin Panel</h1></div>
-        <div class="flex gap-3">
-          <button onclick="showSection('clients')" id="nav-clients" class="px-4 py-2 bg-blue-600 text-white rounded-lg font-bold text-sm">Klien</button>
-          <button onclick="showSection('audit')" id="nav-audit" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg font-bold text-sm">Audit Log</button>
-          <button onclick="handleLogout()" class="px-4 py-2 bg-red-500 text-white rounded-lg font-bold text-sm">Keluar</button>
+      <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+          <span class="text-2xl">🛡️</span>
+          <div>
+            <h1 class="text-lg font-black text-slate-800">Super Admin Panel</h1>
+            <p class="text-xs text-slate-500">Manajemen Klien & Sistem</p>
+          </div>
         </div>
+        <button onclick="handleLogout()" class="text-red-600 text-sm font-bold hover:underline">Keluar</button>
       </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-4 py-8">
-      <div id="section-clients">
-        <div class="flex justify-between items-center mb-6">
-          <h2 class="text-2xl font-bold text-slate-800">Kelola Klien</h2>
-          <button onclick="showRegisterModal()" class="bg-green-600 text-white px-6 py-3 rounded-xl font-bold">+ Registrasi Klien Baru</button>
+    <main class="max-w-7xl mx-auto px-4 py-6">
+      <!-- Stats -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div class="card !mb-0 !p-4"><p class="text-xs text-slate-500 font-bold">Total Klien</p><p class="text-2xl font-black text-blue-600" id="stat-total">0</p></div>
+        <div class="card !mb-0 !p-4"><p class="text-xs text-slate-500 font-bold">Aktif</p><p class="text-2xl font-black text-green-600" id="stat-active">0</p></div>
+        <div class="card !mb-0 !p-4"><p class="text-xs text-slate-500 font-bold">Kadaluarsa</p><p class="text-2xl font-black text-red-600" id="stat-expired">0</p></div>
+        <div class="card !mb-0 !p-4"><p class="text-xs text-slate-500 font-bold">Plan Pro/Ent</p><p class="text-2xl font-black text-purple-600" id="stat-premium">0</p></div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="flex gap-2 mb-6 bg-slate-200 p-1 rounded-xl w-fit">
+        <button onclick="showTab('clients')" class="tab-btn px-6 py-2 rounded-lg font-bold text-sm bg-white shadow" id="btn-clients">👥 Klien</button>
+        <button onclick="showTab('audit')" class="tab-btn px-6 py-2 rounded-lg font-bold text-sm text-slate-500" id="btn-audit">📜 Audit Log</button>
+      </div>
+
+      <!-- TAB: KLIEN -->
+      <div id="tab-clients" class="tab-content">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xl font-black text-slate-800">Kelola Klien</h2>
+          <button onclick="openModal('modal-add-client')" class="btn-secondary text-sm">+ Registrasi Klien</button>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div class="bg-white p-6 rounded-xl shadow-sm border"><p class="text-xs text-slate-500 font-bold uppercase">Total Klien</p><p class="text-3xl font-black text-blue-600" id="stat-total">0</p></div>
-          <div class="bg-white p-6 rounded-xl shadow-sm border"><p class="text-xs text-slate-500 font-bold uppercase">Aktif</p><p class="text-3xl font-black text-green-600" id="stat-active">0</p></div>
-          <div class="bg-white p-6 rounded-xl shadow-sm border"><p class="text-xs text-slate-500 font-bold uppercase">Nonaktif</p><p class="text-3xl font-black text-red-600" id="stat-inactive">0</p></div>
-          <div class="bg-white p-6 rounded-xl shadow-sm border"><p class="text-xs text-slate-500 font-bold uppercase">Plan Pro</p><p class="text-3xl font-black text-purple-600" id="stat-pro">0</p></div>
-        </div>
+
+        <!-- Table -->
         <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
-          <table class="w-full">
-            <thead class="bg-slate-50 border-b"><tr>
-              <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase">Kode</th>
-              <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase">Nama</th>
-              <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase">Plan</th>
-              <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase">Status</th>
-              <th class="px-6 py-4 text-right text-xs font-bold text-slate-600 uppercase">Aksi</th>
-            </tr></thead>
-            <tbody id="clients-table-body" class="divide-y"></tbody>
+          <table class="w-full text-sm text-left">
+            <thead class="bg-slate-50 text-slate-600 font-bold uppercase text-xs">
+              <tr>
+                <th class="px-4 py-3">Klien</th>
+                <th class="px-4 py-3">Plan</th>
+                <th class="px-4 py-3">Validitas</th>
+                <th class="px-4 py-3">Status</th>
+                <th class="px-4 py-3 text-right">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="clients-tbody" class="divide-y">
+              <!-- Rows generated by JS -->
+            </tbody>
           </table>
         </div>
       </div>
 
-      <div id="section-audit" class="hidden">
-        <h2 class="text-2xl font-bold text-slate-800 mb-6">Audit Log</h2>
-        <div class="bg-white rounded-xl shadow-sm border p-6">
-          <table class="w-full">
-            <thead class="bg-slate-50 border-b"><tr>
-              <th class="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase">Waktu</th>
-              <th class="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase">Aktor</th>
-              <th class="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase">Aksi</th>
-            </tr></thead>
-            <tbody id="audit-table-body" class="divide-y"></tbody>
-          </table>
+      <!-- TAB: AUDIT -->
+      <div id="tab-audit" class="tab-content hidden">
+        <h2 class="text-xl font-black text-slate-800 mb-4">Audit Log Sistem</h2>
+        <div class="bg-white rounded-xl shadow-sm border p-4">
+          <ul id="audit-list" class="space-y-3 text-sm"></ul>
         </div>
       </div>
     </main>
   </div>
 
-  <div id="modal-register" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6">
-      <h3 class="text-xl font-bold mb-4">Registrasi Klien Baru</h3>
-      <div class="space-y-3">
-        <input type="text" id="reg-nama" placeholder="Nama Organisasi" class="w-full p-3 border rounded-xl">
-        <input type="text" id="reg-admin-username" placeholder="Username Admin" class="w-full p-3 border rounded-xl">
-        <input type="text" id="reg-admin-password" placeholder="Password Default" class="w-full p-3 border rounded-xl">
+  <!-- MODAL: ADD CLIENT -->
+  <div id="modal-add-client" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6">
+      <div class="flex justify-between mb-4 border-b pb-3">
+        <h3 class="text-lg font-black">🆕 Registrasi Klien Baru</h3>
+        <button onclick="closeModal('modal-add-client')" class="text-slate-400 hover:text-slate-600 text-xl">&times;</button>
       </div>
-      <div class="flex gap-3 mt-6">
-        <button onclick="closeModal()" class="flex-1 px-4 py-2 border rounded-xl font-bold">Batal</button>
-        <button onclick="handleRegisterClient()" class="flex-1 px-4 py-2 bg-green-600 text-white rounded-xl font-bold">Registrasi</button>
-      </div>
+      
+      <form id="form-add-client" class="space-y-4">
+        <!-- Org Info -->
+        <div class="grid grid-cols-2 gap-4">
+          <div class="col-span-2">
+            <label class="text-xs font-bold text-slate-600">Nama Organisasi (Legal)</label>
+            <input type="text" id="reg-nama" required class="input-field mt-1" placeholder="Contoh: RT 05 RW 02">
+          </div>
+          <div class="col-span-2">
+            <label class="text-xs font-bold text-slate-600">Nama Tampil di App</label>
+            <input type="text" id="reg-display" required class="input-field mt-1" placeholder="Contoh: Komplek Asri">
+          </div>
+          <div class="col-span-2">
+            <label class="text-xs font-bold text-slate-600">Alamat Lengkap</label>
+            <textarea id="reg-alamat" class="input-field mt-1" rows="2"></textarea>
+          </div>
+          <div>
+            <label class="text-xs font-bold text-slate-600">Kontak WA Admin (628...)</label>
+            <input type="text" id="reg-wa" required class="input-field mt-1" placeholder="628123456789">
+          </div>
+          <div>
+            <label class="text-xs font-bold text-slate-600">URL Logo (Opsional)</label>
+            <input type="url" id="reg-logo" class="input-field mt-1" placeholder="https://...">
+          </div>
+        </div>
+
+        <!-- Plan & Validity -->
+        <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 grid grid-cols-2 gap-4">
+          <div>
+            <label class="text-xs font-bold text-blue-800">Paket Langganan</label>
+            <select id="reg-plan" class="input-field mt-1 bg-white">
+              <option value="starter">Starter (≤100 warga)</option>
+              <option value="pro">Pro (Unlimited)</option>
+              <option value="enterprise">Enterprise (Custom)</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs font-bold text-blue-800">Berakhir Tanggal</label>
+            <input type="date" id="reg-validity" required class="input-field mt-1 bg-white">
+          </div>
+        </div>
+
+        <!-- Admin Credential -->
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 grid grid-cols-2 gap-4">
+          <div class="col-span-2 text-sm font-bold text-slate-700 border-b pb-2 mb-2">Credential Admin Utama</div>
+          <div>
+            <label class="text-xs font-bold text-slate-600">Username</label>
+            <input type="text" id="reg-admin-user" required class="input-field mt-1">
+          </div>
+          <div>
+            <label class="text-xs font-bold text-slate-600">Nama Admin</label>
+            <input type="text" id="reg-admin-nama" required class="input-field mt-1">
+          </div>
+          <div class="col-span-2">
+            <label class="text-xs font-bold text-slate-600">Password Default</label>
+            <input type="text" id="reg-admin-pass" required class="input-field mt-1">
+          </div>
+        </div>
+
+        <div class="flex gap-3 mt-6 pt-4 border-t">
+          <button type="button" onclick="closeModal('modal-add-client')" class="flex-1 py-3 border rounded-xl font-bold text-slate-600">Batal</button>
+          <button type="submit" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700">Simpan & Buat Akun</button>
+        </div>
+      </form>
     </div>
   </div>
 
-  <div id="modal-credentials" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
-      <div class="text-center mb-4"><div class="text-5xl mb-2">✅</div><h3 class="text-xl font-bold">Berhasil!</h3></div>
-      <div class="space-y-3 mb-6">
-        <div class="bg-blue-50 p-3 rounded-lg"><p class="text-xs text-slate-500">Kode Organisasi</p><p id="cred-code" class="font-mono font-bold text-blue-600"></p></div>
-        <div class="bg-green-50 p-3 rounded-lg"><p class="text-xs text-green-700">Username: <span id="cred-username" class="font-mono"></span></p><p class="text-xs text-green-700">Password: <span id="cred-password" class="font-mono"></span></p></div>
+  <!-- MODAL: IMPORT CSV -->
+  <div id="modal-import" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl w-full max-w-lg p-6">
+      <h3 class="text-lg font-black mb-4">📥 Import Data Warga</h3>
+      <p class="text-xs text-slate-500 mb-4">Format CSV: nama, no_rumah, no_wa, pin_opsional</p>
+      
+      <input type="file" id="csv-file" accept=".csv" class="input-field mb-4">
+      <div id="csv-preview" class="max-h-40 overflow-y-auto bg-slate-50 rounded-lg p-2 text-xs mb-4 hidden"></div>
+      
+      <div class="flex gap-3">
+        <button onclick="closeModal('modal-import')" class="flex-1 py-2 border rounded-lg">Batal</button>
+        <button onclick="processImport()" class="flex-1 py-2 bg-green-600 text-white rounded-lg font-bold">Import Data</button>
       </div>
-      <button onclick="closeModal()" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-bold">Selesai</button>
     </div>
   </div>
 
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      if (typeof window.supabase === 'undefined') {
-        alert('Error: Supabase belum termuat. Refresh halaman.');
-        return;
-      }
+    // CONFIG
+    const SUPABASE_URL = 'https://tgcpyatrllswhlysqfer.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRnY3B5YXRybGxzd2hseXNxZmVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MjI2ODMsImV4cCI6MjA5MTM5ODY4M30.BHY6R2e62YvXz-N_2n_qHossbKxPZxUX0y1lrNKketg';
+    const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-      const SUPER_ADMIN_CREDENTIALS = { email: 'arz.fom@gmail.com', password: 'SuperAdmin2026!' };
-      const SUPABASE_URL = 'https://tgcpyatrllswhlysqfer.supabase.co';
-      const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRnY3B5YXRybGxzd2hseXNxZmVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MjI2ODMsImV4cCI6MjA5MTM5ODY4M30.BHY6R2e62YvXz-N_2n_qHossbKxPZxUX0y1lrNKketg';
-      
-      const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      let currentOrgs = [];
+    let currentImportOrgId = null;
 
-      window.handleSuperAdminLogin = function() {
-        const email = document.getElementById('admin-email').value;
-        const password = document.getElementById('admin-password').value;
-        if (email !== SUPER_ADMIN_CREDENTIALS.email || password !== SUPER_ADMIN_CREDENTIALS.password) {
-          alert('❌ Email atau password salah!');
-          return;
-        }
-        sessionStorage.setItem('super_admin', 'true');
-        showDashboard();
-      };
-
-      window.handleLogout = function() {
-        sessionStorage.removeItem('super_admin');
-        location.reload();
-      };
-
-      window.showDashboard = function() {
+    // LOGIN
+    async function handleLogin() {
+      const e = document.getElementById('sa-email').value;
+      const p = document.getElementById('sa-pass').value;
+      // Simple check (In production, verify with super_admin table)
+      if(e === 'admin@danakita.com' && p === 'SuperAdmin123!') {
         document.getElementById('login-section').classList.add('hidden');
         document.getElementById('dashboard-section').classList.remove('hidden');
         loadClients();
-      };
-
-      window.showSection = function(section) {
-        document.getElementById('section-clients').classList.add('hidden');
-        document.getElementById('section-audit').classList.add('hidden');
-        document.getElementById('nav-clients').className = 'px-4 py-2 bg-slate-200 text-slate-700 rounded-lg font-bold text-sm';
-        document.getElementById('nav-audit').className = 'px-4 py-2 bg-slate-200 text-slate-700 rounded-lg font-bold text-sm';
-        
-        if (section === 'clients') {
-          document.getElementById('section-clients').classList.remove('hidden');
-          document.getElementById('nav-clients').className = 'px-4 py-2 bg-blue-600 text-white rounded-lg font-bold text-sm';
-          loadClients();
-        } else if (section === 'audit') {
-          document.getElementById('section-audit').classList.remove('hidden');
-          document.getElementById('nav-audit').className = 'px-4 py-2 bg-blue-600 text-white rounded-lg font-bold text-sm';
-          loadAuditLogs();
-        }
-      };
-
-      window.loadClients = async function() {
-        showLoader(true);
-        try {
-          const { data, error } = await supabase.from('organizations').select('*').order('created_at', { ascending: false });
-          if (error) throw error;
-          currentOrgs = data || [];
-          renderClientsTable();
-          updateStats();
-        } catch (e) {
-          alert('Error: ' + e.message);
-        } finally {
-          showLoader(false);
-        }
-      };
-
-      window.renderClientsTable = function() {
-        const tbody = document.getElementById('clients-table-body');
-        tbody.innerHTML = '';
-        currentOrgs.forEach(org => {
-          const tr = document.createElement('tr');
-          tr.className = 'hover:bg-slate-50';
-          tr.innerHTML = `
-            <td class="px-6 py-4 font-mono text-sm font-bold text-blue-600">${org.client_code}</td>
-            <td class="px-6 py-4 font-bold">${org.nama}</td>
-            <td class="px-6 py-4"><span class="px-2 py-1 rounded text-xs font-bold bg-slate-100">${org.plan_tier}</span></td>
-            <td class="px-6 py-4"><span class="px-2 py-1 rounded text-xs font-bold ${org.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${org.is_active ? 'AKTIF' : 'NONAKTIF'}</span></td>
-            <td class="px-6 py-4 text-right"><button onclick="toggleOrgStatus('${org.id}', ${!org.is_active})" class="px-3 py-1 rounded text-xs font-bold ${org.is_active ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}">${org.is_active ? 'Suspend' : 'Activate'}</button></td>
-          `;
-          tbody.appendChild(tr);
-        });
-      };
-
-      window.updateStats = function() {
-        document.getElementById('stat-total').innerText = currentOrgs.length;
-        document.getElementById('stat-active').innerText = currentOrgs.filter(o => o.is_active).length;
-        document.getElementById('stat-inactive').innerText = currentOrgs.filter(o => !o.is_active).length;
-        document.getElementById('stat-pro').innerText = currentOrgs.filter(o => o.plan_tier === 'pro').length;
-      };
-
-      window.showRegisterModal = function() {
-        document.getElementById('modal-register').classList.remove('hidden');
-      };
-
-      window.handleRegisterClient = async function() {
-        const nama = document.getElementById('reg-nama').value.trim();
-        const username = document.getElementById('reg-admin-username').value.trim();
-        const password = document.getElementById('reg-admin-password').value;
-        
-        if (!nama || !username || !password) {
-          alert('Semua field wajib diisi!');
-          return;
-        }
-
-        showLoader(true);
-        try {
-          const cleanName = nama.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 10);
-          const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-          const clientCode = `DKT-${cleanName}-${randomCode}`;
-
-          const { data: orgData, error: orgError } = await supabase.from('organizations').insert([{ client_code: clientCode, nama: nama, plan_tier: 'free', is_active: true }]).select().single();
-          if (orgError) throw orgError;
-
-          const { data: hashData } = await supabase.rpc('hash_password', { raw_pass: password });
-          
-          await supabase.from('admin').insert([{
-            organization_id: orgData.id,
-            username: username,
-            password_hash: hashData,
-            nama_admin: nama,
-            role: 'admin',
-            must_change_password: true,
-            is_active: true
-          }]);
-
-          document.getElementById('cred-code').innerText = clientCode;
-          document.getElementById('cred-username').innerText = username;
-          document.getElementById('cred-password').innerText = password;
-          
-          closeModal();
-          document.getElementById('modal-credentials').classList.remove('hidden');
-          await loadClients();
-        } catch (e) {
-          alert('Error: ' + e.message);
-        } finally {
-          showLoader(false);
-        }
-      };
-
-      window.toggleOrgStatus = async function(orgId, newStatus) {
-        if (!confirm(`Yakin ingin ${newStatus ? 'aktifkan' : 'suspend'}?`)) return;
-        showLoader(true);
-        try {
-          await supabase.from('organizations').update({ is_active: newStatus }).eq('id', orgId);
-          await loadClients();
-        } catch (e) {
-          alert('Error: ' + e.message);
-        } finally {
-          showLoader(false);
-        }
-      };
-
-      window.loadAuditLogs = async function() {
-        showLoader(true);
-        try {
-          const { data } = await supabase.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(50);
-          const tbody = document.getElementById('audit-table-body');
-          tbody.innerHTML = '';
-          data.forEach(log => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td class="px-4 py-3 text-sm">${new Date(log.created_at).toLocaleString('id-ID')}</td><td class="px-4 py-3 text-sm">${log.actor_name || log.actor_id}</td><td class="px-4 py-3"><span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-bold">${log.action}</span></td>`;
-            tbody.appendChild(tr);
-          });
-        } catch (e) {
-          alert('Error: ' + e.message);
-        } finally {
-          showLoader(false);
-        }
-      };
-
-      window.closeModal = function() {
-        document.querySelectorAll('[id^="modal-"]').forEach(m => m.classList.add('hidden'));
-      };
-
-      window.showLoader = function(show) {
-        document.getElementById('loader').classList.toggle('hidden', !show);
-      };
-
-      // Check existing session
-      if (sessionStorage.getItem('super_admin') === 'true') {
-        showDashboard();
+      } else {
+        alert('Login salah! Gunakan admin@danakita.com / SuperAdmin123!');
       }
+    }
+
+    function handleLogout() {
+      location.reload();
+    }
+
+    // TABS
+    function showTab(name) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.getElementById('tab-' + name).classList.remove('hidden');
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-white', 'shadow');
+        btn.classList.add('text-slate-500');
+      });
+      document.getElementById('btn-' + name).classList.add('bg-white', 'shadow');
+      document.getElementById('btn-' + name).classList.remove('text-slate-500');
+      
+      if(name === 'audit') loadAudit();
+    }
+
+    // CLIENTS
+    async function loadClients() {
+      const { data, error } = await db.from('organizations').select('*').order('created_at', { ascending: false });
+      if(error) return console.error(error);
+
+      let total = 0, active = 0, expired = 0, premium = 0;
+      const today = new Date();
+      
+      document.getElementById('clients-tbody').innerHTML = data.map(org => {
+        total++;
+        if(org.is_active) active++; else expired++;
+        if(org.plan_tier !== 'starter') premium++;
+
+        const isExpired = new Date(org.validity_end) < today;
+        const statusClass = isExpired ? 'badge-inactive' : 'badge-active';
+        const statusText = isExpired ? 'Expired' : (org.is_active ? 'Aktif' : 'Nonaktif');
+        const planClass = `badge-${org.plan_tier}`;
+
+        return `
+          <tr class="hover:bg-slate-50">
+            <td class="px-4 py-3">
+              <div class="font-bold text-slate-800">${org.display_name || org.nama}</div>
+              <div class="text-xs text-slate-500">WA: ${org.kontak_wa_admin || '-'}</div>
+            </td>
+            <td class="px-4 py-3"><span class="badge ${planClass}">${org.plan_tier.toUpperCase()}</span></td>
+            <td class="px-4 py-3 text-xs">${new Date(org.validity_end).toLocaleDateString('id-ID')}</td>
+            <td class="px-4 py-3"><span class="badge ${statusClass}">${statusText}</span></td>
+            <td class="px-4 py-3 text-right">
+              <button onclick="openImport('${org.id}')" class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded mr-1">Import</button>
+              <button onclick="toggleStatus('${org.id}', ${!org.is_active})" class="text-xs ${org.is_active ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'} px-2 py-1 rounded">
+                ${org.is_active ? 'Suspend' : 'Activate'}
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      document.getElementById('stat-total').innerText = total;
+      document.getElementById('stat-active').innerText = active;
+      document.getElementById('stat-expired').innerText = expired;
+      document.getElementById('stat-premium').innerText = premium;
+    }
+
+    async function toggleStatus(id, status) {
+      await db.from('organizations').update({ is_active: status }).eq('id', id);
+      loadClients();
+    }
+
+    // ADD CLIENT
+    document.getElementById('form-add-client').onsubmit = async function(e) {
+      e.preventDefault();
+      showLoader(true);
+
+      // Validasi WA
+      const wa = document.getElementById('reg-wa').value;
+      if(!/^(\+62|62|0)8[1-9][0-9]{7,10}$/.test(wa.replace(/[\s-]/g,''))) {
+        alert('Format WhatsApp tidak valid! (Contoh: 628123456789)');
+        showLoader(false); return;
+      }
+
+      const res = await db.rpc('super_admin_create_org', {
+        p_nama: document.getElementById('reg-nama').value,
+        p_display_name: document.getElementById('reg-display').value,
+        p_alamat: document.getElementById('reg-alamat').value,
+        p_kontak_wa: wa,
+        p_plan_tier: document.getElementById('reg-plan').value,
+        p_validity_start: new Date().toISOString(),
+        p_validity_end: document.getElementById('reg-validity').value,
+        p_admin_username: document.getElementById('reg-admin-user').value,
+        p_admin_nama: document.getElementById('reg-admin-nama').value,
+        p_admin_password: document.getElementById('reg-admin-pass').value,
+        p_logo_url: document.getElementById('reg-logo').value || null
+      });
+
+      showLoader(false);
+      if(res.error) alert('Gagal: ' + res.error.message);
+      else {
+        alert('✅ Klien berhasil dibuat!');
+        closeModal('modal-add-client');
+        document.getElementById('form-add-client').reset();
+        loadClients();
+      }
+    };
+
+    // IMPORT CSV
+    function openImport(orgId) {
+      currentImportOrgId = orgId;
+      document.getElementById('csv-file').value = '';
+      document.getElementById('csv-preview').classList.add('hidden');
+      document.getElementById('modal-import').classList.remove('hidden');
+    }
+
+    document.getElementById('csv-file').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if(!file) return;
+
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: function(results) {
+          const preview = document.getElementById('csv-preview');
+          preview.classList.remove('hidden');
+          preview.innerHTML = `<p class="font-bold mb-2">Preview ${results.data.length} baris:</p>` + 
+            results.data.slice(0, 3).map(row => `<div class="mb-1 border-b pb-1">${JSON.stringify(row)}</div>`).join('');
+        }
+      });
     });
+
+    async function processImport() {
+      const file = document.getElementById('csv-file').files[0];
+      if(!file) return alert('Pilih file CSV dulu!');
+
+      showLoader(true);
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: async function(results) {
+          let success = 0, error = 0;
+          
+          // Get default PIN hash for '1234'
+          const {  hash } = await db.rpc('hash_password', { raw_pass: '1234' });
+
+          for(const row of results.data) {
+            try {
+              if(!row.nama || !row.no_rumah) throw new Error("Missing name/room");
+              
+              // Insert warga
+              await db.from('warga').insert({
+                id: 'wrg_' + Date.now() + Math.random(),
+                organization_id: currentImportOrgId,
+                nama: row.nama.trim(),
+                no_rumah: row.no_rumah.trim().toUpperCase(),
+                no_wa: row.no_wa?.trim() || null,
+                pin_hash: row.pin_opsional ? await db.rpc('hash_password', { raw_pass: row.pin_opsional }) : hash,
+                status: 'ACTIVE'
+              });
+              success++;
+            } catch(err) {
+              error++;
+              console.error(err);
+            }
+          }
+          
+          showLoader(false);
+          alert(`Import Selesai!\n✅ Berhasil: ${success}\n❌ Gagal: ${error}`);
+          closeModal('modal-import');
+          loadClients();
+        }
+      });
+    }
+
+    // AUDIT LOG
+    async function loadAudit() {
+      const { data } = await db.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(50);
+      document.getElementById('audit-list').innerHTML = data.map(log => `
+        <li class="bg-slate-50 p-3 rounded-lg border-l-4 ${log.action.includes('CREATE') ? 'border-green-500' : 'border-blue-500'}">
+          <div class="flex justify-between text-xs text-slate-500 mb-1">
+            <span>${new Date(log.created_at).toLocaleString('id-ID')}</span>
+            <span class="font-bold">${log.actor_name}</span>
+          </div>
+          <p class="font-bold text-slate-700 text-sm">${log.action}</p>
+          <p class="text-xs text-slate-500">Tabel: ${log.table_name}</p>
+        </li>
+      `).join('');
+    }
+
+    // UTILS
+    function showLoader(show) { document.getElementById('loader').classList.toggle('hidden', !show); }
+    function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
   </script>
 </body>
 </html>
