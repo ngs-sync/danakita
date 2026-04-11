@@ -161,7 +161,7 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRnY3B5YXRybGxzd2hseXNxZmVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MjI2ODMsImV4cCI6MjA5MTM5ODY4M30.BHY6R2e62YvXz-N_2n_qHossbKxPZxUX0y1lrNKketg';
     const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    let expandedOrgs = {}; // Cache admin list
+    let expandedOrgs = {};
 
     // LOGIN
     async function handleLogin() {
@@ -169,7 +169,6 @@
       const p = document.getElementById('sa-pass').value;
       showLoader(true);
       
-      // Cek di tabel super_admins
       const { data, error } = await db.from('super_admins').select('*').eq('username', u).eq('password', p).single();
       showLoader(false);
 
@@ -189,25 +188,31 @@
       location.reload();
     }
 
-    // Check Session
-    if(localStorage.getItem('sa_session')) {
-      document.getElementById('login-section').classList.add('hidden');
-      document.getElementById('dashboard-section').classList.remove('hidden');
-      loadClients();
-      loadSuperAdmins();
-    }
+    // Check Session on Load
+    window.addEventListener('DOMContentLoaded', function() {
+      const session = localStorage.getItem('sa_session');
+      if(session) {
+        document.getElementById('login-section').classList.add('hidden');
+        document.getElementById('dashboard-section').classList.remove('hidden');
+        loadClients();
+        loadSuperAdmins();
+      }
+    });
 
     // TABS
     function showTab(name) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
       document.getElementById('tab-' + name).classList.remove('hidden');
-      document.querySelectorAll('.tab-btn').forEach(btn => { btn.classList.remove('bg-white', 'shadow'); btn.classList.add('text-slate-500'); });
+      document.querySelectorAll('.tab-btn').forEach(btn => { 
+        btn.classList.remove('bg-white', 'shadow'); 
+        btn.classList.add('text-slate-500'); 
+      });
       document.getElementById('btn-' + name).classList.add('bg-white', 'shadow');
       document.getElementById('btn-' + name).classList.remove('text-slate-500');
       if(name === 'audit') loadAudit();
     }
 
-    // --- SUPER ADMIN MANAGEMENT ---
+    // SUPER ADMIN MANAGEMENT
     async function loadSuperAdmins() {
       const { data } = await db.from('super_admins').select('*');
       document.getElementById('sa-tbody').innerHTML = data.map(sa => `
@@ -248,7 +253,7 @@
       loadSuperAdmins();
     }
 
-    // --- CLIENT MANAGEMENT ---
+    // CLIENT MANAGEMENT
     async function loadClients() {
       const { data } = await db.from('organizations').select('*').order('created_at', { ascending: false });
       document.getElementById('clients-tbody').innerHTML = data.map(org => `
@@ -271,16 +276,13 @@
 
     async function toggleRow(orgId, orgName) {
       const row = document.getElementById(`row-${orgId}`);
-      const panel = document.getElementById(`admin-panel-${orgId}`);
       const isHidden = row.style.display === 'none' || !row.style.display;
       
-      // Toggle
       document.querySelectorAll('.row-expand').forEach(r => r.style.display = 'none');
       
       if(isHidden) {
         row.style.display = 'table-row';
         if(!expandedOrgs[orgId]) {
-          // Fetch Admins
           const { data } = await db.from('admin').select('id, username, nama_admin, role, is_active').eq('organization_id', orgId);
           expandedOrgs[orgId] = data || [];
           renderAdminPanel(orgId, orgName, expandedOrgs[orgId]);
@@ -312,9 +314,9 @@
         <div class="bg-white rounded-lg border shadow-sm p-4">
           <div class="flex justify-between items-center mb-3">
             <h4 class="font-bold text-slate-700">👥 Admin: ${orgName}</h4>
-            <button onclick="openModal('modal-add-admin-${orgId}')" class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold">+ Tambah Admin</button>
+            <button onclick="openModal('modal-add-admin')" class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold">+ Tambah Admin</button>
           </div>
-          ${admins.filter(a=>!a.is_active).length > 0 ? `<p class="text-[10px] text-slate-400 mb-2">(${admins.filter(a=>!a.is_active).length} admin nonaktif)</p>` : ''}
+          ${admins.filter(a=>!a.is_active).length > 0 ? '<p class="text-[10px] text-slate-400 mb-2">(' + admins.filter(a=>!a.is_active).length + ' admin nonaktif)</p>' : ''}
           <table class="w-full nested-table">
             <thead><tr><th class="text-left">Username</th><th class="text-left">Nama</th><th>Role</th><th>Password</th><th class="text-right">Aksi</th></tr></thead>
             <tbody>${adminRows || '<tr><td colspan="5" class="p-4 text-center text-slate-400">Belum ada admin aktif.</td></tr>'}</tbody>
@@ -323,56 +325,54 @@
       `;
     }
 
-    // --- CLIENT ADMIN ACTIONS ---
     async function deleteClientAdmin(orgId, adminId) {
       const activeCount = expandedOrgs[orgId].filter(a => a.is_active).length;
       if(activeCount <= 1) return alert('❌ Tidak bisa menghapus admin terakhir!');
       if(!confirm('Hapus admin ini? (Soft delete)')) return;
 
       await db.from('admin').update({ is_active: false }).eq('id', adminId);
-      // Refresh cache & UI
       const { data } = await db.from('admin').select('id, username, nama_admin, role, is_active').eq('organization_id', orgId);
       expandedOrgs[orgId] = data;
       renderAdminPanel(orgId, '...', expandedOrgs[orgId]);
     }
 
     async function resetAdminPass(orgId, adminId, username) {
-      // Generate random password
       const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#';
       let pass = '';
       for(let i=0; i<10; i++) pass += chars.charAt(Math.floor(Math.random() * chars.length));
 
       showLoader(true);
-      // Update DB with hashed password
       const hash = await db.rpc('hash_password', { raw_pass: pass });
       await db.from('admin').update({ password_hash: hash }).eq('id', adminId);
       showLoader(false);
 
-      // Show result
       document.getElementById('display-new-pass').innerText = pass;
       document.getElementById('modal-pass-result').classList.remove('hidden');
       
-      // Copy logic
       window.copyNewPass = () => {
         navigator.clipboard.writeText(pass).then(() => alert('Password copied!'));
       };
     }
 
-    // --- GLOBAL MODALS & UTILS ---
     function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
     function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
     function showLoader(show) { document.getElementById('loader').classList.toggle('hidden', !show); }
 
-    // Add Client Form Submit
     document.getElementById('form-add-client').onsubmit = async function(e) {
       e.preventDefault();
       showLoader(true);
       const res = await db.rpc('super_admin_create_org', {
-        p_nama: document.getElementById('reg-nama').value, p_display_name: document.getElementById('reg-display').value,
-        p_alamat: '', p_kontak_wa: document.getElementById('reg-wa').value, p_plan_tier: document.getElementById('reg-plan').value,
-        p_validity_start: new Date().toISOString(), p_validity_end: document.getElementById('reg-validity').value,
-        p_admin_username: document.getElementById('reg-admin-user').value, p_admin_nama: document.getElementById('reg-admin-nama').value,
-        p_admin_password: document.getElementById('reg-admin-pass').value, p_logo_url: document.getElementById('reg-logo').value || null
+        p_nama: document.getElementById('reg-nama').value, 
+        p_display_name: document.getElementById('reg-display').value,
+        p_alamat: '', 
+        p_kontak_wa: document.getElementById('reg-wa').value, 
+        p_plan_tier: document.getElementById('reg-plan').value,
+        p_validity_start: new Date().toISOString(), 
+        p_validity_end: document.getElementById('reg-validity').value,
+        p_admin_username: document.getElementById('reg-admin-user').value, 
+        p_admin_nama: document.getElementById('reg-admin-nama').value,
+        p_admin_password: document.getElementById('reg-admin-pass').value, 
+        p_logo_url: document.getElementById('reg-logo').value || null
       });
       showLoader(false);
       if(res.error) alert('Gagal: ' + res.error.message);
@@ -395,22 +395,6 @@
           <p class="font-bold text-slate-700 text-sm">${log.action}</p><p class="text-xs text-slate-500">Tabel: ${log.table_name}</p>
         </li>`).join('');
     }
-    <script>
-// Pastikan DOM sudah siap
-document.addEventListener('DOMContentLoaded', function() {
-  // Cek session saat page load
-  const session = localStorage.getItem('sa_session');
-  if(session) {
-    console.log('✅ Session found:', JSON.parse(session));
-    document.getElementById('login-section').classList.add('hidden');
-    document.getElementById('dashboard-section').classList.remove('hidden');
-    loadClients();
-    loadSuperAdmins();
-  } else {
-    console.log('❌ No session found');
-  }
-});
-</script>
   </script>
 </body>
 </html>
