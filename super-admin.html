@@ -395,6 +395,22 @@
           <p class="font-bold text-slate-700 text-sm">${log.action}</p><p class="text-xs text-slate-500">Tabel: ${log.table_name}</p>
         </li>`).join('');
     }
+    <script>
+// Pastikan DOM sudah siap
+document.addEventListener('DOMContentLoaded', function() {
+  // Cek session saat page load
+  const session = localStorage.getItem('sa_session');
+  if(session) {
+    console.log('✅ Session found:', JSON.parse(session));
+    document.getElementById('login-section').classList.add('hidden');
+    document.getElementById('dashboard-section').classList.remove('hidden');
+    loadClients();
+    loadSuperAdmins();
+  } else {
+    console.log('❌ No session found');
+  }
+});
+</script>
   </script>
 </body>
 </html>
