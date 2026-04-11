@@ -157,16 +157,22 @@
   </div>
 
   <script>
-    const SUPABASE_URL = 'https://tgcpyatrllswhlysqfer.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRnY3B5YXRybGxzd2hseXNxZmVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MjI2ODMsImV4cCI6MjA5MTM5ODY4M30.BHY6R2e62YvXz-N_2n_qHossbKxPZxUX0y1lrNKketg';
-    const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-  window.dk = window.dk || {};
-  window.dk.db = db;
-    
+    // ==========================================
+    // INIT SUPABASE & GLOBAL VARS
+    // ==========================================
+    window.dk = window.dk || {};
+    if (!window.dk.db) {
+      window.dk.db = window.supabase.createClient(
+        'https://tgcpyatrllswhlysqfer.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRnY3B5YXRybGxzd2hseXNxZmVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MjI2ODMsImV4cCI6MjA5MTM5ODY4M30.BHY6R2e62YvXz-N_2n_qHossbKxPZxUX0y1lrNKketg'
+      );
+    }
+    const db = window.dk.db;
     let expandedOrgs = {};
 
-    // LOGIN
+    // ==========================================
+    // LOGIN & SESSION
+    // ==========================================
     async function handleLogin() {
       const u = document.getElementById('sa-email').value;
       const p = document.getElementById('sa-pass').value;
@@ -191,18 +197,24 @@
       location.reload();
     }
 
-    // Check Session on Load
+    // Check Session on Page Load
     window.addEventListener('DOMContentLoaded', function() {
+      console.log('🔍 Checking session...');
       const session = localStorage.getItem('sa_session');
       if(session) {
+        console.log('✅ Session found');
         document.getElementById('login-section').classList.add('hidden');
         document.getElementById('dashboard-section').classList.remove('hidden');
         loadClients();
         loadSuperAdmins();
+      } else {
+        console.log('❌ No session found');
       }
     });
 
-    // TABS
+    // ==========================================
+    // TAB NAVIGATION
+    // ==========================================
     function showTab(name) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
       document.getElementById('tab-' + name).classList.remove('hidden');
@@ -215,9 +227,19 @@
       if(name === 'audit') loadAudit();
     }
 
+    // ==========================================
     // SUPER ADMIN MANAGEMENT
+    // ==========================================
     async function loadSuperAdmins() {
-      const { data } = await db.from('super_admins').select('*');
+      console.log('🔄 Loading super admins...');
+      const { data, error } = await db.from('super_admins').select('*');
+      
+      if(error) {
+        console.error('❌ Error loading super admins:', error);
+        return;
+      }
+      
+      console.log('✅ Super admins loaded:', data);
       document.getElementById('sa-tbody').innerHTML = data.map(sa => `
         <tr class="hover:bg-slate-50">
           <td class="px-4 py-3 font-bold">${sa.username}</td>
@@ -256,9 +278,25 @@
       loadSuperAdmins();
     }
 
+    // ==========================================
     // CLIENT MANAGEMENT
+    // ==========================================
     async function loadClients() {
-      const { data } = await db.from('organizations').select('*').order('created_at', { ascending: false });
+      console.log('🔄 Loading clients...');
+      const { data, error } = await db.from('organizations').select('*').order('created_at', { ascending: false });
+      
+      if(error) {
+        console.error('❌ Error loading clients:', error);
+        return;
+      }
+      
+      console.log('✅ Clients loaded:', data);
+      
+      if(!data || data.length === 0) {
+        document.getElementById('clients-tbody').innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-slate-400">Belum ada klien. Klik "+ Registrasi Klien" untuk menambah.</td></tr>';
+        return;
+      }
+      
       document.getElementById('clients-tbody').innerHTML = data.map(org => `
         <tr class="hover:bg-slate-50">
           <td class="px-2 py-3 text-center cursor-pointer text-slate-400" onclick="toggleRow('${org.id}', '${org.display_name}')">▼</td>
@@ -278,18 +316,23 @@
     }
 
     async function toggleRow(orgId, orgName) {
+      console.log('🔄 Toggling row for org:', orgId);
       const row = document.getElementById(`row-${orgId}`);
       const isHidden = row.style.display === 'none' || !row.style.display;
       
+      // Close all rows
       document.querySelectorAll('.row-expand').forEach(r => r.style.display = 'none');
       
       if(isHidden) {
         row.style.display = 'table-row';
         if(!expandedOrgs[orgId]) {
+          console.log('📡 Fetching admins for org:', orgId);
           const { data } = await db.from('admin').select('id, username, nama_admin, role, is_active').eq('organization_id', orgId);
           expandedOrgs[orgId] = data || [];
+          console.log('✅ Admins loaded:', expandedOrgs[orgId]);
           renderAdminPanel(orgId, orgName, expandedOrgs[orgId]);
         } else {
+          console.log('💾 Using cached admins:', expandedOrgs[orgId]);
           renderAdminPanel(orgId, orgName, expandedOrgs[orgId]);
         }
       }
@@ -357,10 +400,14 @@
       };
     }
 
+    // ==========================================
+    // UTILS & MODALS
+    // ==========================================
     function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
     function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
     function showLoader(show) { document.getElementById('loader').classList.toggle('hidden', !show); }
 
+    // Add Client Form Submit
     document.getElementById('form-add-client').onsubmit = async function(e) {
       e.preventDefault();
       showLoader(true);
