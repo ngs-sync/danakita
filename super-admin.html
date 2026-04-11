@@ -161,6 +161,9 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRnY3B5YXRybGxzd2hseXNxZmVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MjI2ODMsImV4cCI6MjA5MTM5ODY4M30.BHY6R2e62YvXz-N_2n_qHossbKxPZxUX0y1lrNKketg';
     const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+  window.dk = window.dk || {};
+  window.dk.db = db;
+    
     let expandedOrgs = {};
 
     // LOGIN
