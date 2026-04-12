@@ -356,8 +356,8 @@
       const orgSession = JSON.parse(localStorage.getItem('dk_org'));
       localStorage.setItem('dk_session', JSON.stringify({ orgId: window.dk.state.orgId, orgName: orgSession?.name, user: window.dk.state.user, token: window.dk.state.token, exp: Date.now() + 86400000 }));
       
-      // LOGIKA GERBANG PRIVASI
-      if (window.dk.state.user.is_agreed_policy === false) {
+      // LOGIKA GERBANG PRIVASI (DENGAN SUPER ADMIN BYPASS)
+      if (window.dk.state.user.is_agreed_policy === false && window.dk.state.user.role !== 'super_admin') {
           document.getElementById('modalPrivacy').classList.remove('hidden');
           return; // Stop eksekusi sampai setuju
       }
@@ -366,16 +366,30 @@
       else { document.getElementById('areaWarga').style.display = 'block'; document.getElementById('areaAdmin').style.display = 'none'; document.getElementById('navWarga').classList.remove('hidden'); document.getElementById('navAdmin').classList.add('hidden'); document.getElementById('logoutBtn').classList.remove('hidden'); fnLoadData().then(() => { fnRenderWargaDash(); fnRenderIuran(); fnRenderRiwayat(); fnSetupProfil(); }); }
     }
 
-    // FUNGSI PERSETUJUAN PRIVASI
+    // FUNGSI PERSETUJUAN PRIVASI (DENGAN PENANGANAN ERROR RLS)
     window.fnAgreePrivacy = async function() {
         const chk = document.getElementById('chkPrivacy');
         if(!chk.checked) return alert("Mohon centang kotak persetujuan terlebih dahulu.");
         
         showLoader(true);
         const table = window.dk.state.user.type === 'warga' ? 'warga' : 'admin';
-        await db().from(table).update({ is_agreed_policy: true }).eq('id', window.dk.state.user.id);
+        
+        const { error } = await db().from(table).update({ is_agreed_policy: true }).eq('id', window.dk.state.user.id);
+        
+        if (error) {
+            showLoader(false);
+            return alert("Gagal menyimpan persetujuan: " + error.message);
+        }
         
         window.dk.state.user.is_agreed_policy = true;
+        
+        // Update memori lokal agar tidak pura-pura lupa saat direfresh
+        const session = JSON.parse(localStorage.getItem('dk_session'));
+        if(session && session.user) {
+            session.user.is_agreed_policy = true;
+            localStorage.setItem('dk_session', JSON.stringify(session));
+        }
+        
         showLoader(false);
         document.getElementById('modalPrivacy').classList.add('hidden');
         fnShowApp(); // Lanjut render dashboard
