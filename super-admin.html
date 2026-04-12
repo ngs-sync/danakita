@@ -7,7 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
   
   <style>
     :root {
@@ -75,7 +75,7 @@
   <div id="dashboard-section" class="!hidden">
     <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
       <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
-        <div class="flex items-center gap-3"><div class="w-10 h-10 bg-gradient-to-br from-[#00A6ED] to-[#0089C9] text-white rounded-xl flex items-center justify-center shadow-lg shadow-blue-200"><i class="ph ph-buildings text-2xl"></i></div><div><h1 class="text-lg font-black text-slate-800 leading-tight">DanaKita Super</h1><p class="text-[10px] font-bold text-[#FF6B35] tracking-widest uppercase">Console Management</p></div></div>
+        <div class="flex items-center gap-3"><div class="w-10 h-10 bg-gradient-to-br from-[#00A6ED] to-[#0089C9] text-white rounded-xl flex items-center justify-center shadow-lg shadow-blue-200"><i class="ph ph-buildings text-2xl"></i></div><div><h1 class="text-lg font-black text-slate-800 leading-tight">DanaKita Super</h1><p id="header-role" class="text-[10px] font-bold text-[#FF6B35] tracking-widest uppercase">Console Management</p></div></div>
         <button onclick="handleLogout()" class="flex items-center gap-2 text-slate-500 hover:text-red-500 font-bold text-sm bg-slate-100 hover:bg-red-50 px-4 py-2 rounded-xl transition"><i class="ph ph-sign-out text-lg"></i> <span class="hidden sm:inline">Keluar</span></button>
       </div>
     </header>
@@ -84,7 +84,7 @@
       <div class="overflow-x-auto pb-2 mb-4 sm:mb-6">
         <div class="flex gap-2 bg-slate-200 p-1.5 rounded-2xl w-max">
           <button onclick="showTab('clients')" class="tab-btn active-tab px-4 sm:px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 text-slate-600" id="btn-clients"><i class="ph ph-users-three text-lg"></i> Klien</button>
-          <button onclick="showTab('superadmins')" class="tab-btn px-4 sm:px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 text-slate-600" id="btn-superadmins"><i class="ph ph-police-car text-lg"></i> Super Admin</button>
+          <button onclick="showTab('superadmins')" class="tab-btn px-4 sm:px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 text-slate-600" id="btn-superadmins"><i class="ph ph-police-car text-lg"></i> Tim Internal</button>
           <button onclick="showTab('audit')" class="tab-btn px-4 sm:px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 text-slate-600" id="btn-audit"><i class="ph ph-file-search text-lg"></i> Audit Log</button>
         </div>
       </div>
@@ -92,7 +92,7 @@
       <div id="tab-clients" class="tab-content active">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
           <div><h2 class="text-2xl font-black text-slate-800">Manajemen Klien</h2><p class="text-sm text-slate-500 font-medium">Kelola pelanggan SaaS dan masa aktif.</p></div>
-          <button onclick="openModal('modal-add-client')" class="btn-secondary w-full sm:w-auto flex items-center justify-center gap-2"><i class="ph ph-plus-circle text-lg"></i> Klien Baru</button>
+          <button id="btn-tambah-klien" onclick="openModal('modal-add-client')" class="btn-secondary w-full sm:w-auto flex items-center justify-center gap-2"><i class="ph ph-plus-circle text-lg"></i> Klien Baru</button>
         </div>
         
         <div class="grid grid-cols-1 sm:grid-cols-2 md:hidden gap-4" id="clients-mobile-container"></div>
@@ -110,13 +110,13 @@
 
       <div id="tab-superadmins" class="tab-content">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-          <h2 class="text-2xl font-black text-slate-800">Super Admin</h2>
+          <h2 class="text-2xl font-black text-slate-800">Tim Internal</h2>
           <button onclick="openModal('modal-add-sa')" class="btn-secondary w-full sm:w-auto flex items-center justify-center gap-2"><i class="ph ph-plus-circle text-lg"></i> Tambah Akses</button>
         </div>
         <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
           <table class="w-full text-left border-collapse">
             <thead>
-              <tr class="bg-slate-50 border-b border-slate-200 text-xs uppercase tracking-widest text-slate-500"><th class="p-4 font-black">Username</th><th class="p-4 font-black">Nama Lengkap</th><th class="p-4 font-black text-right">Aksi</th></tr>
+              <tr class="bg-slate-50 border-b border-slate-200 text-xs uppercase tracking-widest text-slate-500"><th class="p-4 font-black">Username</th><th class="p-4 font-black">Nama & Role</th><th class="p-4 font-black text-right">Aksi</th></tr>
             </thead>
             <tbody id="sa-tbody" class="text-sm divide-y divide-slate-100"></tbody>
           </table>
@@ -129,7 +129,7 @@
         
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
           <div><label class="text-[10px] font-black uppercase text-slate-500 tracking-widest">Filter Klien</label><select id="filter-audit-org" onchange="loadAudit()" class="input-field mt-1 !p-2"><option value="">Semua Klien</option></select></div>
-          <div><label class="text-[10px] font-black uppercase text-slate-500 tracking-widest">Filter Aktor</label><select id="filter-audit-actor" onchange="loadAudit()" class="input-field mt-1 !p-2"><option value="">Semua Aktor</option><option value="superadmin">Super Admin</option><option value="admin">Admin Pengurus</option><option value="warga">Warga</option></select></div>
+          <div><label class="text-[10px] font-black uppercase text-slate-500 tracking-widest">Filter Aktor</label><select id="filter-audit-actor" onchange="loadAudit()" class="input-field mt-1 !p-2"><option value="">Semua Aktor</option><option value="superadmin">Super Admin / Finance</option><option value="admin">Admin Pengurus</option><option value="warga">Warga</option></select></div>
           <div class="flex items-end"><button onclick="loadAudit()" class="btn-primary w-full !py-2.5 flex items-center justify-center gap-2"><i class="ph ph-arrows-clockwise"></i> Refresh</button></div>
         </div>
 
@@ -147,7 +147,7 @@
     
     <div class="p-6 overflow-y-auto flex-1 bg-white">
       <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100 mb-6">
-        <div class="flex justify-between items-center mb-4"><h4 class="font-black text-slate-800 flex items-center gap-2"><i class="ph ph-buildings text-[#00A6ED] text-lg"></i> Profil Klien</h4><button onclick="downloadInvoice()" class="text-[10px] bg-white border border-slate-200 shadow-sm px-3 py-1.5 rounded-lg font-bold text-slate-600 hover:text-blue-600 flex items-center gap-1"><i class="ph ph-file-pdf text-sm"></i> Invoice</button></div>
+        <div class="flex justify-between items-center mb-4"><h4 class="font-black text-slate-800 flex items-center gap-2"><i class="ph ph-buildings text-[#00A6ED] text-lg"></i> Profil Klien</h4><button onclick="downloadInvoice()" class="text-[10px] bg-white border border-slate-200 shadow-sm px-3 py-1.5 rounded-lg font-bold text-green-600 hover:text-green-700 flex items-center gap-1"><i class="ph ph-file-pdf text-sm"></i> Download Invoice</button></div>
         <input type="hidden" id="edit-org-id">
         <div class="space-y-3">
           <div><label class="text-[10px] font-black tracking-widest text-slate-500 uppercase">Kontak WA</label><input type="text" id="edit-wa" class="input-field !p-2 !text-sm mt-1"></div>
@@ -155,12 +155,13 @@
             <div><label class="text-[10px] font-black tracking-widest text-slate-500 uppercase">Mulai</label><input type="date" id="edit-start" class="input-field !p-2 !text-sm mt-1"></div>
             <div><label class="text-[10px] font-black tracking-widest text-slate-500 uppercase">Berakhir</label><input type="date" id="edit-end" class="input-field !p-2 !text-sm mt-1"></div>
           </div>
-          <button onclick="updateClientProfile()" class="btn-primary w-full !py-2 !text-sm shadow-none mt-2">Simpan Perubahan</button>
+          <button id="btn-update-profil" onclick="updateClientProfile()" class="btn-primary w-full !py-2 !text-sm shadow-none mt-2">Simpan Perubahan</button>
         </div>
       </div>
 
       <h4 class="font-black text-slate-800 flex items-center gap-2 mb-3 border-b border-slate-200 pb-2"><i class="ph ph-user-gear text-[#FF6B35] text-xl"></i> Admin Pengurus</h4>
-      <div id="drw-admin-list" class="space-y-3 mb-6"></div> <div class="bg-blue-50/50 p-5 rounded-2xl border border-blue-100">
+      <div id="drw-admin-list" class="space-y-3 mb-6"></div> 
+      <div id="div-tambah-admin" class="bg-blue-50/50 p-5 rounded-2xl border border-blue-100">
         <h5 class="text-xs font-black text-blue-800 uppercase tracking-widest mb-4 flex items-center gap-1"><i class="ph ph-plus"></i> Tambah Admin Baru</h5>
         <div class="space-y-3">
           <input type="text" id="new-adm-user" placeholder="Username (Harus Unik)" class="input-field text-sm !p-2">
@@ -182,13 +183,13 @@
           <div><label class="text-[10px] font-black tracking-widest uppercase text-slate-500 ml-1">No WA Pengurus</label><input type="text" id="reg-wa" required class="input-field mt-1" placeholder="628..."></div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-orange-50/50 p-4 rounded-2xl border border-orange-100">
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 bg-orange-50/50 p-4 rounded-2xl border border-orange-100">
           <div><label class="text-[10px] font-black tracking-widest uppercase text-orange-600 ml-1">Paket SaaS</label><select id="reg-plan" class="input-field mt-1 font-bold text-slate-700"><option value="starter">Starter</option><option value="pro">Pro</option><option value="enterprise">Enterprise</option></select></div>
-          <div class="sm:col-span-2 flex gap-2">
-            <div class="flex-1"><label class="text-[10px] font-black tracking-widest uppercase text-orange-600 ml-1">Nominal (Termasuk PPN)</label><input type="number" id="reg-nominal" required class="input-field mt-1" placeholder="Cth: 150000"></div>
-            <div class="w-1/3"><label class="text-[10px] font-black tracking-widest uppercase text-orange-600 ml-1">PPN (%)</label><input type="number" id="reg-ppn" required class="input-field mt-1" value="11"></div>
-          </div>
-          <div class="sm:col-span-3 grid grid-cols-2 gap-2 mt-2">
+          <div><label class="text-[10px] font-black tracking-widest uppercase text-orange-600 ml-1">Siklus</label><select id="reg-siklus" class="input-field mt-1 font-bold text-slate-700"><option value="Bulanan">Bulanan</option><option value="Tahunan">Tahunan</option></select></div>
+          <div class="flex-1"><label class="text-[10px] font-black tracking-widest uppercase text-orange-600 ml-1">Nominal</label><input type="number" id="reg-nominal" required class="input-field mt-1" placeholder="Cth: 150000"></div>
+          <div><label class="text-[10px] font-black tracking-widest uppercase text-orange-600 ml-1">PPN (%)</label><input type="number" id="reg-ppn" required class="input-field mt-1" value="11"></div>
+          
+          <div class="sm:col-span-4 grid grid-cols-2 gap-2 mt-2">
             <div><label class="text-[10px] font-black tracking-widest uppercase text-slate-500 ml-1">Tgl Mulai</label><input type="date" id="reg-start" required class="input-field mt-1"></div>
             <div><label class="text-[10px] font-black tracking-widest uppercase text-slate-500 ml-1">Tgl Berakhir</label><input type="date" id="reg-validity" required class="input-field mt-1"></div>
           </div>
@@ -209,8 +210,14 @@
 
   <div id="modal-add-sa" class="modal-overlay !hidden">
     <div class="modal-content" style="max-width: 400px;">
-      <h3 class="text-lg font-black mb-4 flex items-center gap-2"><i class="ph ph-shield-plus text-[#00A6ED]"></i> Super Admin Baru</h3>
+      <h3 class="text-lg font-black mb-4 flex items-center gap-2"><i class="ph ph-shield-plus text-[#00A6ED]"></i> Tim Internal Baru</h3>
       <div class="space-y-4">
+        <div><label class="text-[10px] font-black tracking-widest text-slate-500 uppercase ml-1">Role Akses</label>
+            <select id="sa-new-role" class="input-field mt-1 font-bold text-slate-700">
+                <option value="super_admin">Super Admin (Akses Penuh)</option>
+                <option value="finance">Finance (Hanya Penagihan/View)</option>
+            </select>
+        </div>
         <div><label class="text-[10px] font-black tracking-widest text-slate-500 uppercase ml-1">Username</label><input type="text" id="sa-new-user" required class="input-field mt-1"></div>
         <div><label class="text-[10px] font-black tracking-widest text-slate-500 uppercase ml-1">Nama Lengkap</label><input type="text" id="sa-new-nama" required class="input-field mt-1"></div>
         <div><label class="text-[10px] font-black tracking-widest text-slate-500 uppercase ml-1">Password</label><input type="text" id="sa-new-pass" required class="input-field mt-1"></div>
@@ -225,12 +232,18 @@
   <div id="invoice-template" style="display:none; padding: 40px; background: white; font-family: sans-serif; color: #1e293b; width: 800px;">
      <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #00A6ED; padding-bottom: 20px; margin-bottom: 30px;">
          <div><h1 style="color: #00A6ED; font-size: 32px; margin: 0;">INVOICE</h1><p style="font-size: 12px; color: #64748b; margin-top: 5px;">Layanan SaaS DanaKita - Pusat</p></div>
-         <div style="text-align: right;"><p style="font-size: 12px; color: #64748b; margin: 0;">Tanggal: <span id="inv-date" style="color:#0f172a; font-weight:bold;"></span></p></div>
+         <div style="text-align: right;"><p style="font-size: 12px; color: #64748b; margin: 0;">Tanggal Terbit: <span id="inv-date" style="color:#0f172a; font-weight:bold;"></span></p></div>
      </div>
-     <div style="margin-bottom: 40px;">
-         <p style="font-size: 12px; color: #64748b; margin: 0 0 5px 0;">DITAGIHKAN KEPADA:</p>
-         <h2 id="inv-client-name" style="margin: 0; font-size: 20px; color: #0f172a;">-</h2>
-         <p id="inv-client-code" style="margin: 5px 0 0 0; font-size: 14px; color: #64748b; font-family: monospace;">-</p>
+     <div style="margin-bottom: 40px; display: flex; justify-content: space-between;">
+         <div>
+            <p style="font-size: 12px; color: #64748b; margin: 0 0 5px 0;">DITAGIHKAN KEPADA:</p>
+            <h2 id="inv-client-name" style="margin: 0; font-size: 20px; color: #0f172a;">-</h2>
+            <p id="inv-client-code" style="margin: 5px 0 0 0; font-size: 14px; color: #64748b; font-family: monospace;">-</p>
+         </div>
+         <div style="text-align: right; background: #F8FAFC; padding: 12px; border-radius: 8px; border: 1px solid #E2E8F0;">
+            <p style="font-size: 10px; color: #64748b; margin: 0 0 2px 0;">Siklus Tagihan & Periode</p>
+            <h3 id="inv-siklus" style="margin: 0; font-size: 16px; color: #FF6B35; font-weight: 800;">-</h3>
+         </div>
      </div>
      <table style="width: 100%; border-collapse: collapse; margin-bottom: 40px;">
          <thead><tr style="background: #f8fafc; text-align: left; font-size: 12px; color: #64748b;"><th style="padding: 12px; border-bottom: 1px solid #e2e8f0;">DESKRIPSI LAYANAN</th><th style="padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: right;">JUMLAH</th></tr></thead>
@@ -245,40 +258,33 @@
 
   <script>
     // =======================================================================
-    // KONFIGURASI SUPABASE KUNCI MILIK ANDA (DENGAN JWT MANAGER)
+    // KONFIGURASI SUPABASE KUNCI MILIK ANDA
     // =======================================================================
     const SUPABASE_URL = 'https://tgcpyatrllswhlysqfer.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_lwmxiQPF5yUSQnDu4JK12A_mN4tMdWH';
     
     window.dk = window.dk || {};
-    
-    // JWT Connection Manager: Menyambungkan KTP Digital ke Supabase
     window.initSupabaseClient = function(token) {
         const options = {};
-        if(token) {
-            options.global = { headers: { Authorization: `Bearer ${token}` } };
-        }
+        if(token) options.global = { headers: { Authorization: `Bearer ${token}` } };
         window.dk.db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, options);
     };
 
     let currentBillingData = null; 
     let allOrgs = []; 
+    const monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
     
-    // Helper: Panggil db dinamis (KTP Token)
     const db = () => window.dk.db;
 
-    // Helper: Tarik Nama Asli Super Admin dari Sesi Browser
-    function getActiveActorName() {
+    // Helper: Mendapatkan detail sesi Super Admin / Finance
+    function getActiveSession() {
         try {
-            const session = JSON.parse(localStorage.getItem('sa_session'));
-            return session ? session.nama : 'Super Admin System';
-        } catch(e) { return 'Super Admin System'; }
+            return JSON.parse(localStorage.getItem('sa_session'));
+        } catch(e) { return null; }
     }
 
     const formatDate = (dateStr) => {
-      if(!dateStr) return '-';
-      const d = new Date(dateStr);
-      return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+      if(!dateStr) return '-'; const d = new Date(dateStr); return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
     };
     function formatIDR(num) { return 'Rp ' + Number(num||0).toLocaleString('id-ID'); }
     
@@ -287,114 +293,96 @@
         else document.getElementById('loader').classList.add('!hidden');
     }
 
-    // LOGIN SUPER ADMIN + TANGKAP JWT (MESIN BARU)
     async function handleLogin() {
-      const u = document.getElementById('sa-email').value;
-      const p = document.getElementById('sa-pass').value;
+      const u = document.getElementById('sa-email').value; const p = document.getElementById('sa-pass').value;
       showLoader(true);
-      
-      // Panggil fungsi Pabrik KTP (RPC) yang baru dibuat di Supabase
-      // Perhatikan kita menggunakan window.supabase.createClient bawaan anon untuk login awal
       const tempDb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
       const { data, error } = await tempDb.rpc('rpc_login_super_admin', { p_username: u, p_password: p });
-      
       showLoader(false);
       
-      if (error) {
-         alert('Terjadi kesalahan sistem: ' + error.message); return;
-      }
-      
+      if (error) { alert('Terjadi kesalahan sistem: ' + error.message); return; }
       if (data?.success) {
-        // Simpan sesi beserta TOKEN DEWA-nya
-        const sessionData = { ...data.data, token: data.token };
+        // Ambil info role tambahan langsung dari DB setelah token tercipta
+        window.initSupabaseClient(data.token);
+        const { data: saInfo } = await db().from('super_admins').select('role, nama').eq('id', data.data.id).single();
+        
+        const sessionData = { ...data.data, nama: saInfo?.nama, role: saInfo?.role || 'super_admin', token: data.token };
         localStorage.setItem('sa_session', JSON.stringify(sessionData));
         
-        // Colok Token Dewa ke Mesin Database
-        window.initSupabaseClient(data.token);
-        
-        document.getElementById('login-section').classList.add('!hidden');
-        document.getElementById('dashboard-section').classList.remove('!hidden');
+        document.getElementById('login-section').classList.add('!hidden'); document.getElementById('dashboard-section').classList.remove('!hidden');
         initDashboard();
         
-        // Log Login Action
-        await db().from('audit_logs').insert([{ actor_type: 'superadmin', actor_name: data.data.username, action: 'SUPER_ADMIN_LOGIN' }]);
-      } else {
-        alert('Login Gagal! ' + (data?.msg || 'Periksa kembali Username/Password.'));
-      }
+        await db().from('audit_logs').insert([{ actor_type: 'superadmin', actor_name: sessionData.nama, action: 'LOGIN_INTO_SYSTEM' }]);
+      } else { alert('Login Gagal! ' + (data?.msg || 'Periksa kembali.')); }
     }
     function handleLogout() { localStorage.removeItem('sa_session'); location.reload(); }
 
-    // DETEKSI SESI BROWSER (MENGINGAT TOKEN)
     window.addEventListener('DOMContentLoaded', () => {
-      const savedSession = localStorage.getItem('sa_session');
+      const savedSession = getActiveSession();
       let initialToken = null;
 
       if(savedSession) {
-        const sessionData = JSON.parse(savedSession);
-        initialToken = sessionData.token;
-        
-        document.getElementById('login-section').classList.add('!hidden');
-        document.getElementById('dashboard-section').classList.remove('!hidden');
+        initialToken = savedSession.token;
+        document.getElementById('login-section').classList.add('!hidden'); document.getElementById('dashboard-section').classList.remove('!hidden');
       }
-      
-      // Nyalakan koneksi Supabase (Pakai Token jika ada, Anon jika kosong)
       window.initSupabaseClient(initialToken);
-      
-      if(initialToken) {
-          initDashboard();
-      }
+      if(initialToken) { initDashboard(); }
     });
 
     function initDashboard() {
+        const session = getActiveSession();
+        // LOGIKA ROLE: Jika Finance, sembunyikan fitur manajemen penuh
+        if(session?.role === 'finance') {
+            document.getElementById('header-role').innerText = 'Finance & Billing';
+            document.getElementById('btn-superadmins').style.display = 'none'; // Sembunyikan tab Tim
+            document.getElementById('btn-tambah-klien').style.display = 'none'; // Sembunyikan tombol Klien Baru
+        } else {
+            document.getElementById('header-role').innerText = 'Console Management';
+        }
+
         loadClients();
-        loadSuperAdmins();
+        if(session?.role !== 'finance') loadSuperAdmins();
         loadAudit();
     }
 
     function showTab(name) {
-      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-      document.getElementById('tab-' + name).classList.add('active');
-      document.querySelectorAll('.tab-btn').forEach(btn => { btn.classList.remove('active-tab'); });
-      document.getElementById('btn-' + name).classList.add('active-tab');
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active')); document.getElementById('tab-' + name).classList.add('active');
+      document.querySelectorAll('.tab-btn').forEach(btn => { btn.classList.remove('active-tab'); }); document.getElementById('btn-' + name).classList.add('active-tab');
     }
 
     async function loadClients() {
-      const tbody = document.getElementById('clients-tbody');
-      const mobileContainer = document.getElementById('clients-mobile-container');
+      const tbody = document.getElementById('clients-tbody'); const mobileContainer = document.getElementById('clients-mobile-container');
+      const session = getActiveSession(); const isFinance = session?.role === 'finance';
       
       const { data } = await db().from('organizations').select('*').order('created_at', { ascending: false });
       allOrgs = data || [];
       
-      const filterOrg = document.getElementById('filter-audit-org');
-      filterOrg.innerHTML = '<option value="">Semua Klien</option>';
+      const filterOrg = document.getElementById('filter-audit-org'); filterOrg.innerHTML = '<option value="">Semua Klien</option>';
       allOrgs.forEach(o => filterOrg.innerHTML += `<option value="${o.id}">${o.display_name || o.nama}</option>`);
 
       if (allOrgs.length === 0) {
         tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-slate-400 font-bold">Belum ada klien terdaftar.</td></tr>';
-        mobileContainer.innerHTML = '<div class="p-8 text-center text-slate-400 font-bold bg-white rounded-2xl border">Kosong</div>';
-        return;
+        mobileContainer.innerHTML = '<div class="p-8 text-center text-slate-400 font-bold bg-white rounded-2xl border">Kosong</div>'; return;
       }
       
-      tbody.innerHTML = '';
-      mobileContainer.innerHTML = '';
+      tbody.innerHTML = ''; mobileContainer.innerHTML = '';
 
       allOrgs.forEach(org => {
-        const displayName = org.display_name || org.nama || 'Unknown';
-        const isActive = org.is_active === true;
-        const end = new Date(org.validity_end);
-        const now = new Date();
-        const isExpired = end < now;
+        const displayName = org.display_name || org.nama || 'Unknown'; const isActive = org.is_active === true;
+        const end = new Date(org.validity_end); const now = new Date(); const isExpired = end < now;
         const validityClass = isExpired ? 'text-red-500 font-bold' : 'text-slate-600';
         const validityIcon = isExpired ? '<i class="ph ph-warning-circle text-red-500"></i>' : '<i class="ph ph-calendar-check text-green-500"></i>';
         
+        // Logika Tombol Action: Finance tidak boleh Suspend
+        let btnSuspend = !isFinance ? `<button onclick="toggleStatus('${org.id}', ${!isActive})" class="flex-1 sm:flex-none text-[11px] ${isActive ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-green-50 text-green-600 hover:bg-green-100'} px-3 py-2 rounded-lg font-bold transition flex items-center justify-center gap-1"><i class="ph ph-power"></i> ${isActive ? 'Suspend' : 'Aktifkan'}</button>` : '';
+        
         const actionHtml = `
             <div class="flex justify-end gap-2">
-                <button onclick="toggleStatus('${org.id}', ${!isActive})" class="flex-1 sm:flex-none text-[11px] ${isActive ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-green-50 text-green-600 hover:bg-green-100'} px-3 py-2 rounded-lg font-bold transition flex items-center justify-center gap-1"><i class="ph ph-power"></i> ${isActive ? 'Suspend' : 'Aktifkan'}</button>
+                ${btnSuspend}
                 <button onclick='openClientDrawer(${JSON.stringify(org).replace(/'/g, "&#39;")})' class="flex-1 sm:flex-none text-[11px] bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-2 rounded-lg font-bold transition flex items-center justify-center gap-1 shadow-sm"><i class="ph ph-gear"></i> Kelola</button>
             </div>`;
 
-        const row = document.createElement('tr');
-        row.className = 'hover:bg-blue-50/50 transition duration-150';
+        const row = document.createElement('tr'); row.className = 'hover:bg-blue-50/50 transition duration-150';
         row.innerHTML = `
           <td class="p-4 align-top"><div class="flex items-center gap-3"><div class="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-400 font-black shadow-sm">${displayName.charAt(0).toUpperCase()}</div><div><p class="font-black text-slate-800 text-base">${displayName}</p><p class="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-widest mt-0.5">${org.client_code}</p></div></div></td>
           <td class="p-4 align-top"><span class="badge badge-${org.plan_tier || 'starter'}"><i class="ph ph-sparkle"></i> ${(org.plan_tier || 'starter').toUpperCase()}</span></td>
@@ -404,287 +392,170 @@
         `;
         tbody.appendChild(row);
 
-        const card = document.createElement('div');
-        card.className = 'bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-3';
+        const card = document.createElement('div'); card.className = 'bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-3';
         card.innerHTML = `
-          <div class="flex justify-between items-start">
-             <div><p class="font-black text-slate-800">${displayName}</p><p class="text-[10px] font-mono text-slate-400 uppercase tracking-widest">${org.client_code}</p></div>
-             <span class="badge ${isActive ? 'badge-active' : 'badge-inactive'}">${isActive ? 'Aktif' : 'Suspend'}</span>
-          </div>
-          <div class="flex justify-between text-xs items-center bg-slate-50 p-2 rounded-lg border border-slate-100">
-             <span class="badge badge-${org.plan_tier || 'starter'} !text-[9px]">${(org.plan_tier || 'starter').toUpperCase()}</span>
-             <span class="${validityClass} font-bold">${validityIcon} ${formatDate(org.validity_end)}</span>
-          </div>
+          <div class="flex justify-between items-start"><div><p class="font-black text-slate-800">${displayName}</p><p class="text-[10px] font-mono text-slate-400 uppercase tracking-widest">${org.client_code}</p></div><span class="badge ${isActive ? 'badge-active' : 'badge-inactive'}">${isActive ? 'Aktif' : 'Suspend'}</span></div>
+          <div class="flex justify-between text-xs items-center bg-slate-50 p-2 rounded-lg border border-slate-100"><span class="badge badge-${org.plan_tier || 'starter'} !text-[9px]">${(org.plan_tier || 'starter').toUpperCase()}</span><span class="${validityClass} font-bold">${validityIcon} ${formatDate(org.validity_end)}</span></div>
           <div class="mt-1">${actionHtml}</div>
-        `;
-        mobileContainer.appendChild(card);
+        `; mobileContainer.appendChild(card);
       });
     }
 
     async function toggleStatus(id, status) {
-      showLoader(true);
-      await db().from('organizations').update({ is_active: status }).eq('id', id);
-      await db().from('audit_logs').insert([{ organization_id: id, actor_type: 'superadmin', actor_name: getActiveActorName(), action: status ? 'ACTIVATE_CLIENT' : 'SUSPEND_CLIENT' }]);
-      showLoader(false);
-      loadClients();
+      showLoader(true); await db().from('organizations').update({ is_active: status }).eq('id', id);
+      await db().from('audit_logs').insert([{ organization_id: id, actor_type: 'superadmin', actor_name: getActiveSession()?.nama, action: status ? 'ACTIVATE_CLIENT' : 'SUSPEND_CLIENT' }]); showLoader(false); loadClients();
     }
 
-    // DRAWER
     function openDrawer() { document.getElementById('drawer-overlay').classList.add('open'); document.getElementById('client-drawer').classList.add('open'); }
     function closeDrawer() { document.getElementById('drawer-overlay').classList.remove('open'); document.getElementById('client-drawer').classList.remove('open'); }
 
     async function openClientDrawer(org) {
-      document.getElementById('drw-client-name').innerText = org.display_name || org.nama;
-      document.getElementById('drw-client-code').innerText = org.client_code;
-      document.getElementById('edit-org-id').value = org.id;
+      const isFinance = getActiveSession()?.role === 'finance';
       
-      document.getElementById('edit-wa').value = org.kontak_wa_admin || '';
-      document.getElementById('edit-start').value = org.validity_start ? org.validity_start.split('T')[0] : '';
-      document.getElementById('edit-end').value = org.validity_end ? org.validity_end.split('T')[0] : '';
+      document.getElementById('drw-client-name').innerText = org.display_name || org.nama; document.getElementById('drw-client-code').innerText = org.client_code; document.getElementById('edit-org-id').value = org.id;
+      document.getElementById('edit-wa').value = org.kontak_wa_admin || ''; document.getElementById('edit-start').value = org.validity_start ? org.validity_start.split('T')[0] : ''; document.getElementById('edit-end').value = org.validity_end ? org.validity_end.split('T')[0] : '';
 
-      document.getElementById('new-adm-user').value = ''; document.getElementById('new-adm-nama').value = ''; document.getElementById('new-adm-pass').value = '';
+      // Tampilkan/Sembunyikan fitur berdasar role
+      if(isFinance) {
+          document.getElementById('btn-update-profil').style.display = 'none';
+          document.getElementById('div-tambah-admin').style.display = 'none';
+          // Finance dilarang edit text
+          document.getElementById('edit-wa').disabled = true; document.getElementById('edit-start').disabled = true; document.getElementById('edit-end').disabled = true;
+      } else {
+          document.getElementById('btn-update-profil').style.display = 'block'; document.getElementById('div-tambah-admin').style.display = 'block';
+          document.getElementById('edit-wa').disabled = false; document.getElementById('edit-start').disabled = false; document.getElementById('edit-end').disabled = false;
+      }
 
-      openDrawer();
-      showLoader(true);
+      openDrawer(); showLoader(true);
       
       currentBillingData = null;
       const { data: billData } = await db().from('billing_settings').select('*').eq('organization_id', org.id);
-      if(billData && billData.length > 0) {
-          currentBillingData = billData[0];
-      }
+      if(billData && billData.length > 0) currentBillingData = billData[0];
 
       const { data } = await db().from('admin').select('*').eq('organization_id', org.id);
-      const listContainer = document.getElementById('drw-admin-list');
-      listContainer.innerHTML = '';
+      const listContainer = document.getElementById('drw-admin-list'); listContainer.innerHTML = '';
       
-      if(!data || data.length === 0) {
-          listContainer.innerHTML = '<p class="text-xs text-slate-400 italic text-center p-4 bg-slate-50 rounded-xl border border-dashed">Belum ada admin terdaftar.</p>';
-      } else {
+      if(!data || data.length === 0) { listContainer.innerHTML = '<p class="text-xs text-slate-400 italic text-center p-4 bg-slate-50 rounded-xl border border-dashed">Belum ada admin terdaftar.</p>'; } 
+      else {
           data.forEach(adm => {
-              listContainer.innerHTML += `<div class="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm flex justify-between items-center"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-black shadow-inner"><i class="ph ph-user text-xl"></i></div><div><p class="font-black text-slate-800 text-sm">${adm.nama_admin}</p><p class="text-[10px] text-slate-500 font-mono bg-slate-100 px-1.5 py-0.5 rounded inline-block mt-1">@${adm.username}</p></div></div><div class="flex gap-2"><button onclick="deleteClientAdmin('${adm.id}')" title="Hapus Admin" class="w-8 h-8 rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition"><i class="ph ph-trash text-lg"></i></button></div></div>`;
+              const btnDel = !isFinance ? `<button onclick="deleteClientAdmin('${adm.id}')" title="Hapus Admin" class="w-8 h-8 rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition"><i class="ph ph-trash text-lg"></i></button>` : '';
+              listContainer.innerHTML += `<div class="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm flex justify-between items-center"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-black shadow-inner"><i class="ph ph-user text-xl"></i></div><div><p class="font-black text-slate-800 text-sm">${adm.nama_admin}</p><p class="text-[10px] text-slate-500 font-mono bg-slate-100 px-1.5 py-0.5 rounded inline-block mt-1">@${adm.username}</p></div></div><div class="flex gap-2">${btnDel}</div></div>`;
           });
       }
       showLoader(false);
     }
 
     async function updateClientProfile() {
-       const orgId = document.getElementById('edit-org-id').value;
-       const wa = document.getElementById('edit-wa').value;
-       const start = document.getElementById('edit-start').value;
-       const end = document.getElementById('edit-end').value;
-       
-       showLoader(true);
-       await db().from('organizations').update({ kontak_wa_admin: wa, validity_start: start, validity_end: end }).eq('id', orgId);
-       await db().from('audit_logs').insert([{ organization_id: orgId, actor_type: 'superadmin', actor_name: getActiveActorName(), action: 'UPDATE_CLIENT_PROFILE' }]);
-       showLoader(false);
-       alert("Profil berhasil diupdate!");
-       loadClients(); 
+       const orgId = document.getElementById('edit-org-id').value; const wa = document.getElementById('edit-wa').value; const start = document.getElementById('edit-start').value; const end = document.getElementById('edit-end').value;
+       showLoader(true); await db().from('organizations').update({ kontak_wa_admin: wa, validity_start: start, validity_end: end }).eq('id', orgId);
+       await db().from('audit_logs').insert([{ organization_id: orgId, actor_type: 'superadmin', actor_name: getActiveSession()?.nama, action: 'UPDATE_CLIENT_PROFILE' }]); showLoader(false); alert("Profil berhasil diupdate!"); loadClients(); 
     }
 
     function downloadInvoice() {
-       if(!currentBillingData) return alert("Data biaya/billing klien ini belum diatur di database!");
+       if(!currentBillingData) return alert("Data biaya/billing klien ini belum diatur!");
+       const org = allOrgs.find(o => o.id === document.getElementById('edit-org-id').value);
        
-       const gross = parseFloat(currentBillingData.nominal_gross);
-       const ppnPercent = parseFloat(currentBillingData.ppn_percentage);
+       const gross = parseFloat(currentBillingData.nominal_gross); const ppnPercent = parseFloat(currentBillingData.ppn_percentage);
+       const dpp = gross / (1 + (ppnPercent / 100)); const ppnAmount = gross - dpp;
        
-       const dpp = gross / (1 + (ppnPercent / 100));
-       const ppnAmount = gross - dpp;
+       const dateNow = new Date(); const currentPeriode = `${monthNames[dateNow.getMonth()]} ${dateNow.getFullYear()}`;
        
-       const orgName = document.getElementById('drw-client-name').innerText;
-       document.getElementById('inv-date').innerText = new Date().toLocaleDateString('id-ID');
-       document.getElementById('inv-client-name').innerText = orgName;
-       document.getElementById('inv-client-code').innerText = document.getElementById('drw-client-code').innerText;
+       document.getElementById('inv-date').innerText = dateNow.toLocaleDateString('id-ID');
+       document.getElementById('inv-client-name').innerText = org.display_name || org.nama;
+       document.getElementById('inv-client-code').innerText = org.client_code;
+       document.getElementById('inv-siklus').innerText = `${org.siklus_tagihan || 'Bulanan'} (${currentPeriode})`; // Smart Invoice (Poin 1)
        
        document.getElementById('inv-dpp').innerText = formatIDR(dpp);
        document.getElementById('inv-ppn-text').innerText = `Pajak PPN (${ppnPercent}%)`;
        document.getElementById('inv-ppn-amount').innerText = formatIDR(ppnAmount);
        document.getElementById('inv-total').innerText = formatIDR(gross);
        
-       showLoader(true);
-       const element = document.getElementById('invoice-template');
-       element.style.display = 'block'; 
-       const opt = { margin: 0, filename: `Invoice_${orgName.replace(/\s+/g, '')}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } };
-       
-       html2pdf().set(opt).from(element).save().then(() => {
-           element.style.display = 'none'; 
-           showLoader(false);
-       });
+       showLoader(true); const element = document.getElementById('invoice-template'); element.style.display = 'block'; 
+       const opt = { margin: 0, filename: `Invoice_${org.client_code}_${currentPeriode.replace(/\s/g,'_')}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } };
+       html2pdf().set(opt).from(element).save().then(() => { element.style.display = 'none'; showLoader(false); });
     }
 
     async function addClientAdmin() {
-        const orgId = document.getElementById('edit-org-id').value;
-        const u = document.getElementById('new-adm-user').value;
-        const n = document.getElementById('new-adm-nama').value;
-        const p = document.getElementById('new-adm-pass').value;
-        
-        if(!u || !n || !p) return alert("Lengkapi data admin baru!");
-        
-        showLoader(true);
-        const { data: cekExist } = await db().from('admin').select('id').eq('organization_id', orgId).eq('username', u);
-        if(cekExist && cekExist.length > 0) {
-            showLoader(false);
-            return alert("Gagal: Username '" + u + "' sudah dipakai di komunitas ini! Gunakan username lain.");
-        }
-
+        const orgId = document.getElementById('edit-org-id').value; const u = document.getElementById('new-adm-user').value; const n = document.getElementById('new-adm-nama').value; const p = document.getElementById('new-adm-pass').value;
+        if(!u || !n || !p) return alert("Lengkapi data admin!");
+        showLoader(true); const { data: cekExist } = await db().from('admin').select('id').eq('organization_id', orgId).eq('username', u);
+        if(cekExist && cekExist.length > 0) { showLoader(false); return alert("Gagal: Username sudah dipakai!"); }
         const { data: hashedPass } = await db().rpc('hash_password', { raw_pass: p });
         const { error } = await db().from('admin').insert([{ organization_id: orgId, username: u, nama_admin: n, password_hash: hashedPass || p, role: 'admin' }]);
-        
-        await db().from('audit_logs').insert([{ organization_id: orgId, actor_type: 'superadmin', actor_name: getActiveActorName(), action: 'ADD_CLIENT_ADMIN' }]);
-        
-        showLoader(false);
-        if(error) return alert("Gagal tambah admin: " + error.message);
-        
-        const orgRefresh = allOrgs.find(o => o.id === orgId);
-        if(orgRefresh) openClientDrawer(orgRefresh);
+        await db().from('audit_logs').insert([{ organization_id: orgId, actor_type: 'superadmin', actor_name: getActiveSession()?.nama, action: 'ADD_CLIENT_ADMIN' }]); showLoader(false);
+        if(error) return alert("Gagal tambah: " + error.message);
+        document.getElementById('new-adm-user').value = ''; document.getElementById('new-adm-nama').value = ''; document.getElementById('new-adm-pass').value = '';
+        const orgRefresh = allOrgs.find(o => o.id === orgId); if(orgRefresh) openClientDrawer(orgRefresh);
     }
 
     async function deleteClientAdmin(adminId) {
-        if(!confirm("Yakin ingin mencabut hak akses admin ini secara permanen?")) return;
-        const orgId = document.getElementById('edit-org-id').value;
-        showLoader(true);
-        await db().from('admin').delete().eq('id', adminId);
-        await db().from('audit_logs').insert([{ organization_id: orgId, actor_type: 'superadmin', actor_name: getActiveActorName(), action: 'DELETE_CLIENT_ADMIN' }]);
-        showLoader(false);
-        const orgRefresh = allOrgs.find(o => o.id === orgId);
-        if(orgRefresh) openClientDrawer(orgRefresh);
+        if(!confirm("Cabut hak akses admin ini?")) return;
+        const orgId = document.getElementById('edit-org-id').value; showLoader(true);
+        await db().from('admin').delete().eq('id', adminId); await db().from('audit_logs').insert([{ organization_id: orgId, actor_type: 'superadmin', actor_name: getActiveSession()?.nama, action: 'DELETE_CLIENT_ADMIN' }]); showLoader(false);
+        const orgRefresh = allOrgs.find(o => o.id === orgId); if(orgRefresh) openClientDrawer(orgRefresh);
     }
 
     async function loadAudit() {
-      const orgFilter = document.getElementById('filter-audit-org').value;
-      const actorFilter = document.getElementById('filter-audit-actor').value;
-      
+      const orgFilter = document.getElementById('filter-audit-org').value; const actorFilter = document.getElementById('filter-audit-actor').value;
       let query = db().from('audit_logs').select('*').order('created_at', { ascending: false }).limit(100);
-      if(orgFilter) query = query.eq('organization_id', orgFilter);
-      if(actorFilter) query = query.eq('actor_type', actorFilter); 
+      if(orgFilter) query = query.eq('organization_id', orgFilter); if(actorFilter) query = query.eq('actor_type', actorFilter); 
       
-      showLoader(true);
-      const { data } = await query;
-      showLoader(false);
-
-      const list = document.getElementById('audit-list');
-      list.innerHTML = '';
-      
-      if (!data || data.length === 0) {
-          list.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">Tidak ada log aktivitas.</p>';
-          return;
-      }
+      showLoader(true); const { data } = await query; showLoader(false);
+      const list = document.getElementById('audit-list'); list.innerHTML = '';
+      if (!data || data.length === 0) { list.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">Tidak ada log aktivitas.</p>'; return; }
 
       data.forEach(log => {
-        let orgName = '-';
-        if(log.organization_id) {
-           const findOrg = allOrgs.find(o => o.id === log.organization_id);
-           orgName = findOrg ? (findOrg.display_name || findOrg.nama) : 'Unknown Org';
-        }
-
-        const li = document.createElement('li');
-        li.className = 'bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-col gap-2';
-        li.innerHTML = `
-          <div class="flex justify-between items-start text-xs border-b border-slate-200 pb-2">
-            <span class="font-black text-blue-600 bg-blue-100 px-2 py-0.5 rounded uppercase tracking-widest">${orgName}</span>
-            <span class="text-slate-400 font-bold">${new Date(log.created_at).toLocaleString('id-ID')}</span>
-          </div>
-          <div>
-            <p class="font-bold text-slate-800 text-sm">${log.action}</p>
-            <p class="text-[10px] text-slate-500 font-mono mt-1">Oleh: <span class="font-bold text-orange-600">${log.actor_name || 'System'}</span></p>
-          </div>
-        `;
-        list.appendChild(li);
+        let orgName = '-'; if(log.organization_id) { const findOrg = allOrgs.find(o => o.id === log.organization_id); orgName = findOrg ? (findOrg.display_name || findOrg.nama) : 'Unknown Org'; }
+        const actColor = log.actor_type === 'superadmin' ? 'text-blue-600' : (log.actor_type === 'admin' ? 'text-orange-600' : 'text-green-600');
+        const li = document.createElement('li'); li.className = 'bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-col gap-2';
+        li.innerHTML = `<div class="flex justify-between items-start text-xs border-b border-slate-200 pb-2"><span class="font-black text-slate-700 bg-white border px-2 py-0.5 rounded uppercase tracking-widest">${orgName}</span><span class="text-slate-400 font-bold">${new Date(log.created_at).toLocaleString('id-ID')}</span></div><div><p class="font-bold text-slate-800 text-sm">${log.action}</p><p class="text-[10px] text-slate-500 font-mono mt-1">Oleh: <span class="font-bold uppercase ${actColor}">${log.actor_name || 'System'}</span> (${log.actor_type})</p></div>`; list.appendChild(li);
       });
     }
 
-    // ================= FRONTEND TAKEOVER (BYPASS SQL RPC) =================
+    // ================= FRONTEND TAKEOVER =================
     document.getElementById('form-add-client').onsubmit = async function(e) {
-      e.preventDefault();
-      showLoader(true);
-      
-      const clientCode = document.getElementById('reg-code').value;
-      const nominalGross = document.getElementById('reg-nominal').value;
-      const ppnPercent = document.getElementById('reg-ppn').value;
+      e.preventDefault(); showLoader(true);
+      const clientCode = document.getElementById('reg-code').value; const nominalGross = document.getElementById('reg-nominal').value; const ppnPercent = document.getElementById('reg-ppn').value; const siklus = document.getElementById('reg-siklus').value;
 
-      // 1. Validasi Kode Klien (Biar tidak ada yang dobel)
       const { data: checkCode } = await db().from('organizations').select('id').eq('client_code', clientCode);
-      if(checkCode && checkCode.length > 0) {
-          showLoader(false);
-          return alert("Gagal: Client Code '" + clientCode + "' sudah dipakai! Silakan gunakan kode lain.");
-      }
+      if(checkCode && checkCode.length > 0) { showLoader(false); return alert("Gagal: Client Code sudah dipakai!"); }
 
-      // 2. Insert Klien (Dengan Client Code sesuai ketikan Admin)
-      const { data: newOrg, error: errOrg } = await db().from('organizations').insert([{
-          client_code: clientCode,
-          nama: clientCode, 
-          display_name: document.getElementById('reg-display').value,
-          kontak_wa_admin: document.getElementById('reg-wa').value,
-          plan_tier: document.getElementById('reg-plan').value,
-          validity_start: document.getElementById('reg-start').value,
-          validity_end: document.getElementById('reg-validity').value
-      }]).select().single();
+      const { data: newOrg, error: errOrg } = await db().from('organizations').insert([{ client_code: clientCode, nama: clientCode, display_name: document.getElementById('reg-display').value, kontak_wa_admin: document.getElementById('reg-wa').value, plan_tier: document.getElementById('reg-plan').value, validity_start: document.getElementById('reg-start').value, validity_end: document.getElementById('reg-validity').value, siklus_tagihan: siklus }]).select().single();
+      if(errOrg || !newOrg) { showLoader(false); return alert("Gagal Buat Klien!"); }
 
-      if(errOrg || !newOrg) {
-          showLoader(false);
-          return alert("Gagal Buat Klien: " + (errOrg ? errOrg.message : 'Unknown Error'));
-      }
+      await db().from('billing_settings').insert([{ organization_id: newOrg.id, nominal_gross: nominalGross, ppn_percentage: ppnPercent }]);
 
-      // 3. Insert Tagihan (Billing)
-      await db().from('billing_settings').insert([{
-          organization_id: newOrg.id,
-          nominal_gross: nominalGross,
-          ppn_percentage: ppnPercent
-      }]);
-
-      // 4. Enkripsi Password & Insert Admin Klien Pertama
       const { data: hashedPass } = await db().rpc('hash_password', { raw_pass: document.getElementById('reg-admin-pass').value });
-      await db().from('admin').insert([{
-          organization_id: newOrg.id,
-          username: document.getElementById('reg-admin-user').value,
-          nama_admin: document.getElementById('reg-admin-nama').value,
-          password_hash: hashedPass || document.getElementById('reg-admin-pass').value,
-          role: 'admin'
-      }]);
+      await db().from('admin').insert([{ organization_id: newOrg.id, username: document.getElementById('reg-admin-user').value, nama_admin: document.getElementById('reg-admin-nama').value, password_hash: hashedPass || document.getElementById('reg-admin-pass').value, role: 'admin' }]);
 
-      // 5. Catat Log Pintar (Suntikkan Nama Asli Super Admin)
-      await db().from('audit_logs').insert([{
-          organization_id: newOrg.id,
-          actor_type: 'superadmin',
-          actor_name: getActiveActorName(),
-          action: 'CREATE_ORG_NEW'
-      }]);
-
-      showLoader(false);
-      closeModal('modal-add-client');
-      alert("Klien Baru Berhasil Didaftarkan!");
-      loadClients();
+      await db().from('audit_logs').insert([{ organization_id: newOrg.id, actor_type: 'superadmin', actor_name: getActiveSession()?.nama, action: 'CREATE_ORG_NEW' }]);
+      showLoader(false); closeModal('modal-add-client'); alert("Klien Baru Berhasil Didaftarkan!"); loadClients();
     };
 
     async function loadSuperAdmins() {
-      const { data } = await db().from('super_admins').select('*');
-      const tbody = document.getElementById('sa-tbody');
-      tbody.innerHTML = '';
+      const { data } = await db().from('super_admins').select('*'); const tbody = document.getElementById('sa-tbody'); tbody.innerHTML = '';
       data.forEach(sa => {
-        const row = document.createElement('tr');
-        row.className = 'hover:bg-slate-50 transition border-b border-slate-100';
-        row.innerHTML = `<td class="p-4"><div class="font-bold text-slate-800 bg-slate-100 px-2 py-1 rounded-md inline-block">@${sa.username}</div></td><td class="p-4 font-bold text-slate-600">${sa.nama}</td><td class="p-4 text-right"><button onclick="deleteSuperAdmin('${sa.id}')" class="w-8 h-8 rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition ml-auto"><i class="ph ph-trash text-lg"></i></button></td>`;
+        const roleColor = sa.role === 'finance' ? 'text-green-600 bg-green-100' : 'text-blue-600 bg-blue-100';
+        const row = document.createElement('tr'); row.className = 'hover:bg-slate-50 transition border-b border-slate-100';
+        row.innerHTML = `<td class="p-4"><div class="font-bold text-slate-800 bg-slate-100 px-2 py-1 rounded-md inline-block">@${sa.username}</div></td><td class="p-4"><p class="font-bold text-slate-600">${sa.nama}</p><p class="text-[9px] font-black uppercase ${roleColor} inline-block px-1.5 py-0.5 rounded mt-1">${sa.role}</p></td><td class="p-4 text-right"><button onclick="deleteSuperAdmin('${sa.id}')" class="w-8 h-8 rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition ml-auto"><i class="ph ph-trash text-lg"></i></button></td>`;
         tbody.appendChild(row);
       });
     }
 
     async function addSuperAdmin() {
-      const u = document.getElementById('sa-new-user').value; const n = document.getElementById('sa-new-nama').value; const p = document.getElementById('sa-new-pass').value;
-      if(!u || !n || !p) return alert('Lengkapi semua!');
-      showLoader(true);
+      const u = document.getElementById('sa-new-user').value; const n = document.getElementById('sa-new-nama').value; const p = document.getElementById('sa-new-pass').value; const r = document.getElementById('sa-new-role').value;
+      if(!u || !n || !p) return alert('Lengkapi semua!'); showLoader(true);
+      // Panggil RPC pembuat admin (tanpa role), lalu kita update rolenya
       await db().rpc('super_admin_add_super_admin', { p_username: u, p_nama: n, p_plain_pass: p });
-      await db().from('audit_logs').insert([{ actor_type: 'superadmin', actor_name: getActiveActorName(), action: 'ADD_NEW_SUPERADMIN' }]);
-      showLoader(false);
-      closeModal('modal-add-sa');
-      loadSuperAdmins();
+      await db().from('super_admins').update({ role: r }).eq('username', u);
+      await db().from('audit_logs').insert([{ actor_type: 'superadmin', actor_name: getActiveSession()?.nama, action: `ADD_INTERNAL_TEAM_${r}` }]);
+      showLoader(false); closeModal('modal-add-sa'); loadSuperAdmins();
     }
 
     async function deleteSuperAdmin(id) {
-      if(!confirm('Hapus akses Super Admin ini?')) return;
-      showLoader(true); 
-      await db().from('super_admins').delete().eq('id', id); 
-      await db().from('audit_logs').insert([{ actor_type: 'superadmin', actor_name: getActiveActorName(), action: 'DELETE_SUPERADMIN' }]);
-      showLoader(false);
-      loadSuperAdmins();
+      if(!confirm('Hapus akses Tim Internal ini?')) return; showLoader(true); 
+      await db().from('super_admins').delete().eq('id', id); await db().from('audit_logs').insert([{ actor_type: 'superadmin', actor_name: getActiveSession()?.nama, action: 'DELETE_INTERNAL_TEAM' }]);
+      showLoader(false); loadSuperAdmins();
     }
 
     function openModal(id) { document.getElementById(id).classList.remove('!hidden'); }
