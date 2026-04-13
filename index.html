@@ -70,9 +70,11 @@
     .floating-nav.admin { background: rgba(30, 41, 59, 0.95); border-color: #334155; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); }
     .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--tk-text-tertiary); background: none; border: none; cursor: pointer; transition: all 0.2s; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
     .nav-item i { font-size: 24px; transition: transform 0.2s; margin-bottom: 2px;}
-    .floating-nav.admin .nav-item { color: #64748B; }
+    .floating-nav.admin .nav-item { color: #64748B; border-radius: 14px; padding: 6px 0; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+    .floating-nav.admin .nav-item.nav-active { color: var(--tk-primary); background: #FFFFFF; box-shadow: 0 4px 12px rgba(0,0,0,0.25); position: relative; }
+    .floating-nav.admin .nav-item.nav-active::after { content: ''; position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%); width: 16px; height: 3px; background: var(--tk-primary); border-radius: 99px; }
     .nav-item.nav-active { color: var(--tk-primary); }
-    .floating-nav.admin .nav-item.nav-active { color: var(--tk-secondary); }
+    .floating-nav.admin .nav-item.nav-active { color: var(--tk-primary); }
     .nav-item.nav-active i { transform: translateY(-3px); font-weight: bold; }
 
     .badge { display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; border-radius: 12px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -257,7 +259,7 @@
   </main>
 
   <nav id="navWarga" class="floating-nav hidden"><button onclick="fnSwitchWargaTab('viewDashboard', this)" class="nav-item nav-active"><i class="ph ph-house"></i><span>Beranda</span></button><button onclick="fnSwitchWargaTab('viewIuran', this)" class="nav-item"><i class="ph ph-wallet"></i><span>Bayar</span></button><button onclick="fnSwitchWargaTab('viewRiwayat', this)" class="nav-item"><i class="ph ph-receipt"></i><span>Riwayat</span></button><button onclick="fnSwitchWargaTab('viewProfil', this)" class="nav-item"><i class="ph ph-user-circle"></i><span>Profil</span></button></nav>
-  <nav id="navAdmin" class="floating-nav admin hidden"><button onclick="fnSwitchAdminTab('viewAdminVerify', this)" class="nav-item nav-admin-active"><i class="ph ph-check-circle"></i><span>Verifikasi</span></button><button onclick="fnSwitchAdminTab('viewAdminMaster', this)" class="nav-item"><i class="ph ph-users"></i><span>Master</span></button><button onclick="fnSwitchAdminTab('viewAdminKas', this)" class="nav-item"><i class="ph ph-money"></i><span>Kas</span></button><button onclick="fnSwitchAdminTab('viewAdminLaporan', this)" class="nav-item"><i class="ph ph-chart-pie-slice"></i><span>Laporan</span></button></nav>
+  <nav id="navAdmin" class="floating-nav admin hidden"><button onclick="fnSwitchAdminTab('viewAdminVerify', this)" class="nav-item nav-active"><i class="ph ph-check-circle"></i><span>Verifikasi</span></button><button onclick="fnSwitchAdminTab('viewAdminMaster', this)" class="nav-item"><i class="ph ph-users"></i><span>Master</span></button><button onclick="fnSwitchAdminTab('viewAdminKas', this)" class="nav-item"><i class="ph ph-money"></i><span>Kas</span></button><button onclick="fnSwitchAdminTab('viewAdminLaporan', this)" class="nav-item"><i class="ph ph-chart-pie-slice"></i><span>Laporan</span></button></nav>
 
   <script>
     const SUPABASE_URL = 'https://tgcpyatrllswhlysqfer.supabase.co';
@@ -283,13 +285,11 @@
     function genId(p) { return p + '-' + Date.now() + '-' + Math.floor(Math.random()*100); }
     function formatBulan(p) { if(p==='SEKALI') return 'Sekali Bayar'; const parts=p.split('-'); if(parts.length<2) return p; return `${monthNames[parseInt(parts[1])-1]} ${parts[0]}`; }
     
-    // Masking No Telp
     function maskPhone(phone) { 
-        if(window.dk.state.user?.role === 'super_admin') return phone; // GOD MODE: Buka sensor
+        if(window.dk.state.user?.role === 'super_admin') return phone;
         if(!phone) return '-'; if(phone.length < 8) return phone; return phone.substring(0, 4) + '*'.repeat(phone.length - 7) + phone.substring(phone.length - 3); 
     }
 
-    // HTML5 CANVAS COMPRESSION
     function compressImageNative(file, maxSizeKB = 150) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader(); reader.readAsDataURL(file);
@@ -334,7 +334,7 @@
       if(error) { err.textContent = error.message; err.style.display = 'block'; return; }
       if(data?.success) { 
           window.dk.state.user = { type:'admin', id:data.data.id, name:data.data.nama_admin, is_agreed_policy: data.data.is_agreed_policy }; 
-          if(data.data.nama_admin.includes('(Super Admin)')) window.dk.state.user.role = 'super_admin'; // Identifikasi God Mode
+          if(data.data.nama_admin.includes('(Super Admin)')) window.dk.state.user.role = 'super_admin';
           window.dk.state.token = data.token; window.initSupabaseClient(data.token); document.getElementById('loginModal').classList.add('hidden'); fnShowApp(); 
       } else { err.textContent = data?.msg || 'Gagal Login'; err.style.display = 'block'; }
     };
@@ -356,47 +356,42 @@
       const orgSession = JSON.parse(localStorage.getItem('dk_org'));
       localStorage.setItem('dk_session', JSON.stringify({ orgId: window.dk.state.orgId, orgName: orgSession?.name, user: window.dk.state.user, token: window.dk.state.token, exp: Date.now() + 86400000 }));
       
-      // LOGIKA GERBANG PRIVASI (DENGAN SUPER ADMIN BYPASS)
       if (window.dk.state.user.is_agreed_policy === false && window.dk.state.user.role !== 'super_admin') {
           document.getElementById('modalPrivacy').classList.remove('hidden');
-          return; // Stop eksekusi sampai setuju
+          return;
       }
 
-      if(window.dk.state.user.type === 'admin') { document.getElementById('areaAdmin').style.display = 'block'; document.getElementById('areaWarga').style.display = 'none'; document.getElementById('navAdmin').classList.remove('hidden'); document.getElementById('navWarga').classList.add('hidden'); document.getElementById('logoutBtn').classList.remove('hidden'); document.querySelector('.app-header').style.background = 'rgba(30, 41, 59, 0.95)'; document.querySelector('.app-header h1').style.color = 'white'; document.querySelector('.app-header p').style.color = '#94A3B8'; document.getElementById('org-logo-fallback').className = "ph ph-shield-check text-2xl text-blue-500"; fnLoadData().then(() => { fnRenderAdminVerify(); fnRenderMaster(); fnRenderKas(); fnRenderLaporan(); }); } 
+      if(window.dk.state.user.type === 'admin') { 
+        document.querySelector('#navAdmin .nav-item')?.classList.add('nav-active'); // ✅ Highlight awal
+        document.getElementById('areaAdmin').style.display = 'block'; document.getElementById('areaWarga').style.display = 'none'; document.getElementById('navAdmin').classList.remove('hidden'); document.getElementById('navWarga').classList.add('hidden'); document.getElementById('logoutBtn').classList.remove('hidden'); document.querySelector('.app-header').style.background = 'rgba(30, 41, 59, 0.95)'; document.querySelector('.app-header h1').style.color = 'white'; document.querySelector('.app-header p').style.color = '#94A3B8'; document.getElementById('org-logo-fallback').className = "ph ph-shield-check text-2xl text-blue-500"; fnLoadData().then(() => { fnRenderAdminVerify(); fnRenderMaster(); fnRenderKas(); fnRenderLaporan(); }); } 
       else { document.getElementById('areaWarga').style.display = 'block'; document.getElementById('areaAdmin').style.display = 'none'; document.getElementById('navWarga').classList.remove('hidden'); document.getElementById('navAdmin').classList.add('hidden'); document.getElementById('logoutBtn').classList.remove('hidden'); fnLoadData().then(() => { fnRenderWargaDash(); fnRenderIuran(); fnRenderRiwayat(); fnSetupProfil(); }); }
     }
 
-    // FUNGSI PERSETUJUAN PRIVASI (DENGAN PENANGANAN ERROR RLS)
     window.fnAgreePrivacy = async function() {
         const chk = document.getElementById('chkPrivacy');
         if(!chk.checked) return alert("Mohon centang kotak persetujuan terlebih dahulu.");
-        
         showLoader(true);
         const table = window.dk.state.user.type === 'warga' ? 'warga' : 'admin';
-        
         const { error } = await db().from(table).update({ is_agreed_policy: true }).eq('id', window.dk.state.user.id);
-        
-        if (error) {
-            showLoader(false);
-            return alert("Gagal menyimpan persetujuan: " + error.message);
-        }
-        
+        if (error) { showLoader(false); return alert("Gagal menyimpan persetujuan: " + error.message); }
         window.dk.state.user.is_agreed_policy = true;
-        
-        // Update memori lokal agar tidak pura-pura lupa saat direfresh
         const session = JSON.parse(localStorage.getItem('dk_session'));
-        if(session && session.user) {
-            session.user.is_agreed_policy = true;
-            localStorage.setItem('dk_session', JSON.stringify(session));
-        }
-        
-        showLoader(false);
-        document.getElementById('modalPrivacy').classList.add('hidden');
-        fnShowApp(); // Lanjut render dashboard
+        if(session && session.user) { session.user.is_agreed_policy = true; localStorage.setItem('dk_session', JSON.stringify(session)); }
+        showLoader(false); document.getElementById('modalPrivacy').classList.add('hidden'); fnShowApp();
     };
 
     window.fnSwitchWargaTab = function(tabId, btn) { document.querySelectorAll('.w-sec').forEach(c => c.classList.remove('active')); document.getElementById(tabId).classList.add('active'); document.querySelectorAll('#navWarga .nav-item').forEach(b => b.classList.remove('nav-active')); if(btn) btn.classList.add('nav-active'); document.querySelector('.main-container').scrollTo({ top: 0, behavior: 'smooth' }); };
-    window.fnSwitchAdminTab = function(tabId, btn) { document.querySelectorAll('.a-sec').forEach(c => c.classList.remove('active')); document.getElementById(tabId).classList.add('active'); document.querySelectorAll('#navAdmin .nav-item').forEach(b => b.classList.remove('nav-admin-active')); if(btn) btn.classList.add('nav-admin-active'); document.querySelector('.main-container').scrollTo({ top: 0, behavior: 'smooth' }); if(tabId==='viewAdminVerify') fnRenderAdminVerify(); if(tabId==='viewAdminMaster') fnRenderMaster(); if(tabId==='viewAdminKas') fnRenderKas(); if(tabId==='viewAdminLaporan') fnRenderLaporan(); };
+    window.fnSwitchAdminTab = function(tabId, btn) { 
+      document.querySelectorAll('.a-sec').forEach(c => c.classList.remove('active')); 
+      document.getElementById(tabId).classList.add('active'); 
+      document.querySelectorAll('#navAdmin .nav-item').forEach(b => b.classList.remove('nav-active')); 
+      if(btn) btn.classList.add('nav-active'); 
+      document.querySelector('.main-container').scrollTo({ top: 0, behavior: 'smooth' }); 
+      if(tabId==='viewAdminVerify') fnRenderAdminVerify(); 
+      if(tabId==='viewAdminMaster') fnRenderMaster(); 
+      if(tabId==='viewAdminKas') fnRenderKas(); 
+      if(tabId==='viewAdminLaporan') fnRenderLaporan(); 
+    };
 
     window.fnLoadData = async function() { showLoader(true); const orgId = window.dk.state.orgId; try { const [w, p, pay, det, out, inc] = await Promise.all([ db().from('warga').select('*').eq('organization_id', orgId), db().from('project').select('*').eq('organization_id', orgId).eq('status', 'ACTIVE'), db().from('pembayaran').select('*').eq('organization_id', orgId), db().from('pembayaran_detail').select('*').eq('organization_id', orgId), db().from('pengeluaran').select('*').eq('organization_id', orgId), db().from('dana_lain').select('*').eq('organization_id', orgId) ]); window.dk.state.data = { warga: (w.data||[]).filter(x => x.status !== 'INACTIVE'), project: p.data||[], pembayaran: pay.data||[], detail: det.data||[], pengeluaran: out.data||[], danaLain: inc.data||[] }; } catch(e) { alert('Gagal memuat data.'); } finally { showLoader(false); } };
 
@@ -510,6 +505,10 @@
       let rows = det.map(d => { const proj = window.dk.state.data.project.find(x => x.id === d.project_id); return `<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px dashed var(--tk-border);"><span style="font-size:13px;font-weight:700;color:var(--tk-text-primary);">${proj?.nama_project || 'Project'}<br><span style="font-size:11px;font-weight:600;color:var(--tk-text-tertiary);text-transform:uppercase;letter-spacing:0.5px;">${formatBulan(d.periode)}</span></span><span style="font-weight:800;color:var(--tk-text-primary);">${formatRp(d.nominal)}</span></div>`; }).join('');
       document.getElementById('strukContent').innerHTML = `<div style="text-align:center;margin-bottom:24px;border-bottom:2px solid #F1F5F9;padding-bottom:20px;"><div style="width:48px;height:48px;background:#DCFCE7;color:#16A34A;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 12px;"><i class="ph ph-check-bold"></i></div><p style="font-size:11px;font-weight:800;color:var(--tk-text-tertiary);text-transform:uppercase;letter-spacing:1px;margin:0;">Status Pembayaran</p><h3 style="font-weight:900;color:var(--tk-text-primary);font-size:24px;margin:4px 0 0;letter-spacing:-0.5px;">LUNAS</h3></div><table style="width:100%;font-size:12px;color:var(--tk-text-secondary);margin-bottom:20px;border-collapse:collapse;"><tr><td style="padding:6px 0;font-weight:600;">Warga / Blok</td><td style="text-align:right;font-weight:800;color:var(--tk-text-primary);">${w?.nama || '-'} (${w?.no_rumah || '-'})</td></tr><tr><td style="padding:6px 0;font-weight:600;">Tanggal Lunas</td><td style="text-align:right;font-weight:800;color:var(--tk-text-primary);">${new Date(payment.tanggal).toLocaleDateString('id-ID')}</td></tr><tr><td style="padding:6px 0;font-weight:600;">Metode</td><td style="text-align:right;font-weight:800;color:var(--tk-text-primary);">${payment.metode}</td></tr><tr><td style="padding:6px 0;font-weight:600;">Payment ID</td><td style="text-align:right;font-family:monospace;font-size:10px;font-weight:700;color:var(--tk-text-tertiary);">${payment.id}</td></tr></table><div style="margin-bottom:20px;background:#F8FAFC;padding:12px;border-radius:12px;border:1px solid var(--tk-border);"><p style="font-size:10px;font-weight:800;color:var(--tk-text-tertiary);text-transform:uppercase;letter-spacing:1px;margin:0 0 8px;border-bottom:1px solid var(--tk-border);padding-bottom:8px;">Rincian Transaksi</p>${rows}</div><div style="display:flex;justify-content:space-between;align-items:center;padding-top:16px;border-top:2px dashed var(--tk-border);"><span style="font-weight:800;color:var(--tk-text-tertiary);font-size:13px;text-transform:uppercase;letter-spacing:0.5px;">Total Bayar</span><span style="font-weight:900;color:var(--tk-primary);font-size:28px;letter-spacing:-1px;">${formatRp(payment.total_nominal)}</span></div>`;
       document.getElementById('strukModal').classList.remove('hidden');
+      
+      // ✅ SET TITLE DINAMIS UNTUK PDF
+      const safeName = (w?.nama || 'Warga').replace(/[^a-zA-Z0-9]/g, '');
+      document.title = `Struk_${safeName}_${payment.id}`;
     };
     
     document.getElementById('btnWA').onclick = function() {
@@ -520,7 +519,13 @@
       window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank');
     };
     
-    document.getElementById('btnPDF').onclick = function() { window.print(); };
+    document.getElementById('btnPDF').onclick = function() { 
+      window.print(); 
+      window.onafterprint = function() {
+        document.title = 'DanaKita - Portal Klien';
+        window.onafterprint = null;
+      };
+    };
   </script>
 </body>
 </html>
