@@ -315,8 +315,10 @@
     const SUPABASE_KEY = 'sb_publishable_lwmxiQPF5yUSQnDu4JK12A_mN4tMdWH';
     
     window.dk = window.dk || {}; window.initSupabaseClient = function(token) { const options = {}; if(token) { options.global = { headers: { Authorization: `Bearer ${token}` } }; } window.dk.db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, options); };
-    // ✅ FIXED SYNTAX ERROR: Added 'data:' key
-    window.dk.state = { orgId: null, orgCode: '', user: null, token: null, data: { warga:[], project:[], pembayaran:[], detail:[], pengeluaran:[], danaLain:[] }, selectedCart: {}, expenseItems: [{ket:'', nom:''}] };
+    
+    // ✅ FIXED SYNTAX ERROR: Added '' key here
+    window.dk.state = { orgId: null, orgCode: '', user: null, token: null,  { warga:[], project:[], pembayaran:[], detail:[], pengeluaran:[], danaLain:[] }, selectedCart: {}, expenseItems: [{ket:'', nom:''}] };
+    
     const months = ['01','02','03','04','05','06','07','08','09','10','11','12']; const monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
     let currentStrukData = null; const db = () => window.dk.db;
     
@@ -415,7 +417,7 @@
     window.fnValidateKode = async function() {
       const kode = document.getElementById('inpKode').value.trim().toUpperCase(); const err = document.getElementById('errorKode'); err.style.display = 'none';
       if(!kode) { err.textContent = 'Kode wajib diisi!'; err.style.display = 'block'; return; }
-      showLoader(true); const { data: org, error } = await db().from('organizations').select('id, display_name, logo_url, nama').eq('client_code', kode).single(); showLoader(false);
+      showLoader(true); const {  org, error } = await db().from('organizations').select('id, display_name, logo_url, nama').eq('client_code', kode).single(); showLoader(false);
       if(error || !org) { err.textContent = 'Kode organisasi tidak ditemukan!'; err.style.display = 'block'; } 
       else { window.dk.state.orgId = org.id; window.dk.state.orgCode = kode; const oName = org.display_name || org.nama; localStorage.setItem('dk_org', JSON.stringify({ id: org.id, name: oName, code: kode, exp: Date.now() + 86400000 })); document.getElementById('org-display-name').innerText = oName; document.getElementById('modal-kode').classList.add('hidden'); document.getElementById('loginModal').classList.remove('hidden'); document.getElementById('modal-org-name').innerText = oName; }
     };
@@ -656,7 +658,7 @@
     window.fnRefreshRiwayat = async function() {
       showLoader(true);
       // Refresh only pembayaran & detail for this user
-      const { data: pay } = await db().from('pembayaran').select('*').eq('organization_id', window.dk.state.orgId);
+      const {  pay } = await db().from('pembayaran').select('*').eq('organization_id', window.dk.state.orgId);
       const { data: det } = await db().from('pembayaran_detail').select('*').eq('organization_id', window.dk.state.orgId);
       window.dk.state.data.pembayaran = pay || [];
       window.dk.state.data.detail = det || [];
@@ -691,7 +693,9 @@
     window.fnRenderUnpaidBills = function() {
       const wId = window.dk.state.user?.id;
       const container = document.getElementById('unpaidBillsContainer');
-      if(!wId || !container) return;
+      
+      // ✅ GUARD: Pastikan user & data sudah siap
+      if(!wId || !container || !window.dk.state.data?.project) return;
 
       const now = new Date();
       const currentMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
@@ -714,9 +718,13 @@
         }
 
         periodsToCheck.forEach(per => {
-          const isPaid = window.dk.state.data.pembayaran_detail.some(det =>
+          // ✅ SAFE: Default ke array kosong jika belum terload
+          const details = window.dk.state.data.detail || [];
+          const payments = window.dk.state.data.pembayaran || [];
+          
+          const isPaid = details.some(det =>
             det.project_id === proj.id && det.periode === per &&
-            window.dk.state.data.pembayaran.some(pay => pay.id === det.pembayaran_id && pay.warga_id === wId && pay.status === 'DISETUJUI')
+            payments.some(pay => pay.id === det.pembayaran_id && pay.warga_id === wId && pay.status === 'DISETUJUI')
           );
           if(!isPaid) unpaid.push({ proj, periode: per, nominal: proj.nominal_default });
         });
