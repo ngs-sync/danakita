@@ -193,11 +193,32 @@
     </div>
   </div>
 
+  <!-- ✅ MODAL KONFIRMASI LOGOUT -->
+  <div id="modalLogout" class="modal-overlay hidden">
+    <div class="modal-content" style="max-width: 350px; text-align: center;">
+      <div style="width: 64px; height: 64px; background: #FEF2F2; color: #EF4444; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 32px;">
+        <i class="ph ph-sign-out"></i>
+      </div>
+      <h3 style="font-size: 20px; font-weight: 900; color: var(--tk-text-primary); margin-bottom: 8px;">Konfirmasi Logout</h3>
+      <p style="font-size: 13px; color: var(--tk-text-secondary); margin-bottom: 24px; line-height: 1.6;">
+        Apakah Anda yakin ingin keluar dari sistem? Anda perlu login kembali untuk mengakses.
+      </p>
+      <div style="display: flex; gap: 12px;">
+        <button onclick="closeLogoutModal()" class="btn-ghost" style="flex: 1; background: #F1F5F9; border: none; padding: 12px;">
+          Batal
+        </button>
+        <button onclick="confirmLogout()" class="btn-danger" style="flex: 1; padding: 12px;">
+          <i class="ph ph-sign-out"></i> Ya, Keluar
+        </button>
+      </div>
+    </div>
+  </div>
+
   <header class="app-header">
     <div style="display: flex; align-items: center; gap: 16px; max-width: 640px; margin: 0 auto;">
       <div style="width: 44px; height: 44px; border-radius: 14px; background: linear-gradient(135deg, #F1F5F9, #E2E8F0); display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.05);"><i id="org-logo-fallback" class="ph ph-buildings text-2xl text-slate-500"></i></div>
       <div style="flex: 1;"><h1 style="font-size: 18px; font-weight: 900; color: var(--tk-text-primary); margin: 0; letter-spacing: -0.5px;">DANAKITA</h1><p id="org-display-name" style="font-size: 11px; color: var(--tk-primary); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Memuat...</p></div>
-      <button id="logoutBtn" onclick="fnLogout()" class="btn-danger hidden px-3 py-2 border-radius: 12px; font-size: 12px;"><i class="ph ph-sign-out text-lg"></i> Keluar</button>
+      <button id="logoutBtn" onclick="openLogoutModal()" class="btn-danger hidden px-3 py-2 border-radius: 12px; font-size: 12px;"><i class="ph ph-sign-out text-lg"></i> Keluar</button>
     </div>
   </header>
 
@@ -282,21 +303,76 @@
     const SUPABASE_KEY = 'sb_publishable_lwmxiQPF5yUSQnDu4JK12A_mN4tMdWH';
     
     window.dk = window.dk || {}; window.initSupabaseClient = function(token) { const options = {}; if(token) { options.global = { headers: { Authorization: `Bearer ${token}` } }; } window.dk.db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, options); };
-    window.dk.state = { orgId: null, orgCode: '', user: null, token: null,  { warga:[], project:[], pembayaran:[], detail:[], pengeluaran:[], danaLain:[] }, selectedCart: {}, expenseItems: [{ket:'', nom:''}] };
+    window.dk.state = { orgId: null, orgCode: '', user: null, token: null, data: { warga:[], project:[], pembayaran:[], detail:[], pengeluaran:[], danaLain:[] }, selectedCart: {}, expenseItems: [{ket:'', nom:''}] };
     const months = ['01','02','03','04','05','06','07','08','09','10','11','12']; const monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
     let currentStrukData = null; const db = () => window.dk.db;
     
-    // ✅ State Pagination Warga
     let wargaPagination = { page: 1, perPage: 10, search: '' };
 
+    // ✅ FUNGSI VALIDASI SESSION YANG ROBUST
+    function isValidSession(session) {
+      if (!session) return false;
+      // Cek field wajib
+      if (!session.token || !session.orgId || !session.user) return false;
+      // Cek expiry (24 jam)
+      if (session.exp && session.exp <= Date.now()) return false;
+      // Cek tipe user valid
+      if (!session.user.type || !['warga', 'admin'].includes(session.user.type)) return false;
+      return true;
+    }
+
+    // ✅ FUNGSI CLEAR SESSION AMAN
+    function clearAllSessions() {
+      localStorage.removeItem('dk_session');
+      localStorage.removeItem('dk_org');
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
-      const orgSession = JSON.parse(localStorage.getItem('dk_org')); const authSession = JSON.parse(localStorage.getItem('dk_session'));
+      let authSession = null;
+      let orgSession = null;
+      
+      // 1. Safe Parse dengan Try-Catch untuk mencegah crash
+      try {
+        const sessionRaw = localStorage.getItem('dk_session');
+        const orgRaw = localStorage.getItem('dk_org');
+        if (sessionRaw) authSession = JSON.parse(sessionRaw);
+        if (orgRaw) orgSession = JSON.parse(orgRaw);
+      } catch (e) {
+        console.error("Session corrupted, clearing...", e);
+        clearAllSessions();
+        authSession = null;
+        orgSession = null;
+      }
+
       let initialToken = null;
-      if (authSession && authSession.exp > Date.now()) { window.dk.state.orgId = authSession.orgId; window.dk.state.user = authSession.user; window.dk.state.token = authSession.token; window.dk.state.orgCode = orgSession?.code || ''; initialToken = authSession.token; } 
-      else if (orgSession && orgSession.exp > Date.now()) { window.dk.state.orgId = orgSession.id; window.dk.state.orgCode = orgSession.code; document.getElementById('org-display-name').innerText = orgSession.name; document.getElementById('modal-org-name').innerText = orgSession.name; document.getElementById('modal-kode').classList.add('hidden'); document.getElementById('loginModal').classList.remove('hidden'); } 
-      else { document.getElementById('modal-kode').classList.remove('hidden'); }
+
+      // 2. Validasi Session
+      if (isValidSession(authSession)) { 
+        window.dk.state.orgId = authSession.orgId; 
+        window.dk.state.user = authSession.user; 
+        window.dk.state.token = authSession.token; 
+        window.dk.state.orgCode = orgSession?.code || ''; 
+        initialToken = authSession.token; 
+      } 
+      else if (orgSession && orgSession.exp > Date.now()) { 
+        // Session expired, tapi org code masih ada -> ke login modal
+        window.dk.state.orgId = orgSession.id; 
+        window.dk.state.orgCode = orgSession.code; 
+        document.getElementById('org-display-name').innerText = orgSession.name; 
+        document.getElementById('modal-org-name').innerText = orgSession.name; 
+        document.getElementById('modal-kode').classList.add('hidden'); 
+        document.getElementById('loginModal').classList.remove('hidden'); 
+      } 
+      else { 
+        // Fresh state -> ke modal kode organisasi
+        document.getElementById('modal-kode').classList.remove('hidden'); 
+      }
+
       window.initSupabaseClient(initialToken);
-      if (initialToken) { document.getElementById('org-display-name').innerText = authSession.orgName || orgSession?.name || 'Memuat...'; fnShowApp(); }
+      if (initialToken) { 
+        document.getElementById('org-display-name').innerText = authSession.orgName || orgSession?.name || 'Memuat...'; 
+        fnShowApp(); 
+      }
     });
 
     function showLoader(show) { document.getElementById('loader').classList.toggle('hidden', !show); }
@@ -326,14 +402,26 @@
         });
     }
 
-    window.fnGantiKomunitas = function() { localStorage.removeItem('dk_org'); localStorage.removeItem('dk_session'); location.reload(); };
+    window.fnGantiKomunitas = function() { clearAllSessions(); location.reload(); };
     function closeStrukModal() { document.getElementById('strukModal').classList.add('hidden'); }
     function closeEditModal() { document.getElementById('modalEditWarga').classList.add('hidden'); }
+
+    // ✅ FUNGSI LOGOUT MODAL
+    window.openLogoutModal = function() {
+      document.getElementById('modalLogout').classList.remove('hidden');
+    };
+    window.closeLogoutModal = function() {
+      document.getElementById('modalLogout').classList.add('hidden');
+    };
+    window.confirmLogout = function() {
+      clearAllSessions();
+      location.reload();
+    };
 
     window.fnValidateKode = async function() {
       const kode = document.getElementById('inpKode').value.trim().toUpperCase(); const err = document.getElementById('errorKode'); err.style.display = 'none';
       if(!kode) { err.textContent = 'Kode wajib diisi!'; err.style.display = 'block'; return; }
-      showLoader(true); const {  org, error } = await db().from('organizations').select('id, display_name, logo_url, nama').eq('client_code', kode).single(); showLoader(false);
+      showLoader(true); const { data: org, error } = await db().from('organizations').select('id, display_name, logo_url, nama').eq('client_code', kode).single(); showLoader(false);
       if(error || !org) { err.textContent = 'Kode organisasi tidak ditemukan!'; err.style.display = 'block'; } 
       else { window.dk.state.orgId = org.id; window.dk.state.orgCode = kode; const oName = org.display_name || org.nama; localStorage.setItem('dk_org', JSON.stringify({ id: org.id, name: oName, code: kode, exp: Date.now() + 86400000 })); document.getElementById('org-display-name').innerText = oName; document.getElementById('modal-kode').classList.add('hidden'); document.getElementById('loginModal').classList.remove('hidden'); document.getElementById('modal-org-name').innerText = oName; }
     };
@@ -369,7 +457,8 @@
       } else { err.textContent = data?.msg || 'Gagal Login'; err.style.display = 'block'; }
     };
 
-    window.fnLogout = function() { localStorage.removeItem('dk_session'); location.reload(); };
+    // ✅ TOMBOL LOGOUT UDAH DIUBAH KE OPEN MODAL (LIHAT HTML)
+    // function fnLogout dihapus/diganti oleh openLogoutModal
 
     function fnShowApp() {
       const orgSession = JSON.parse(localStorage.getItem('dk_org'));
@@ -381,7 +470,7 @@
       }
 
       if(window.dk.state.user.type === 'admin') { 
-        document.querySelector('#navAdmin .nav-item')?.classList.add('nav-active'); // ✅ Highlight awal
+        document.querySelector('#navAdmin .nav-item')?.classList.add('nav-active'); 
         document.getElementById('areaAdmin').style.display = 'block'; document.getElementById('areaWarga').style.display = 'none'; document.getElementById('navAdmin').classList.remove('hidden'); document.getElementById('navWarga').classList.add('hidden'); document.getElementById('logoutBtn').classList.remove('hidden'); document.querySelector('.app-header').style.background = 'rgba(30, 41, 59, 0.95)'; document.querySelector('.app-header h1').style.color = 'white'; document.querySelector('.app-header p').style.color = '#94A3B8'; document.getElementById('org-logo-fallback').className = "ph ph-shield-check text-2xl text-blue-500"; fnLoadData().then(() => { fnRenderAdminVerify(); fnRenderMaster(); fnRenderKas(); fnRenderLaporan(); }); } 
       else { document.getElementById('areaWarga').style.display = 'block'; document.getElementById('areaAdmin').style.display = 'none'; document.getElementById('navWarga').classList.remove('hidden'); document.getElementById('navAdmin').classList.add('hidden'); document.getElementById('logoutBtn').classList.remove('hidden'); fnLoadData().then(() => { fnRenderWargaDash(); fnRenderIuran(); fnRenderRiwayat(); fnSetupProfil(); }); }
     }
@@ -575,8 +664,8 @@
 
     window.fnSendWAInfo = function(nama, rumah, wa) { let phone = wa || ''; if(phone.startsWith('0')) phone = '62' + phone.substring(1); if(!phone) return alert('Oopss, Nomor WA warga ini belum diisi.'); const link = window.location.href.split('?')[0]; let text = `Halo Bapak/Ibu *${nama}* 👋\nIni adalah akses login Anda untuk Portal Warga di komunitas *${window.dk.state.orgCode}*.\n\n🏢 *ID Komunitas:* ${window.dk.state.orgCode}\n🏠 *No Rumah / Blok:* ${rumah}\n🔑 *PIN Login:* 1234 _(Atau PIN terbaru Anda)_\n\nSilakan akses sistem melalui link berikut:\n🌐 ${link}\n\n_Harap rahasiakan PIN Anda._`; window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank'); };
     window.fnDownloadTemplateCSV = function() { const csv = "NamaLengkap,NoRumah,NoWhatsApp,PIN_Default\nBudi Santoso,A-01,081234567890,1234\nSiti Rahma,A-02,089876543210,1234"; const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Template_Data_Warga.csv`; a.click(); };
-    window.fnProsesImportCSV = function() { const f = document.getElementById('csvWarga'); if(!f.files.length) return alert('Pilih file CSV!'); showLoader(true); Papa.parse(f.files[0], { header: true, skipEmptyLines: true, complete: async function(res) { const rows = res.data; if(!rows.length) { showLoader(false); return alert('File CSV kosong!'); } let ins = []; const {  defHash } = await db().rpc('hash_password', { raw_pass: '1234' }); for(let r of rows) { const nama = r.NamaLengkap?.trim(); const rumah = r.NoRumah?.trim()?.toUpperCase(); if(!nama || !rumah) continue; ins.push({ id: genId('WRG'), organization_id: window.dk.state.orgId, nama: nama, no_rumah: rumah, no_wa: r.NoWhatsApp?.trim()||'', pin_hash: defHash, status: 'ACTIVE' }); } if(ins.length) { await db().from('warga').insert(ins); await fnLoadData(); fnRenderWargaList(); } showLoader(false); f.value = ''; alert(`✅ Import Selesai!`); }}); };
-    window.fnTambahWarga = async function() { const nama = document.getElementById('admNama').value.trim(), blok = document.getElementById('admRumah').value.trim().toUpperCase(), wa = document.getElementById('admWa').value.trim(); if(!nama || !blok) return alert('Nama dan Blok wajib diisi!'); showLoader(true); const {  hash } = await db().rpc('hash_password', { raw_pass: '1234' }); await db().from('warga').insert([{ id: genId('WRG'), organization_id: window.dk.state.orgId, nama, no_rumah: blok, no_wa: wa, pin_hash: hash || '1234', status: 'ACTIVE' }]); document.getElementById('admNama').value=''; document.getElementById('admRumah').value=''; document.getElementById('admWa').value=''; alert('✅ Warga berhasil ditambahkan!\nPIN default: 1234'); await fnLoadData(); fnRenderWargaList(); showLoader(false); };
+    window.fnProsesImportCSV = function() { const f = document.getElementById('csvWarga'); if(!f.files.length) return alert('Pilih file CSV!'); showLoader(true); Papa.parse(f.files[0], { header: true, skipEmptyLines: true, complete: async function(res) { const rows = res.data; if(!rows.length) { showLoader(false); return alert('File CSV kosong!'); } let ins = []; const { data: defHash } = await db().rpc('hash_password', { raw_pass: '1234' }); for(let r of rows) { const nama = r.NamaLengkap?.trim(); const rumah = r.NoRumah?.trim()?.toUpperCase(); if(!nama || !rumah) continue; ins.push({ id: genId('WRG'), organization_id: window.dk.state.orgId, nama: nama, no_rumah: rumah, no_wa: r.NoWhatsApp?.trim()||'', pin_hash: defHash, status: 'ACTIVE' }); } if(ins.length) { await db().from('warga').insert(ins); await fnLoadData(); fnRenderWargaList(); } showLoader(false); f.value = ''; alert(`✅ Import Selesai!`); }}); };
+    window.fnTambahWarga = async function() { const nama = document.getElementById('admNama').value.trim(), blok = document.getElementById('admRumah').value.trim().toUpperCase(), wa = document.getElementById('admWa').value.trim(); if(!nama || !blok) return alert('Nama dan Blok wajib diisi!'); showLoader(true); const { data: hash } = await db().rpc('hash_password', { raw_pass: '1234' }); await db().from('warga').insert([{ id: genId('WRG'), organization_id: window.dk.state.orgId, nama, no_rumah: blok, no_wa: wa, pin_hash: hash || '1234', status: 'ACTIVE' }]); document.getElementById('admNama').value=''; document.getElementById('admRumah').value=''; document.getElementById('admWa').value=''; alert('✅ Warga berhasil ditambahkan!\nPIN default: 1234'); await fnLoadData(); fnRenderWargaList(); showLoader(false); };
     window.fnTambahProject = async function() { const nama = document.getElementById('admProj').value.trim(), tipe = document.getElementById('admTipe').value, start = document.getElementById('admStart').value; const nom = tipe === 'non_iuran' ? 0 : document.getElementById('admNom').value; const target = tipe === 'non_iuran' ? 0 : document.getElementById('admTarget').value; if(!nama) return alert('Nama Pos wajib diisi!'); showLoader(true); await db().from('project').insert([{ id: genId('PRJ'), organization_id: window.dk.state.orgId, nama_project: nama, tipe, start_periode: start||null, nominal_default: nom||0, target: target||0, status: 'ACTIVE' }]); document.getElementById('admProj').value=''; document.getElementById('admNom').value=''; document.getElementById('admTarget').value=''; await fnLoadData(); fnRenderMaster(); showLoader(false); };
 
     window.fnToggleKasForm = function(type) { document.getElementById('formKasOut').style.display = type!=='OUT' ? 'none' : 'block'; document.getElementById('formKasIn').style.display = type!=='IN' ? 'none' : 'block'; const btnOut = document.getElementById('btnTabOut'), btnIn = document.getElementById('btnTabIn'); if(type==='OUT') { btnOut.style.cssText='flex: 1; background: #FEF2F2; color: var(--tk-danger); font-weight: 800; font-size: 13px; padding: 12px; border-radius: 12px; border: none; cursor: pointer; transition: 0.2s;'; btnIn.style.cssText='flex: 1; color: var(--tk-text-secondary); font-weight: 700; font-size: 13px; padding: 12px; border-radius: 12px; border: none; cursor: pointer; background: transparent; transition: 0.2s;'; fnRenderExpenseItems(); } else { btnIn.style.cssText='flex: 1; background: #DCFCE7; color: var(--tk-success); font-weight: 800; font-size: 13px; padding: 12px; border-radius: 12px; border: none; cursor: pointer; transition: 0.2s;'; btnOut.style.cssText='flex: 1; color: var(--tk-text-secondary); font-weight: 700; font-size: 13px; padding: 12px; border-radius: 12px; border: none; cursor: pointer; background: transparent; transition: 0.2s;'; } };
@@ -590,7 +679,7 @@
     window.fnExportCSV = function() { let csv = "Tanggal,Keterangan,Tipe,Debit,Kredit\n"; window.dk.state.data.danaLain.forEach(d => csv += `${new Date(d.tanggal).toLocaleDateString('id-ID')},"${d.sumber} - ${d.keterangan}",DEBIT,${d.nominal},0\n`); window.dk.state.data.pengeluaran.forEach(o => csv += `${new Date(o.tanggal).toLocaleDateString('id-ID')},"${o.keterangan.replace(/"/g,'""')}",KREDIT,0,${o.nominal}\n`); window.dk.state.data.pembayaran.filter(p=>p.status==='DISETUJUI').forEach(p => { const w = window.dk.state.data.warga.find(x=>x.id===p.warga_id); csv += `${new Date(p.tanggal).toLocaleDateString('id-ID')},"Iuran: ${w?.nama||'-'} (Blok ${w?.no_rumah||'-'})",DEBIT,${p.total_nominal},0\n`; }); const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `LPJ_Keuangan_${new Date().toISOString().split('T')[0]}.csv`; a.click(); };
 
     window.fnSetupProfil = function() { const u = window.dk.state.user; if(u && u.type === 'warga') { document.getElementById('profNama').value = u.name; document.getElementById('profRumah').value = u.noRumah; document.getElementById('profWa').value = u.wa || 'Belum diisi'; } };
-    window.fnGantiPinWarga = async function() { const oldPin = document.getElementById('profPinOld').value, newPin = document.getElementById('profPinNew').value, confirmPin = document.getElementById('profPinConfirm').value; if(!oldPin || !newPin || !confirmPin) return alert('Semua kolom PIN wajib diisi!'); if(newPin.length < 4) return alert('PIN baru minimal 4 karakter!'); if(newPin !== confirmPin) return alert('Konfirmasi PIN baru tidak sama!'); showLoader(true); const {  loginCheck } = await db().rpc('rpc_login_warga', { p_no_rumah: window.dk.state.user.noRumah, p_pin: oldPin, p_org_id: window.dk.state.orgId }); if(loginCheck && loginCheck.success) { const {  newHash } = await db().rpc('hash_password', { raw_pass: newPin }); await db().from('warga').update({ pin_hash: newHash || newPin }).eq('id', window.dk.state.user.id); document.getElementById('profPinOld').value=''; document.getElementById('profPinNew').value=''; document.getElementById('profPinConfirm').value=''; await db().from('audit_logs').insert([{ organization_id: window.dk.state.orgId, actor_type: 'warga', actor_name: window.dk.state.user.name, action: 'UPDATE_SECURITY_PIN' }]); showLoader(false); alert('✅ PIN Keamanan berhasil diperbarui!'); } else { showLoader(false); alert('Gagal: PIN Lama salah!'); } };
+    window.fnGantiPinWarga = async function() { const oldPin = document.getElementById('profPinOld').value, newPin = document.getElementById('profPinNew').value, confirmPin = document.getElementById('profPinConfirm').value; if(!oldPin || !newPin || !confirmPin) return alert('Semua kolom PIN wajib diisi!'); if(newPin.length < 4) return alert('PIN baru minimal 4 karakter!'); if(newPin !== confirmPin) return alert('Konfirmasi PIN baru tidak sama!'); showLoader(true); const { data: loginCheck } = await db().rpc('rpc_login_warga', { p_no_rumah: window.dk.state.user.noRumah, p_pin: oldPin, p_org_id: window.dk.state.orgId }); if(loginCheck && loginCheck.success) { const { data: newHash } = await db().rpc('hash_password', { raw_pass: newPin }); await db().from('warga').update({ pin_hash: newHash || newPin }).eq('id', window.dk.state.user.id); document.getElementById('profPinOld').value=''; document.getElementById('profPinNew').value=''; document.getElementById('profPinConfirm').value=''; await db().from('audit_logs').insert([{ organization_id: window.dk.state.orgId, actor_type: 'warga', actor_name: window.dk.state.user.name, action: 'UPDATE_SECURITY_PIN' }]); showLoader(false); alert('✅ PIN Keamanan berhasil diperbarui!'); } else { showLoader(false); alert('Gagal: PIN Lama salah!'); } };
 
     window.toggleAccordion = function(id) { const el = document.getElementById(id); const icon = document.getElementById('icon-' + id); if(el.classList.contains('open')) { el.classList.remove('open'); icon.style.transform = 'rotate(0deg)'; } else { el.classList.add('open'); icon.style.transform = 'rotate(180deg)'; } };
     window.fnRenderWargaDash = function() { const approved = window.dk.state.data.pembayaran.filter(p => p.status === 'DISETUJUI'); const totalIn = approved.reduce((s,p)=>s+Number(p.total_nominal),0) + window.dk.state.data.danaLain.reduce((s,d)=>s+Number(d.nominal),0); const totalOut = window.dk.state.data.pengeluaran.reduce((s,o)=>s+Number(o.nominal),0); document.getElementById('cardSaldo').innerText = formatRp(totalIn - totalOut); document.getElementById('totalIn').innerText = formatRp(totalIn); document.getElementById('totalOut').innerText = formatRp(totalOut); let html = ''; window.dk.state.data.project.forEach((proj, idx) => { let terkumpulWarga = window.dk.state.data.detail.filter(d => d.project_id === proj.id && approved.some(p => p.id === d.pembayaran_id)).reduce((s,d)=>s+Number(d.nominal),0); let terkumpulLain = window.dk.state.data.danaLain.filter(d => d.kategori_project === proj.id).reduce((s,d)=>s+Number(d.nominal),0); let terkumpul = terkumpulWarga + terkumpulLain; let perc = Number(proj.target) > 0 ? Math.min(Math.round((terkumpul / proj.target) * 100), 100) : 0; let accId = 'acc-' + idx; html += `<div style="background:#F8FAFC;padding:16px;border-radius:16px;border:1px solid var(--tk-border);"><div style="display:flex;justify-content:space-between;margin-bottom:8px;align-items:center;cursor:pointer;" onclick="toggleAccordion('${accId}')"><span style="font-weight:800;color:var(--tk-text-primary);font-size:14px;display:flex;align-items:center;gap:6px;"><i class="ph ph-caret-down text-slate-400 transition" id="icon-${accId}"></i> <i class="ph ph-target text-[#FF6B35]"></i> ${proj.nama_project}</span><span class="badge badge-success">${perc}%</span></div><div style="width:100%;height:8px;background:var(--tk-border);border-radius:4px;overflow:hidden;margin-bottom:8px;"><div style="height:100%;background:linear-gradient(90deg,var(--tk-primary),var(--tk-primary-dark));border-radius:4px;width:${perc}%;transition:width 0.6s cubic-bezier(0.16, 1, 0.3, 1);"></div></div><p style="font-size:11px;font-weight:700;color:var(--tk-text-secondary);text-align:right;">Terkumpul: <span style="color:var(--tk-text-primary);">${formatRp(terkumpul)}</span> ${proj.target>0?' / '+formatRp(proj.target):''}</p><div id="${accId}" class="accordion-content"><p style="font-size:10px;font-weight:800;text-transform:uppercase;color:var(--tk-text-tertiary);margin:0 0 6px;">Rincian Pemasukan Pos</p><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tk-text-secondary);padding:4px 0;"><span style="display:flex;align-items:center;gap:4px;"><i class="ph ph-users text-blue-500"></i> Dari Iuran Warga</span><span style="font-weight:700;color:var(--tk-text-primary);">${formatRp(terkumpulWarga)}</span></div><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tk-text-secondary);padding:4px 0;"><span style="display:flex;align-items:center;gap:4px;"><i class="ph ph-gift text-green-500"></i> Donasi/Sumbangan Luar</span><span style="font-weight:700;color:var(--tk-text-primary);">${formatRp(terkumpulLain)}</span></div></div></div>`; }); document.getElementById('progressContainer').innerHTML = html || '<p style="font-size:13px;font-weight:600;color:var(--tk-text-tertiary);text-align:center;padding:24px;">Belum ada pos kas yang aktif.</p>'; };
