@@ -191,7 +191,7 @@
         <div>
           <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Nama Lengkap</label>
           <input type="text" id="editWNama" style="background:#F8FAFC; color:var(--tk-text-primary); cursor:auto;">
-          <p class="text-[10px] text-slate-400 italic">⚠️ Perubahan nama akan tercatat di log aktivitas.</p>
+          <p style="font-size:10px; color:var(--tk-text-tertiary); margin-top:4px;">⚠️ Perubahan nama akan tercatat di log aktivitas.</p>
         </div>
         <div>
           <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">No Rumah</label>
@@ -258,9 +258,7 @@
         <h1 style="font-size: 18px; font-weight: 900; color: var(--tk-text-primary); margin: 0; letter-spacing: -0.5px;">DANAKITA</h1>
         <p id="org-display-name" style="font-size: 11px; color: var(--tk-primary); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Memuat...</p>
       </div>
-      <button id="logoutBtn" onclick="openLogoutModal()" class="btn-danger hidden px-3 py-2 border-radius: 12px; font-size: 12px;">
-        <i class="ph ph-sign-out text-lg"></i> Keluar
-      </button>
+      <button id="logoutBtn" onclick="openLogoutModal()" class="btn-danger hidden px-3 py-2 border-radius: 12px; font-size: 12px;"><i class="ph ph-sign-out text-lg"></i> Keluar</button>
     </div>
   </header>
 
@@ -401,7 +399,7 @@
   </nav>
 
   <script>
-    // ✅ INISIALISASI GLOBAL — HARUS DI ATAS SEMUA FUNGSI
+    // ✅ GLOBAL INIT
     window.dk = window.dk || {};
     window.dk.state = {
       orgId: null,
@@ -423,7 +421,20 @@
     const SUPABASE_URL = 'https://tgcpyatrllswhlysqfer.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_lwmxiQPF5yUSQnDu4JK12A_mN4tMdWH';
 
-    // ✅ Fungsi inisialisasi client — dipanggil saat dibutuhkan
+    // ✅ Fungsi global — harus di sini, bukan di dalam DOMContentLoaded
+    function switchLoginTab(type) {
+      const isAdm = type === 'admin';
+      document.getElementById('tab-admin').className = isAdm 
+        ? 'flex-1 py-2.5 rounded-xl text-sm font-bold bg-white shadow text-blue-600 transition' 
+        : 'flex-1 py-2.5 rounded-xl text-sm font-bold text-slate-500 transition hover:bg-slate-200';
+      document.getElementById('tab-warga').className = !isAdm 
+        ? 'flex-1 py-2.5 rounded-xl text-sm font-bold bg-white shadow text-green-600 transition' 
+        : 'flex-1 py-2.5 rounded-xl text-sm font-bold text-slate-500 transition hover:bg-slate-200';
+      document.getElementById('form-admin').classList.toggle('hidden', !isAdm);
+      document.getElementById('form-warga').classList.toggle('hidden', isAdm);
+      document.getElementById('modal-title').innerText = isAdm ? 'Login Pengurus' : 'Login Warga';
+    }
+
     window.initSupabaseClient = function(token) {
       const options = {};
       if (token) {
@@ -484,13 +495,13 @@
     }
     function db() {
       if (!window.dk.db) {
-        console.warn('Supabase client not initialized. Initializing now...');
+        console.warn('Initializing Supabase client...');
         window.initSupabaseClient(null);
       }
       return window.dk.db;
     }
 
-    // ✅ fnValidateKode — sudah diperbaiki: pastikan db() siap sebelum dipanggil
+    // ✅ fnValidateKode — sudah aman
     window.fnValidateKode = async () => {
       const kode = document.getElementById('inpKode').value.trim().toUpperCase();
       const errEl = document.getElementById('errorKode');
@@ -502,14 +513,10 @@
 
       showLoader(true);
       try {
-        // 🔐 Pastikan client sudah siap
         if (!window.dk.db) {
           window.initSupabaseClient(null);
-          // Wait one tick for assignment
           await new Promise(r => setTimeout(r, 0));
-          if (!window.dk.db) {
-            throw new Error('Supabase client failed to initialize');
-          }
+          if (!window.dk.db) throw new Error('Client init failed');
         }
 
         const { data: org, error } = await db().from('organizations')
@@ -523,7 +530,6 @@
           return;
         }
 
-        // Simpan ke state & localStorage
         window.dk.state.orgId = org.id;
         window.dk.state.orgCode = kode;
         localStorage.setItem('dk_org', JSON.stringify({
@@ -541,7 +547,7 @@
       } catch (e) {
         console.error('Validasi kode gagal:', e);
         errEl.textContent = e.message.includes('Supabase') 
-          ? 'Gagal koneksi ke server. Cek jaringan atau allowed origins di Supabase.' 
+          ? 'Gagal koneksi ke server. Pastikan allowed origins di Supabase sudah diatur.' 
           : 'Gagal memvalidasi kode. Coba lagi.';
         errEl.style.display = 'block';
       } finally {
@@ -549,7 +555,7 @@
       }
     };
 
-    // Lainnya (placeholder — bisa diisi lengkap nanti)
+    // Lainnya (placeholder — cukup untuk mencegah crash)
     window.fnGantiKomunitas = () => {
       localStorage.removeItem('dk_session');
       localStorage.removeItem('dk_org');
@@ -768,7 +774,6 @@
 
     // Event listeners
     window.addEventListener('DOMContentLoaded', () => {
-      // Jika ada session, langsung show app
       let authSession = null;
       let orgSession = null;
       try {
