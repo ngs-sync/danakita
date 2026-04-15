@@ -162,16 +162,24 @@
       </div>
       <div id="form-warga">
         <div style="display: flex; flex-direction: column; gap: 16px;">
-          <div class="relative"><i class="ph ph-house-line absolute left-4 top-3.5 text-slate-400 text-lg"></i><input type="text" id="inpRumah" placeholder="No. Rumah (Cth: A-12)" class="pl-11 uppercase"></div>
-          <div class="relative"><i class="ph ph-password absolute left-4 top-3.5 text-slate-400 text-lg"></i><input type="password" id="inpPin" placeholder="PIN Warga" maxlength="6" class="pl-11" style="letter-spacing: 4px; font-family: monospace; font-size: 18px;"></div>
+          <div class="relative"><i class="ph ph-house-line absolute left-4 top-3.5 text-slate-400 text-lg"></i>
+            <input type="text" id="inpRumah" placeholder="No. Rumah (Cth: A-12)" class="pl-11 uppercase">
+          </div>
+          <div class="relative"><i class="ph ph-password absolute left-4 top-3.5 text-slate-400 text-lg"></i>
+            <input type="password" id="inpPin" placeholder="PIN Warga" maxlength="6" class="pl-11" style="letter-spacing: 4px; font-family: monospace; font-size: 18px;">
+          </div>
           <p id="loginErrorWarga" style="color: var(--tk-danger); font-size: 12px; font-weight: 600; display: none; margin: 0; background: #FEE2E2; padding: 8px; border-radius: 8px;"></p>
           <button onclick="fnLoginWarga()" class="btn-secondary mt-2">Masuk Portal Warga <i class="ph ph-sign-in"></i></button>
         </div>
       </div>
       <div id="form-admin" class="hidden">
         <div style="display: flex; flex-direction: column; gap: 16px;">
-          <div class="relative"><i class="ph ph-user absolute left-4 top-3.5 text-slate-400 text-lg"></i><input type="text" id="inpUser" placeholder="Username" class="pl-11"></div>
-          <div class="relative"><i class="ph ph-lock-key absolute left-4 top-3.5 text-slate-400 text-lg"></i><input type="password" id="inpPass" placeholder="Password" class="pl-11"></div>
+          <div class="relative"><i class="ph ph-user absolute left-4 top-3.5 text-slate-400 text-lg"></i>
+            <input type="text" id="inpUser" placeholder="Username" class="pl-11">
+          </div>
+          <div class="relative"><i class="ph ph-lock-key absolute left-4 top-3.5 text-slate-400 text-lg"></i>
+            <input type="password" id="inpPass" placeholder="Password" class="pl-11">
+          </div>
           <p id="loginError" style="color: var(--tk-danger); font-size: 12px; font-weight: 600; display: none; margin: 0; background: #FEE2E2; padding: 8px; border-radius: 8px;"></p>
           <button onclick="fnLoginAdmin()" class="btn-primary mt-2">Masuk Panel Admin <i class="ph ph-sign-in"></i></button>
         </div>
@@ -258,7 +266,9 @@
         <h1 style="font-size: 18px; font-weight: 900; color: var(--tk-text-primary); margin: 0; letter-spacing: -0.5px;">DANAKITA</h1>
         <p id="org-display-name" style="font-size: 11px; color: var(--tk-primary); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Memuat...</p>
       </div>
-      <button id="logoutBtn" onclick="openLogoutModal()" class="btn-danger hidden px-3 py-2 border-radius: 12px; font-size: 12px;"><i class="ph ph-sign-out text-lg"></i> Keluar</button>
+      <button id="logoutBtn" onclick="openLogoutModal()" class="btn-danger hidden px-3 py-2 border-radius: 12px; font-size: 12px;">
+        <i class="ph ph-sign-out text-lg"></i> Keluar
+      </button>
     </div>
   </header>
 
@@ -324,7 +334,9 @@
                 <label style="display:block; font-size:12px; font-weight:800; color:var(--tk-text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">Upload Bukti Transfer</label>
                 <div style="display:flex; gap:8px; flex-direction:column;">
                   <input type="file" id="fileBukti" accept="image/*" style="background:white; border-color:#E2E8F0; padding:10px;">
-                  <p style="font-size:10px; color:var(--tk-text-tertiary);"><i class="ph ph-info"></i> Otomatis dikompres hemat kuota (~100KB).</p>
+                  <p style="font-size:10px; color:var(--tk-text-tertiary);">
+                    <i class="ph ph-info"></i> Otomatis dikompres hemat kuota (~100KB).
+                  </p>
                 </div>
               </div>
             </div>
@@ -399,7 +411,7 @@
   </nav>
 
   <script>
-    // ✅ GLOBAL INIT
+    // ✅ GLOBAL INIT — HARUS DI ATAS SEMUA FUNGSI
     window.dk = window.dk || {};
     window.dk.state = {
       orgId: null,
@@ -421,7 +433,7 @@
     const SUPABASE_URL = 'https://tgcpyatrllswhlysqfer.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_lwmxiQPF5yUSQnDu4JK12A_mN4tMdWH';
 
-    // ✅ Fungsi global — harus di sini, bukan di dalam DOMContentLoaded
+    // ✅ Fungsi global — DEKLARASI LANGSUNG DI SINI (bukan di dalam DOMContentLoaded)
     function switchLoginTab(type) {
       const isAdm = type === 'admin';
       document.getElementById('tab-admin').className = isAdm 
@@ -555,25 +567,62 @@
       }
     };
 
-    // Lainnya (placeholder — cukup untuk mencegah crash)
-    window.fnGantiKomunitas = () => {
-      localStorage.removeItem('dk_session');
-      localStorage.removeItem('dk_org');
-      location.reload();
+    // ✅ fnLoginAdmin — SEKARANG DEFINISI GLOBAL
+    window.fnLoginAdmin = async () => {
+      const u = document.getElementById('inpUser').value.trim();
+      const p = document.getElementById('inpPass').value;
+      const errEl = document.getElementById('loginError');
+      if (!u || !p) {
+        errEl.textContent = 'Isi Username & Password!';
+        errEl.style.display = 'block';
+        return;
+      }
+      showLoader(true);
+      try {
+        const { data, error } = await db().rpc('rpc_login_admin', {
+          p_username: u,
+          p_password: p,
+          p_org_id: window.dk.state.orgId
+        });
+        if (error) throw error;
+        if (data.success) {
+          window.dk.state.user = {
+            type: 'admin',
+            id: data.data.id,
+            name: data.data.nama_admin,
+            is_agreed_policy: data.data.is_agreed_policy
+          };
+          if (data.data.nama_admin.includes('(Super Admin)')) window.dk.state.user.role = 'super_admin';
+          window.dk.state.token = data.token;
+          window.initSupabaseClient(data.token);
+          document.getElementById('loginModal').classList.add('hidden');
+          fnShowApp();
+        } else {
+          errEl.textContent = data.msg || 'Gagal login';
+          errEl.style.display = 'block';
+        }
+      } catch (e) {
+        errEl.textContent = e.message || 'Error tak dikenal';
+        errEl.style.display = 'block';
+      } finally {
+        showLoader(false);
+      }
     };
 
+    // ✅ fnLoginWarga — juga global
     window.fnLoginWarga = async () => {
-      const rumah = document.getElementById('inpRumah').value.trim();
+      const r = document.getElementById('inpRumah').value.trim();
       const pin = document.getElementById('inpPin').value;
-      if (!rumah || !pin) {
-        document.getElementById('loginErrorWarga').textContent = 'Isi No Rumah & PIN!';
-        document.getElementById('loginErrorWarga').style.display = 'block';
+      const errEl = document.getElementById('loginErrorWarga');
+      if (!r || !pin) {
+        errEl.textContent = 'Isi No Rumah & PIN!';
+        errEl.style.display = 'block';
         return;
       }
       showLoader(true);
       try {
         const { data, error } = await db().rpc('rpc_login_warga', {
-          p_no_rumah: rumah,
+          p_no_rumah: r,
           p_pin: pin,
           p_org_id: window.dk.state.orgId
         });
@@ -592,15 +641,22 @@
           document.getElementById('loginModal').classList.add('hidden');
           fnShowApp();
         } else {
-          document.getElementById('loginErrorWarga').textContent = data.msg || 'Gagal login';
-          document.getElementById('loginErrorWarga').style.display = 'block';
+          errEl.textContent = data.msg || 'Gagal login';
+          errEl.style.display = 'block';
         }
       } catch (e) {
-        document.getElementById('loginErrorWarga').textContent = e.message || 'Error tak dikenal';
-        document.getElementById('loginErrorWarga').style.display = 'block';
+        errEl.textContent = e.message || 'Error tak dikenal';
+        errEl.style.display = 'block';
       } finally {
         showLoader(false);
       }
+    };
+
+    // Lainnya
+    window.fnGantiKomunitas = () => {
+      localStorage.removeItem('dk_session');
+      localStorage.removeItem('dk_org');
+      location.reload();
     };
 
     window.fnShowApp = () => {
@@ -751,7 +807,7 @@
       }, 100);
     };
 
-    // Placeholder functions (untuk mencegah error saat load)
+    // Placeholder
     window.fnRenderWargaDash = () => {
       document.getElementById('cardSaldo').innerText = 'Rp 0';
       document.getElementById('totalIn').innerText = 'Rp 0';
