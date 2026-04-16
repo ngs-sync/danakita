@@ -81,6 +81,13 @@
     window.initSupabaseClient = function(token) {
       const SUPABASE_URL = "VITE_SUPABASE_URL_PLACEHOLDER";
       const SUPABASE_KEY = "VITE_SUPABASE_KEY_PLACEHOLDER";
+
+      if (SUPABASE_URL.startsWith('VITE_') || !SUPABASE_URL) {
+        console.error("Supabase credentials not configured. Please run 'npm run build' or 'npm run dev' to inject environment variables.");
+        alert("Konfigurasi Sistem Belum Lengkap: Aplikasi harus dijalankan melalui Vite atau di-build terlebih dahulu untuk menyuntikkan kredensial Supabase.");
+        return;
+      }
+
       const options = {};
       if(token) options.global = { headers: { Authorization: `Bearer ${token}` } };
       window.dk.db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, options);
