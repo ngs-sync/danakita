@@ -925,6 +925,55 @@
       }
     });
 
+    // ✅ MISSING FUNCTIONS IMPLEMENTATION (STUBS)
+    window.fnGantiKomunitas = () => {
+      localStorage.removeItem('dk_org');
+      localStorage.removeItem('dk_session');
+      location.reload();
+    };
+
+    window.closeEditModal = () => document.getElementById('modalEditWarga').classList.add('hidden');
+    window.closeStrukModal = () => document.getElementById('strukModal').classList.add('hidden');
+    window.closeLogoutModal = () => document.getElementById('modalLogout').classList.add('hidden');
+    window.openLogoutModal = () => document.getElementById('modalLogout').classList.remove('hidden');
+
+    window.confirmLogout = () => {
+      localStorage.removeItem('dk_session');
+      location.reload();
+    };
+
+    window.fnSimpanEditWarga = () => { alert('Simpan Edit Warga Clicked'); window.closeEditModal(); };
+    window.fnGantiPinWarga = () => { alert('Ganti PIN Warga Clicked'); };
+    window.fnToggleVerifikasi = (type) => { alert('Toggle Verifikasi: ' + type); };
+    window.fnFilterWarga = () => { console.log('Filter Warga...'); };
+    window.fnTambahWarga = () => { alert('Tambah Warga Clicked'); };
+    window.fnDownloadTemplateCSV = () => { alert('Download Template Clicked'); };
+    window.fnProsesImportCSV = () => { alert('Proses Import Clicked'); };
+    window.fnWargaPrev = () => { alert('Prev Page Clicked'); };
+    window.fnWargaNext = () => { alert('Next Page Clicked'); };
+    window.fnToggleProjType = () => {
+      const tipe = document.getElementById('admTipe').value;
+      const divNominalTarget = document.getElementById('divNominalTarget');
+      const noteNonIuran = document.getElementById('noteNonIuran');
+      if (divNominalTarget) divNominalTarget.classList.toggle('hidden', tipe === 'non_iuran');
+      if (noteNonIuran) noteNonIuran.classList.toggle('hidden', tipe !== 'non_iuran');
+    };
+    window.fnTambahProject = () => { alert('Tambah Project Clicked'); };
+    window.fnToggleKasForm = (type) => {
+      const isOut = type === 'OUT';
+      document.getElementById('formKasOut').style.display = isOut ? 'block' : 'none';
+      document.getElementById('formKasIn').style.display = !isOut ? 'block' : 'none';
+    };
+    window.fnAddExpenseItem = () => { alert('Add Expense Item Clicked'); };
+    window.fnTambahKas = (type) => { alert('Tambah Kas: ' + type); };
+    window.fnExportCSV = () => { alert('Export CSV Clicked'); };
+    window.fnToggleBukti = () => {
+      const met = document.getElementById('metodeBayar').value;
+      document.getElementById('buktiSection').style.display = met === 'TRANSFER' ? 'block' : 'none';
+    };
+    window.fnSubmitPembayaran = () => { alert('Submit Pembayaran Clicked'); };
+    window.fnRefreshRiwayat = () => { window.fnLoadData().then(() => window.fnRenderRiwayat()); };
+
     // Public APIs
     window.fnAgreePrivacy = async () => {
       if (!document.getElementById('chkPrivacy').checked) return alert('Centang persetujuan dulu!');
