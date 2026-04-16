@@ -315,7 +315,11 @@
       const kode = document.getElementById('inpKode').value.trim().toUpperCase(); const err = document.getElementById('errorKode'); err.style.display = 'none';
       if(!kode) { err.textContent = 'Kode wajib diisi!'; err.style.display = 'block'; return; }
       showLoader(true); const { data: org, error } = await db().from('organizations').select('id, display_name, logo_url, nama').eq('client_code', kode).single(); showLoader(false);
-      if(error || !org) { err.textContent = 'Kode organisasi tidak ditemukan!'; err.style.display = 'block'; } 
+      if(error || !org) {
+        console.error('Validation Error:', error);
+        err.textContent = error ? `Error: ${error.message}` : 'Kode organisasi tidak ditemukan!';
+        err.style.display = 'block';
+      }
       else { window.dk.state.orgId = org.id; window.dk.state.orgCode = kode; const oName = org.display_name || org.nama; localStorage.setItem('dk_org', JSON.stringify({ id: org.id, name: oName, code: kode, exp: Date.now() + 86400000 })); document.getElementById('org-display-name').innerText = oName; document.getElementById('modal-kode').classList.add('hidden'); document.getElementById('loginModal').classList.remove('hidden'); document.getElementById('modal-org-name').innerText = oName; }
     };
 
