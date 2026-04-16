@@ -260,8 +260,8 @@
   <nav id="navAdmin" class="floating-nav admin hidden"><button onclick="fnSwitchAdminTab('viewAdminVerify', this)" class="nav-item nav-admin-active"><i class="ph ph-check-circle"></i><span>Verifikasi</span></button><button onclick="fnSwitchAdminTab('viewAdminMaster', this)" class="nav-item"><i class="ph ph-users"></i><span>Master</span></button><button onclick="fnSwitchAdminTab('viewAdminKas', this)" class="nav-item"><i class="ph ph-money"></i><span>Kas</span></button><button onclick="fnSwitchAdminTab('viewAdminLaporan', this)" class="nav-item"><i class="ph ph-chart-pie-slice"></i><span>Laporan</span></button></nav>
 
   <script>
-    const SUPABASE_URL = 'MASUKKAN_URL_SUPABASE_ANDA_DISINI';
-    const SUPABASE_KEY = 'MASUKKAN_ANON_KEY_ANDA_DISINI';
+    const SUPABASE_URL = 'https://tgcpyatrllswhlysqfer.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_lwmxiQPF5yUSQnDu4JK12A_mN4tMdWH';
     
     window.dk = window.dk || {}; window.initSupabaseClient = function(token) { const options = {}; if(token) { options.global = { headers: { Authorization: `Bearer ${token}` } }; } window.dk.db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, options); };
     window.dk.state = { orgId: null, orgCode: '', user: null, token: null, data: { warga:[], project:[], pembayaran:[], detail:[], pengeluaran:[], danaLain:[] }, selectedCart: {}, expenseItems: [{ket:'', nom:''}] };
