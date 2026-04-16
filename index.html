@@ -162,24 +162,16 @@
       </div>
       <div id="form-warga">
         <div style="display: flex; flex-direction: column; gap: 16px;">
-          <div class="relative"><i class="ph ph-house-line absolute left-4 top-3.5 text-slate-400 text-lg"></i>
-            <input type="text" id="inpRumah" placeholder="No. Rumah (Cth: A-12)" class="pl-11 uppercase">
-          </div>
-          <div class="relative"><i class="ph ph-password absolute left-4 top-3.5 text-slate-400 text-lg"></i>
-            <input type="password" id="inpPin" placeholder="PIN Warga" maxlength="6" class="pl-11" style="letter-spacing: 4px; font-family: monospace; font-size: 18px;">
-          </div>
+          <div class="relative"><i class="ph ph-house-line absolute left-4 top-3.5 text-slate-400 text-lg"></i><input type="text" id="inpRumah" placeholder="No. Rumah (Cth: A-12)" class="pl-11 uppercase"></div>
+          <div class="relative"><i class="ph ph-password absolute left-4 top-3.5 text-slate-400 text-lg"></i><input type="password" id="inpPin" placeholder="PIN Warga" maxlength="6" class="pl-11" style="letter-spacing: 4px; font-family: monospace; font-size: 18px;"></div>
           <p id="loginErrorWarga" style="color: var(--tk-danger); font-size: 12px; font-weight: 600; display: none; margin: 0; background: #FEE2E2; padding: 8px; border-radius: 8px;"></p>
           <button onclick="fnLoginWarga()" class="btn-secondary mt-2">Masuk Portal Warga <i class="ph ph-sign-in"></i></button>
         </div>
       </div>
       <div id="form-admin" class="hidden">
         <div style="display: flex; flex-direction: column; gap: 16px;">
-          <div class="relative"><i class="ph ph-user absolute left-4 top-3.5 text-slate-400 text-lg"></i>
-            <input type="text" id="inpUser" placeholder="Username" class="pl-11">
-          </div>
-          <div class="relative"><i class="ph ph-lock-key absolute left-4 top-3.5 text-slate-400 text-lg"></i>
-            <input type="password" id="inpPass" placeholder="Password" class="pl-11">
-          </div>
+          <div class="relative"><i class="ph ph-user absolute left-4 top-3.5 text-slate-400 text-lg"></i><input type="text" id="inpUser" placeholder="Username" class="pl-11"></div>
+          <div class="relative"><i class="ph ph-lock-key absolute left-4 top-3.5 text-slate-400 text-lg"></i><input type="password" id="inpPass" placeholder="Password" class="pl-11"></div>
           <p id="loginError" style="color: var(--tk-danger); font-size: 12px; font-weight: 600; display: none; margin: 0; background: #FEE2E2; padding: 8px; border-radius: 8px;"></p>
           <button onclick="fnLoginAdmin()" class="btn-primary mt-2">Masuk Panel Admin <i class="ph ph-sign-in"></i></button>
         </div>
@@ -266,9 +258,7 @@
         <h1 style="font-size: 18px; font-weight: 900; color: var(--tk-text-primary); margin: 0; letter-spacing: -0.5px;">DANAKITA</h1>
         <p id="org-display-name" style="font-size: 11px; color: var(--tk-primary); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Memuat...</p>
       </div>
-      <button id="logoutBtn" onclick="openLogoutModal()" class="btn-danger hidden px-3 py-2 border-radius: 12px; font-size: 12px;">
-        <i class="ph ph-sign-out text-lg"></i> Keluar
-      </button>
+      <button id="logoutBtn" onclick="openLogoutModal()" class="btn-danger hidden px-3 py-2 border-radius: 12px; font-size: 12px;"><i class="ph ph-sign-out text-lg"></i> Keluar</button>
     </div>
   </header>
 
@@ -334,9 +324,7 @@
                 <label style="display:block; font-size:12px; font-weight:800; color:var(--tk-text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">Upload Bukti Transfer</label>
                 <div style="display:flex; gap:8px; flex-direction:column;">
                   <input type="file" id="fileBukti" accept="image/*" style="background:white; border-color:#E2E8F0; padding:10px;">
-                  <p style="font-size:10px; color:var(--tk-text-tertiary);">
-                    <i class="ph ph-info"></i> Otomatis dikompres hemat kuota (~100KB).
-                  </p>
+                  <p style="font-size:10px; color:var(--tk-text-tertiary);"><i class="ph ph-info"></i> Otomatis dikompres hemat kuota (~100KB).</p>
                 </div>
               </div>
             </div>
@@ -393,6 +381,131 @@
 
     <div id="areaAdmin" style="display:none;">
       <!-- Admin content will be loaded dynamically -->
+      <div id="viewAdminVerify" class="tab-content a-sec">
+        <div style="display:flex; gap:8px; background:white; padding:6px; border-radius:16px; margin-bottom:16px; box-shadow:0 4px 12px rgba(0,0,0,0.03); border:1px solid var(--tk-border);">
+          <button id="btnPending" onclick="fnToggleVerifikasi('PENDING')" style="flex:1; background:#F1F5F9; color:var(--tk-primary); font-weight:800; font-size:13px; padding:12px; border-radius:12px; border:none; cursor:pointer; transition:0.2s;">Menunggu</button>
+          <button id="btnProcessed" onclick="fnToggleVerifikasi('PROCESSED')" style="flex:1; color:var(--tk-text-secondary); font-weight:700; font-size:13px; padding:12px; border-radius:12px; border:none; cursor:pointer; background:transparent; transition:0.2s;">Selesai</button>
+        </div>
+        <div class="relative mb-6">
+          <i class="ph ph-magnifying-glass absolute left-4 top-3.5 text-slate-400 text-lg"></i>
+          <input type="text" id="searchVerify" onkeyup="fnRenderAdminVerify()" placeholder="Cari Nama atau Blok..." class="pl-11 bg-white border-slate-200 shadow-sm">
+        </div>
+        <div id="pendingList" style="display:flex; flex-direction:column; gap:16px;"></div>
+        <div id="processedList" style="display:flex; flex-direction:column; gap:16px; display:none;"></div>
+        <div id="emptyPending" style="background:white; border-radius:24px; padding:40px 20px; text-align:center; border:1px dashed var(--tk-border); display:none;">
+          <i class="ph ph-check-circle text-4xl text-green-400 mb-2"></i>
+          <p style="font-size:14px; font-weight:700; color:var(--tk-success);">Hebat! Semua beres!</p>
+          <p style="font-size:12px; color:var(--tk-text-tertiary); margin-top:4px;">Tidak ada antrean verifikasi.</p>
+        </div>
+      </div>
+
+      <div id="viewAdminMaster" class="tab-content a-sec">
+        <div class="card">
+          <h3 style="font-weight:900; color:var(--tk-text-primary); margin-bottom:20px; font-size:18px; display:flex; align-items:center; gap:8px;"><i class="ph ph-users text-[#00A6ED]"></i> Data Warga</h3>
+          <div class="relative mb-4">
+            <i class="ph ph-magnifying-glass absolute left-4 top-3.5 text-slate-400 text-lg"></i>
+            <input type="text" id="searchWarga" oninput="fnFilterWarga()" placeholder="Cari Nama atau No. Rumah..." class="pl-11 bg-white border-slate-200 shadow-sm">
+          </div>
+          <div style="display:flex; gap:8px; margin-bottom:16px;">
+            <button onclick="document.getElementById('formAddWarga').classList.toggle('hidden'); document.getElementById('formImportWarga').classList.add('hidden');" class="btn-primary" style="flex:1;"><i class="ph ph-user-plus"></i> Manual</button>
+            <button onclick="document.getElementById('formImportWarga').classList.toggle('hidden'); document.getElementById('formAddWarga').classList.add('hidden');" class="btn-secondary" style="flex:1;"><i class="ph ph-file-csv"></i> Import Excel</button>
+          </div>
+          <div id="formAddWarga" class="hidden" style="background:#F8FAFC; padding:16px; border-radius:16px; border:1px solid var(--tk-border); margin-bottom:24px; display:flex; flex-direction:column; gap:12px;">
+            <input type="text" id="admNama" placeholder="Nama Lengkap">
+            <div style="display:flex; gap:12px;">
+              <input type="text" id="admRumah" placeholder="Blok" style="flex:1;" class="uppercase">
+              <input type="text" id="admWa" placeholder="No. WA" style="flex:1;">
+            </div>
+            <button onclick="fnTambahWarga()" class="btn-primary mt-2"><i class="ph ph-floppy-disk text-lg"></i> Simpan Data</button>
+          </div>
+          <div id="formImportWarga" class="hidden" style="background:#F0FDF4; padding:16px; border-radius:16px; border:1px solid #BBF7D0; margin-bottom:24px; display:flex; flex-direction:column; gap:12px;">
+            <p class="text-xs text-slate-600 font-bold mb-1">Upload Data Sekaligus (CSV)</p>
+            <button onclick="fnDownloadTemplateCSV()" class="btn-ghost !bg-white !border-green-200 !text-green-700 !justify-start mb-2"><i class="ph ph-download-simple"></i> Download Template</button>
+            <input type="file" id="csvWarga" accept=".csv" class="!bg-white !p-2 !border-green-200">
+            <button onclick="fnProsesImportCSV()" class="btn-secondary !bg-green-600 mt-2"><i class="ph ph-upload-simple text-lg"></i> Proses Import</button>
+          </div>
+          <h4 style="font-weight:800; color:var(--tk-text-secondary); font-size:12px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--tk-border);">Daftar Warga</h4>
+          <div id="listWarga" style="display:flex; flex-direction:column; gap:12px;"></div>
+          <div id="wargaPagination" style="display:none; margin-top:16px; justify-content:center; align-items:center; gap:12px;">
+            <button onclick="fnWargaPrev()" class="btn-ghost" style="width:auto; padding:8px 16px;"><i class="ph ph-caret-left"></i> Sebelumnya</button>
+            <span id="wargaPageInfo" style="font-size:12px; color:var(--tk-text-secondary); font-weight:600;"></span>
+            <button onclick="fnWargaNext()" class="btn-ghost" style="width:auto; padding:8px 16px;">Selanjutnya <i class="ph ph-caret-right"></i></button>
+          </div>
+        </div>
+        <div class="card">
+          <h3 style="font-weight:900; color:var(--tk-text-primary); margin-bottom:20px; font-size:18px; display:flex; align-items:center; gap:8px;"><i class="ph ph-folder text-[#FF6B35]"></i> Pos Iuran/Kas</h3>
+          <div style="background:#FFF7ED; padding:16px; border-radius:16px; border:1px solid #FFEDD5; margin-bottom:24px; display:flex; flex-direction:column; gap:12px;">
+            <input type="text" id="admProj" placeholder="Nama Pos (Cth: Kas RT)">
+            <div style="display:flex; gap:12px;">
+              <select id="admTipe" style="flex:1;" onchange="fnToggleProjType()">
+                <option value="bulanan">Bulanan</option>
+                <option value="sekali">Sekali Bayar</option>
+                <option value="non_iuran">Pos Kas Saja</option>
+              </select>
+              <input type="month" id="admStart" style="flex:1;">
+            </div>
+            <div id="divNominalTarget" style="display:flex; gap:12px;">
+              <input type="number" id="admNom" placeholder="Nominal" style="flex:1;">
+              <input type="number" id="admTarget" placeholder="Target" style="flex:1;">
+            </div>
+            <p id="noteNonIuran" class="hidden text-[10px] text-orange-600 italic font-bold">*) Pos Kas Saja: Tidak perlu Nominal & Target.</p>
+            <button onclick="fnTambahProject()" class="btn-secondary mt-2"><i class="ph ph-plus-circle text-lg"></i> Terbitkan Pos</button>
+          </div>
+          <h4 style="font-weight:800; color:var(--tk-text-secondary); font-size:12px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--tk-border);">Daftar Aktif</h4>
+          <div id="listProj" style="display:flex; flex-direction:column; gap:12px;"></div>
+        </div>
+      </div>
+
+      <div id="viewAdminKas" class="tab-content a-sec">
+        <div style="display:flex; gap:8px; background:white; padding:6px; border-radius:16px; box-shadow:0 4px 12px rgba(0,0,0,0.03); border:1px solid var(--tk-border); margin-bottom:24px;">
+          <button id="btnTabOut" onclick="fnToggleKasForm('OUT')" style="flex:1; background:#FEF2F2; color:var(--tk-danger); font-weight:800; font-size:13px; padding:12px; border-radius:12px; border:none; cursor:pointer; transition:0.2s;"><i class="ph ph-trend-down"></i> Pengeluaran</button>
+          <button id="btnTabIn" onclick="fnToggleKasForm('IN')" style="flex:1; color:var(--tk-text-secondary); font-weight:700; font-size:13px; padding:12px; border-radius:12px; border:none; cursor:pointer; background:transparent; transition:0.2s;"><i class="ph ph-trend-up"></i> Pemasukan</button>
+        </div>
+        <div id="formKasOut" class="card" style="border-top:6px solid var(--tk-danger);">
+          <div id="expenseItemsContainer" style="display:flex; flex-direction:column; gap:16px; margin-bottom:16px;"></div>
+          <button onclick="fnAddExpenseItem()" class="btn-ghost" style="width:100%; padding:12px; margin-bottom:24px; border:2px dashed var(--tk-border); border-radius:14px;"><i class="ph ph-plus"></i> Tambah Item Belanja</button>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:20px; background:#FEF2F2; border-radius:16px; margin-bottom:20px; border:1px dashed #FECACA;">
+            <span style="font-weight:800; color:var(--tk-danger); font-size:12px; text-transform:uppercase; letter-spacing:1px;">Total Keluar</span>
+            <span id="expenseTotal" style="font-weight:900; color:var(--tk-danger); font-size:24px; letter-spacing:-0.5px;">Rp 0</span>
+          </div>
+          <div style="margin-bottom:20px;">
+            <label style="display:block; font-size:12px; font-weight:800; color:var(--tk-text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">Ambil Dana Dari</label>
+            <select id="kasOutKategori" style="background:white; border-color:#E2E8F0;"></select>
+          </div>
+          <button onclick="fnTambahKas('OUT')" class="btn-danger w-full py-3" style="font-size:15px;"><i class="ph ph-floppy-disk"></i> Simpan Pengeluaran</button>
+        </div>
+        <div id="formKasIn" class="card" style="border-top:6px solid var(--tk-success); display:none;">
+          <div style="display:flex; flex-direction:column; gap:16px;">
+            <input type="text" id="kasInSumber" placeholder="Sumber Dana (Cth: Donasi)">
+            <select id="kasInKategori" style="background:white;"></select>
+            <input type="text" id="kasInKet" placeholder="Keterangan tambahan">
+            <input type="number" id="kasInNom" placeholder="Nominal (Rp)" style="font-weight:700; color:var(--tk-success); font-size:18px;">
+          </div>
+          <button onclick="fnTambahKas('IN')" class="btn-primary mt-6 py-3" style="background:var(--tk-success); box-shadow:0 4px 12px rgba(0,184,148,0.3); font-size:15px;"><i class="ph ph-floppy-disk"></i> Simpan Pemasukan Tambahan</button>
+        </div>
+        <div class="card">
+          <h4 style="font-weight:900; color:var(--tk-text-primary); font-size:16px; margin-bottom:16px; display:flex; align-items:center; gap:8px;"><i class="ph ph-list-dashes text-xl text-slate-400"></i> Mutasi Kas Terakhir</h4>
+          <div id="kasList" style="display:flex; flex-direction:column; gap:12px;"></div>
+        </div>
+      </div>
+
+      <div id="viewAdminLaporan" class="tab-content a-sec">
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding-bottom:16px; border-bottom:1px dashed var(--tk-border);">
+            <h3 style="font-weight:900; color:var(--tk-text-primary); font-size:18px; margin:0; display:flex; align-items:center; gap:8px;"><i class="ph ph-chart-pie-slice text-[#00A6ED]"></i> LPJ Keuangan</h3>
+            <button onclick="fnExportCSV()" class="btn-ghost" style="color:var(--tk-success); background:#DCFCE7; border:none; font-weight:800;"><i class="ph ph-download-simple"></i> Excel</button>
+          </div>
+          <div id="laporanBukukas"></div>
+        </div>
+        <div class="card">
+          <h3 style="font-weight:900; color:var(--tk-text-primary); font-size:18px; margin-bottom:12px; display:flex; align-items:center; gap:8px;"><i class="ph ph-table text-[#FF6B35]"></i> Rekap Status Iuran</h3>
+          <div class="relative mb-6">
+            <i class="ph ph-magnifying-glass absolute left-4 top-3.5 text-slate-400 text-lg"></i>
+            <input type="text" id="searchRekap" onkeyup="fnRenderLaporan()" placeholder="Cari Nama atau Blok..." class="pl-11 bg-slate-50 border-slate-200">
+          </div>
+          <div id="rekapList" style="display:flex; flex-direction:column; gap:16px;"></div>
+        </div>
+      </div>
     </div>
   </main>
 
@@ -411,7 +524,7 @@
   </nav>
 
   <script>
-    // ✅ GLOBAL INIT — HARUS DI ATAS SEMUA FUNGSI
+    // ✅ GLOBAL INIT
     window.dk = window.dk || {};
     window.dk.state = {
       orgId: null,
@@ -433,7 +546,7 @@
     const SUPABASE_URL = 'https://tgcpyatrllswhlysqfer.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_lwmxiQPF5yUSQnDu4JK12A_mN4tMdWH';
 
-    // ✅ Fungsi global — DEKLARASI LANGSUNG DI SINI (bukan di dalam DOMContentLoaded)
+    // ✅ Fungsi navigasi — HARUS DI DEFINISIKAN DI GLOBAL SCOPE
     function switchLoginTab(type) {
       const isAdm = type === 'admin';
       document.getElementById('tab-admin').className = isAdm 
@@ -447,6 +560,24 @@
       document.getElementById('modal-title').innerText = isAdm ? 'Login Pengurus' : 'Login Warga';
     }
 
+    // ✅ fnSwitchAdminTab — FIX: sekarang didefinisikan di sini
+    window.fnSwitchAdminTab = function(tabId, btn) {
+      document.querySelectorAll('.a-sec').forEach(c => c.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      document.querySelectorAll('#navAdmin .nav-item').forEach(b => b.classList.remove('nav-active'));
+      if(btn) btn.classList.add('nav-active');
+      document.querySelector('.main-container').scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    // ✅ fnSwitchWargaTab — juga didefinisikan di sini
+    window.fnSwitchWargaTab = function(tabId, btn) {
+      document.querySelectorAll('.w-sec').forEach(c => c.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      document.querySelectorAll('#navWarga .nav-item').forEach(b => b.classList.remove('nav-active'));
+      if(btn) btn.classList.add('nav-active');
+      document.querySelector('.main-container').scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
     window.initSupabaseClient = function(token) {
       const options = {};
       if (token) {
@@ -456,8 +587,8 @@
     };
 
     // Utility
-    const months = ['01','02','03','04','05','06','07','08','09','10','11','12'];
-    const monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    const months = ['01','02',...,'12'];
+    const monthNames = ['Januari','Februari',...,'Desember'];
 
     function formatRp(n) { return 'Rp ' + Number(n||0).toLocaleString('id-ID'); }
     function genId(prefix) { return prefix + '-' + Date.now() + '-' + Math.floor(Math.random()*100); }
@@ -513,7 +644,7 @@
       return window.dk.db;
     }
 
-    // ✅ fnValidateKode — sudah aman
+    // ✅ fnValidateKode
     window.fnValidateKode = async () => {
       const kode = document.getElementById('inpKode').value.trim().toUpperCase();
       const errEl = document.getElementById('errorKode');
@@ -522,7 +653,6 @@
         errEl.style.display = 'block';
         return;
       }
-
       showLoader(true);
       try {
         if (!window.dk.db) {
@@ -567,7 +697,7 @@
       }
     };
 
-    // ✅ fnLoginAdmin — SEKARANG DEFINISI GLOBAL
+    // ✅ fnLoginAdmin — sudah didefinisikan global
     window.fnLoginAdmin = async () => {
       const u = document.getElementById('inpUser').value.trim();
       const p = document.getElementById('inpPass').value;
@@ -609,12 +739,12 @@
       }
     };
 
-    // ✅ fnLoginWarga — juga global
+    // ✅ fnLoginWarga
     window.fnLoginWarga = async () => {
-      const r = document.getElementById('inpRumah').value.trim();
+      const rumah = document.getElementById('inpRumah').value.trim();
       const pin = document.getElementById('inpPin').value;
       const errEl = document.getElementById('loginErrorWarga');
-      if (!r || !pin) {
+      if (!rumah || !pin) {
         errEl.textContent = 'Isi No Rumah & PIN!';
         errEl.style.display = 'block';
         return;
@@ -622,7 +752,7 @@
       showLoader(true);
       try {
         const { data, error } = await db().rpc('rpc_login_warga', {
-          p_no_rumah: r,
+          p_no_rumah: rumah,
           p_pin: pin,
           p_org_id: window.dk.state.orgId
         });
@@ -652,13 +782,7 @@
       }
     };
 
-    // Lainnya
-    window.fnGantiKomunitas = () => {
-      localStorage.removeItem('dk_session');
-      localStorage.removeItem('dk_org');
-      location.reload();
-    };
-
+    // ✅ fnShowApp
     window.fnShowApp = () => {
       if (window.dk.state.user?.is_agreed_policy === false && window.dk.state.user?.role !== 'super_admin') {
         document.getElementById('modalPrivacy').classList.remove('hidden');
@@ -697,6 +821,7 @@
       }
     };
 
+    // ✅ fnLoadData
     window.fnLoadData = async () => {
       showLoader(true);
       try {
@@ -725,89 +850,26 @@
       }
     };
 
+    // Placeholder functions (untuk mencegah error saat load)
+    window.fnRenderAdminVerify = () => {
+      const container = document.getElementById('pendingList');
+      container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--tk-text-tertiary);">Loading...</div>';
+    };
+    window.fnRenderMaster = () => {
+      document.getElementById('listWarga').innerHTML = '<div style="padding:20px; text-align:center; color:var(--tk-text-tertiary);">Daftar warga akan muncul setelah load data.</div>';
+      document.getElementById('listProj').innerHTML = '<div style="padding:20px; text-align:center; color:var(--tk-text-tertiary);">Daftar pos iuran akan muncul setelah load data.</div>';
+    };
+    window.fnRenderKas = () => {
+      document.getElementById('kasList').innerHTML = '<div style="padding:20px; text-align:center; color:var(--tk-text-tertiary);">Mutasi kas akan muncul setelah load data.</div>';
+    };
+    window.fnRenderLaporan = () => {
+      document.getElementById('laporanBukukas').innerHTML = '<div style="padding:20px; text-align:center; color:var(--tk-text-tertiary);">LPJ akan muncul setelah load data.</div>';
+      document.getElementById('rekapList').innerHTML = '<div style="padding:20px; text-align:center; color:var(--tk-text-tertiary);">Rekap iuran akan muncul setelah load data.</div>';
+    };
     window.fnRenderUnpaidBills = () => {
-      const wId = window.dk.state.user?.id;
-      const container = document.getElementById('unpaidBillsContainer');
-      if (!wId || !container) return;
-
-      const now = new Date();
-      const currentMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-      let unpaid = [];
-
-      (window.dk.state.data.project || []).forEach(proj => {
-        if (proj.tipe === 'non_iuran' || proj.status !== 'ACTIVE') return;
-        let periodsToCheck = [];
-        if (proj.tipe === 'sekali') {
-          periodsToCheck = ['SEKALI'];
-        } else if (proj.tipe === 'bulanan') {
-          let start = proj.start_periode || '2000-01';
-          let curr = start;
-          while (curr <= currentMonth) {
-            periodsToCheck.push(curr);
-            let [y, m] = curr.split('-').map(Number);
-            m++; if (m > 12) { m = 1; y++; }
-            curr = `${y}-${String(m).padStart(2,'0')}`;
-          }
-        }
-
-        periodsToCheck.forEach(per => {
-          const isPaid = (window.dk.state.data.detail || []).some(det =>
-            det.project_id === proj.id && det.periode === per &&
-            (window.dk.state.data.pembayaran || []).some(pay =>
-              pay.id === det.pembayaran_id && pay.warga_id === wId && pay.status === 'DISETUJUI'
-            )
-          );
-          if (!isPaid) {
-            unpaid.push({ proj, periode: per, nominal: proj.nominal_default });
-          }
-        });
-      });
-
-      unpaid.sort((a,b) => b.periode.localeCompare(a.periode));
-      container.style.display = 'block';
-
-      if (unpaid.length === 0) {
-        container.style.display = 'none';
-        return;
-      }
-
-      container.innerHTML = `
-        <h3 style="font-size:16px; font-weight:800; color:var(--tk-danger); margin-bottom:16px; display:flex; align-items:center; gap:8px;">
-          <i class="ph ph-warning-circle text-xl"></i> Tagihan Belum Dibayar
-        </h3>
-        ${unpaid.map(u => `
-          <div style="display:flex; justify-content:space-between; align-items:center; padding:12px; background:#FEF2F2; border:1px solid #FECACA; border-radius:12px; margin-bottom:8px;">
-            <div>
-              <p style="font-weight:700; color:#991B1B; font-size:14px;">${u.proj.nama_project}</p>
-              <p style="font-size:12px; color:#B91C1C;">Periode: ${formatBulan(u.periode)}</p>
-            </div>
-            <div style="text-align:right;">
-              <p style="font-weight:800; color:#DC2626; font-size:15px;">${formatRp(u.nominal)}</p>
-              <button onclick="fnQuickPay('${u.proj.id}', '${u.periode}')" style="margin-top:4px; font-size:11px; font-weight:700; color:#DC2626; background:white; border:1px solid #FECACA; padding:4px 8px; border-radius:6px; cursor:pointer;">Bayar</button>
-            </div>
-          </div>
-        `).join('')}
-      `;
+      document.getElementById('unpaidBillsContainer').style.display = 'block';
+      document.getElementById('unpaidBillsContainer').innerHTML = '<div style="padding:20px; text-align:center; color:var(--tk-text-tertiary);">Tagihan belum bayar akan muncul setelah load data.</div>';
     };
-
-    window.fnQuickPay = (projId, periode) => {
-      const proj = (window.dk.state.data.project || []).find(p => p.id === projId);
-      if (!proj) return;
-      if (!window.dk.state.selectedCart[projId]) {
-        window.dk.state.selectedCart[projId] = { periods: [], nominal: 0, base: proj.nominal_default };
-      }
-      if (!window.dk.state.selectedCart[projId].periods.includes(periode)) {
-        window.dk.state.selectedCart[projId].periods.push(periode);
-        window.dk.state.selectedCart[projId].nominal += proj.nominal_default;
-      }
-      fnSwitchWargaTab('viewIuran', document.querySelector('#navWarga .nav-item:nth-child(2)'));
-      setTimeout(() => {
-        fnRenderIuran();
-        document.getElementById('summaryBayar').scrollIntoView({ behavior: 'smooth' });
-      }, 100);
-    };
-
-    // Placeholder
     window.fnRenderWargaDash = () => {
       document.getElementById('cardSaldo').innerText = 'Rp 0';
       document.getElementById('totalIn').innerText = 'Rp 0';
@@ -864,13 +926,6 @@
     });
 
     // Public APIs
-    window.fnSwitchWargaTab = (tabId, btn) => {
-      document.querySelectorAll('.w-sec').forEach(c => c.classList.remove('active'));
-      document.getElementById(tabId).classList.add('active');
-      document.querySelectorAll('#navWarga .nav-item').forEach(b => b.classList.remove('nav-active'));
-      if (btn) btn.classList.add('nav-active');
-      document.querySelector('.main-container').scrollTo({ top: 0, behavior: 'smooth' });
-    };
     window.fnAgreePrivacy = async () => {
       if (!document.getElementById('chkPrivacy').checked) return alert('Centang persetujuan dulu!');
       const table = window.dk.state.user.type === 'warga' ? 'warga' : 'admin';
