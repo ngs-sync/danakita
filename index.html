@@ -226,6 +226,17 @@
     <div id="areaWarga">
       <div id="viewDashboard" class="tab-content active w-sec">
         <div class="card-hero"><p class="label"><i class="ph ph-wallet"></i> Saldo Kas Aktif</p><h2 id="cardSaldo" class="amount">Rp 0</h2><div style="display:flex; gap:12px; border-top:1px solid rgba(255,255,255,0.2); padding-top:16px;"><div style="flex:1;"><p style="font-size:10px; opacity:0.8; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px;">Total Masuk</p><p id="totalIn" style="font-weight:800; font-size:14px; margin:0;">Rp 0</p></div><div style="width:1px; background:rgba(255,255,255,0.2);"></div><div style="flex:1;"><p style="font-size:10px; opacity:0.8; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px;">Total Keluar</p><p id="totalOut" style="font-weight:800; font-size:14px; margin:0;">Rp 0</p></div></div></div>
+
+        <div id="unpaidCard" class="card hidden" style="border-left: 6px solid var(--tk-danger); padding: 16px 20px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <p style="font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:1px; color:var(--tk-text-secondary); margin:0;">Tagihan Belum Dibayar</p>
+              <h2 id="unpaidAmount" style="font-size:22px; font-weight:900; color:var(--tk-danger); margin:4px 0 0; letter-spacing:-0.5px;">Rp 0</h2>
+            </div>
+            <button onclick="fnSwitchWargaTab('viewIuran', document.querySelector('#navWarga button:nth-child(2)'))" class="btn-primary" style="width:auto; padding:10px 16px; font-size:12px; height: fit-content;">Bayar Sekarang</button>
+          </div>
+        </div>
+
         <div class="card"><h3 style="font-size:16px; font-weight:800; color:var(--tk-text-primary); margin:0 0 20px; display:flex; align-items:center; gap:8px;"><i class="ph ph-chart-bar text-xl text-[#00A6ED]"></i> Progress Pos Kas</h3><div id="progressContainer" style="display:flex; flex-direction:column; gap:20px;"></div></div>
       </div>
 
@@ -682,7 +693,71 @@
     window.fnGantiPinWarga = async function() { const oldPin = document.getElementById('profPinOld').value, newPin = document.getElementById('profPinNew').value, confirmPin = document.getElementById('profPinConfirm').value; if(!oldPin || !newPin || !confirmPin) return alert('Semua kolom PIN wajib diisi!'); if(newPin.length < 4) return alert('PIN baru minimal 4 karakter!'); if(newPin !== confirmPin) return alert('Konfirmasi PIN baru tidak sama!'); showLoader(true); const { data: loginCheck } = await db().rpc('rpc_login_warga', { p_no_rumah: window.dk.state.user.noRumah, p_pin: oldPin, p_org_id: window.dk.state.orgId }); if(loginCheck && loginCheck.success) { const {  newHash } = await db().rpc('hash_password', { raw_pass: newPin }); await db().from('warga').update({ pin_hash: newHash || newPin }).eq('id', window.dk.state.user.id); document.getElementById('profPinOld').value=''; document.getElementById('profPinNew').value=''; document.getElementById('profPinConfirm').value=''; await db().from('audit_logs').insert([{ organization_id: window.dk.state.orgId, actor_type: 'warga', actor_name: window.dk.state.user.name, action: 'UPDATE_SECURITY_PIN' }]); showLoader(false); alert('✅ PIN Keamanan berhasil diperbarui!'); } else { showLoader(false); alert('Gagal: PIN Lama salah!'); } };
 
     window.toggleAccordion = function(id) { const el = document.getElementById(id); const icon = document.getElementById('icon-' + id); if(el.classList.contains('open')) { el.classList.remove('open'); icon.style.transform = 'rotate(0deg)'; } else { el.classList.add('open'); icon.style.transform = 'rotate(180deg)'; } };
-    window.fnRenderWargaDash = function() { const approved = window.dk.state.data.pembayaran.filter(p => p.status === 'DISETUJUI'); const totalIn = approved.reduce((s,p)=>s+Number(p.total_nominal),0) + window.dk.state.data.danaLain.reduce((s,d)=>s+Number(d.nominal),0); const totalOut = window.dk.state.data.pengeluaran.reduce((s,o)=>s+Number(o.nominal),0); document.getElementById('cardSaldo').innerText = formatRp(totalIn - totalOut); document.getElementById('totalIn').innerText = formatRp(totalIn); document.getElementById('totalOut').innerText = formatRp(totalOut); let html = ''; window.dk.state.data.project.forEach((proj, idx) => { let terkumpulWarga = window.dk.state.data.detail.filter(d => d.project_id === proj.id && approved.some(p => p.id === d.pembayaran_id)).reduce((s,d)=>s+Number(d.nominal),0); let terkumpulLain = window.dk.state.data.danaLain.filter(d => d.kategori_project === proj.id).reduce((s,d)=>s+Number(d.nominal),0); let terkumpul = terkumpulWarga + terkumpulLain; let perc = Number(proj.target) > 0 ? Math.min(Math.round((terkumpul / proj.target) * 100), 100) : 0; let accId = 'acc-' + idx; html += `<div style="background:#F8FAFC;padding:16px;border-radius:16px;border:1px solid var(--tk-border);"><div style="display:flex;justify-content:space-between;margin-bottom:8px;align-items:center;cursor:pointer;" onclick="toggleAccordion('${accId}')"><span style="font-weight:800;color:var(--tk-text-primary);font-size:14px;display:flex;align-items:center;gap:6px;"><i class="ph ph-caret-down text-slate-400 transition" id="icon-${accId}"></i> <i class="ph ph-target text-[#FF6B35]"></i> ${proj.nama_project}</span><span class="badge badge-success">${perc}%</span></div><div style="width:100%;height:8px;background:var(--tk-border);border-radius:4px;overflow:hidden;margin-bottom:8px;"><div style="height:100%;background:linear-gradient(90deg,var(--tk-primary),var(--tk-primary-dark));border-radius:4px;width:${perc}%;transition:width 0.6s cubic-bezier(0.16, 1, 0.3, 1);"></div></div><p style="font-size:11px;font-weight:700;color:var(--tk-text-secondary);text-align:right;">Terkumpul: <span style="color:var(--tk-text-primary);">${formatRp(terkumpul)}</span> ${proj.target>0?' / '+formatRp(proj.target):''}</p><div id="${accId}" class="accordion-content"><p style="font-size:10px;font-weight:800;text-transform:uppercase;color:var(--tk-text-tertiary);margin:0 0 6px;">Rincian Pemasukan Pos</p><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tk-text-secondary);padding:4px 0;"><span style="display:flex;align-items:center;gap:4px;"><i class="ph ph-users text-blue-500"></i> Dari Iuran Warga</span><span style="font-weight:700;color:var(--tk-text-primary);">${formatRp(terkumpulWarga)}</span></div><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tk-text-secondary);padding:4px 0;"><span style="display:flex;align-items:center;gap:4px;"><i class="ph ph-gift text-green-500"></i> Donasi/Sumbangan Luar</span><span style="font-weight:700;color:var(--tk-text-primary);">${formatRp(terkumpulLain)}</span></div></div></div>`; }); document.getElementById('progressContainer').innerHTML = html || '<p style="font-size:13px;font-weight:600;color:var(--tk-text-tertiary);text-align:center;padding:24px;">Belum ada pos kas yang aktif.</p>'; };
+
+    window.fnGetTotalUnpaid = function(wId) {
+      if (!wId) return 0;
+      let totalUnpaid = 0;
+      let paid = {};
+      window.dk.state.data.pembayaran.filter(p => p.warga_id === wId && p.status !== 'DITOLAK').forEach(p => {
+        window.dk.state.data.detail.filter(d => d.pembayaran_id === p.id).forEach(d => {
+          if(!paid[d.project_id]) paid[d.project_id]=[];
+          paid[d.project_id].push(d.periode);
+        });
+      });
+
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth() + 1;
+      const currentPeriodeStr = `${currentYear}-${currentMonth.toString().padStart(2, '0')}`;
+
+      window.dk.state.data.project.forEach(p => {
+        if(p.tipe === 'bulanan') {
+          const startPeriode = p.start_periode || '2000-01';
+          for (let y = parseInt(startPeriode.split('-')[0]); y <= currentYear; y++) {
+            months.forEach(m => {
+              const periode = `${y}-${m}`;
+              if (periode >= startPeriode && periode <= currentPeriodeStr) {
+                const isPaid = paid[p.id]?.includes(periode);
+                if (!isPaid) totalUnpaid += Number(p.nominal_default);
+              }
+            });
+          }
+        } else if (p.tipe === 'sekali') {
+          const isPaid = paid[p.id]?.includes('SEKALI');
+          if (!isPaid) totalUnpaid += Number(p.nominal_default);
+        }
+      });
+      return totalUnpaid;
+    };
+
+    window.fnRenderWargaDash = function() {
+      const approved = window.dk.state.data.pembayaran.filter(p => p.status === 'DISETUJUI');
+      const totalIn = approved.reduce((s,p)=>s+Number(p.total_nominal),0) + window.dk.state.data.danaLain.reduce((s,d)=>s+Number(d.nominal),0);
+      const totalOut = window.dk.state.data.pengeluaran.reduce((s,o)=>s+Number(o.nominal),0);
+      document.getElementById('cardSaldo').innerText = formatRp(totalIn - totalOut);
+      document.getElementById('totalIn').innerText = formatRp(totalIn);
+      document.getElementById('totalOut').innerText = formatRp(totalOut);
+
+      const totalUnpaid = fnGetTotalUnpaid(window.dk.state.user?.id);
+      const upCard = document.getElementById('unpaidCard');
+      if (totalUnpaid > 0) {
+        document.getElementById('unpaidAmount').innerText = formatRp(totalUnpaid);
+        upCard.classList.remove('hidden');
+      } else {
+        upCard.classList.add('hidden');
+      }
+
+      let html = '';
+      window.dk.state.data.project.forEach((proj, idx) => {
+        let terkumpulWarga = window.dk.state.data.detail.filter(d => d.project_id === proj.id && approved.some(p => p.id === d.pembayaran_id)).reduce((s,d)=>s+Number(d.nominal),0);
+        let terkumpulLain = window.dk.state.data.danaLain.filter(d => d.kategori_project === proj.id).reduce((s,d)=>s+Number(d.nominal),0);
+        let terkumpul = terkumpulWarga + terkumpulLain;
+        let perc = Number(proj.target) > 0 ? Math.min(Math.round((terkumpul / proj.target) * 100), 100) : 0;
+        let accId = 'acc-' + idx;
+        html += `<div style="background:#F8FAFC;padding:16px;border-radius:16px;border:1px solid var(--tk-border);"><div style="display:flex;justify-content:space-between;margin-bottom:8px;align-items:center;cursor:pointer;" onclick="toggleAccordion('${accId}')"><span style="font-weight:800;color:var(--tk-text-primary);font-size:14px;display:flex;align-items:center;gap:6px;"><i class="ph ph-caret-down text-slate-400 transition" id="icon-${accId}"></i> <i class="ph ph-target text-[#FF6B35]"></i> ${proj.nama_project}</span><span class="badge badge-success">${perc}%</span></div><div style="width:100%;height:8px;background:var(--tk-border);border-radius:4px;overflow:hidden;margin-bottom:8px;"><div style="height:100%;background:linear-gradient(90deg,var(--tk-primary),var(--tk-primary-dark));border-radius:4px;width:${perc}%;transition:width 0.6s cubic-bezier(0.16, 1, 0.3, 1);"></div></div><p style="font-size:11px;font-weight:700;color:var(--tk-text-secondary);text-align:right;">Terkumpul: <span style="color:var(--tk-text-primary);">${formatRp(terkumpul)}</span> ${proj.target>0?' / '+formatRp(proj.target):''}</p><div id="${accId}" class="accordion-content"><p style="font-size:10px;font-weight:800;text-transform:uppercase;color:var(--tk-text-tertiary);margin:0 0 6px;">Rincian Pemasukan Pos</p><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tk-text-secondary);padding:4px 0;"><span style="display:flex;align-items:center;gap:4px;"><i class="ph ph-users text-blue-500"></i> Dari Iuran Warga</span><span style="font-weight:700;color:var(--tk-text-primary);">${formatRp(terkumpulWarga)}</span></div><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tk-text-secondary);padding:4px 0;"><span style="display:flex;align-items:center;gap:4px;"><i class="ph ph-gift text-green-500"></i> Donasi/Sumbangan Luar</span><span style="font-weight:700;color:var(--tk-text-primary);">${formatRp(terkumpulLain)}</span></div></div></div>`;
+      });
+      document.getElementById('progressContainer').innerHTML = html || '<p style="font-size:13px;font-weight:600;color:var(--tk-text-tertiary);text-align:center;padding:24px;">Belum ada pos kas yang aktif.</p>';
+    };
 
     window.fnRenderIuran = function() { const wId = window.dk.state.user?.id; const tahun = document.getElementById('pilihTahun')?.value || '2026'; const container = document.getElementById('iuranContainer'); if(!wId || !container) return; document.getElementById('lblWargaBayar').innerText = `${window.dk.state.user.name} (${window.dk.state.user.noRumah})`; container.innerHTML = ''; window.dk.state.selectedCart = {}; document.getElementById('summaryBayar').style.display = 'none'; let paid = {}; window.dk.state.data.pembayaran.filter(p => p.warga_id === wId && p.status !== 'DITOLAK').forEach(p => { window.dk.state.data.detail.filter(d => d.pembayaran_id === p.id).forEach(d => { if(!paid[d.project_id]) paid[d.project_id]=[]; paid[d.project_id].push(d.periode); }); }); window.dk.state.data.project.forEach(p => { if(p.tipe === 'non_iuran') return; let html = ''; if(p.tipe === 'bulanan') { let listHtml = ''; const startPeriode = p.start_periode || '2000-01'; months.forEach((m, i) => { const periode = `${tahun}-${m}`; const isPaid = paid[p.id]?.includes(periode); const isBeforeStart = periode < startPeriode; if(!isPaid && !isBeforeStart) { listHtml += `<label class="list-item"><input type="checkbox" value="${periode}" onchange="fnToggleIuran('${p.id}', this, ${p.nominal_default}, '${periode}')"><div style="flex:1;margin-left:16px;"><p style="font-weight:800;color:var(--tk-text-primary);font-size:15px;margin:0;">${monthNames[i]} ${tahun}</p><p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--tk-text-tertiary);margin:2px 0 0;">Iuran Rutin</p></div><span style="font-weight:900;color:var(--tk-primary);font-size:16px;letter-spacing:-0.5px;">${formatRp(p.nominal_default)}</span></label>`; } }); html = listHtml || '<div style="padding:20px;background:#DCFCE7;border:1px dashed #86EFAC;border-radius:16px;text-align:center;"><i class="ph ph-check-circle text-3xl text-green-500 mb-2"></i><p style="color:var(--tk-success);font-weight:800;font-size:14px;margin:0;">Hebat! Semua tagihan aktif lunas.</p></div>'; } else if(p.tipe === 'sekali') { const isPaid = paid[p.id]?.includes('SEKALI'); html = isPaid ? '<div style="padding:20px;background:#DCFCE7;border:1px dashed #86EFAC;border-radius:16px;text-align:center;"><i class="ph ph-check-circle text-3xl text-green-500 mb-2"></i><p style="color:var(--tk-success);font-weight:800;font-size:14px;margin:0;">Pembayaran Selesai / Lunas</p></div>' : `<label class="list-item"><input type="checkbox" value="SEKALI" onchange="fnToggleIuran('${p.id}', this, ${p.nominal_default}, 'SEKALI')"><div style="flex:1;margin-left:16px;"><p style="font-weight:800;color:var(--tk-text-primary);font-size:15px;margin:0;">Tagihan Penuh</p><p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--tk-text-tertiary);margin:2px 0 0;">Pembayaran Satu Kali</p></div><span style="font-weight:900;color:var(--tk-primary);font-size:16px;letter-spacing:-0.5px;">${formatRp(p.nominal_default)}</span></label>`; } if(html) { const div = document.createElement('div'); div.style.background = '#F8FAFC'; div.style.padding = '20px'; div.style.borderRadius = '20px'; div.style.border = '1px solid var(--tk-border)'; div.innerHTML = `<h4 style="font-weight:900;color:var(--tk-text-primary);font-size:16px;margin:0 0 16px;display:flex;align-items:center;gap:8px;"><i class="ph ph-folder text-[#FF6B35]"></i> ${p.nama_project}</h4>${html}`; container.appendChild(div); } }); };
     window.fnToggleIuran = function(pid, el, price, periode) { if(!window.dk.state.selectedCart[pid]) window.dk.state.selectedCart[pid] = { periods:[], nominal:0, base:price }; let cart = window.dk.state.selectedCart[pid]; if(el.checked) { if(!cart.periods.includes(periode)) cart.periods.push(periode); } else { cart.periods = cart.periods.filter(x => x !== periode); } cart.nominal = cart.periods.length * price; if(cart.periods.length === 0) delete window.dk.state.selectedCart[pid]; let total = Object.values(window.dk.state.selectedCart).reduce((s,c)=>s+c.nominal, 0); document.getElementById('totalBayarDisplay').innerText = formatRp(total); document.getElementById('summaryBayar').style.display = total === 0 ? 'none' : 'block'; };
@@ -709,7 +784,8 @@
         await db().from('pembayaran').insert([{ id: payId, organization_id: window.dk.state.orgId, tanggal: new Date().toISOString(), warga_id: wId, total_nominal: tot, metode, bukti_url: buktiPathUrl, status: 'MENUNGGU VERIFIKASI' }]);
         await db().from('pembayaran_detail').insert(dets.map(d => ({ id: genId('DET'), organization_id: window.dk.state.orgId, pembayaran_id: payId, ...d })));
         await db().from('audit_logs').insert([{ organization_id: window.dk.state.orgId, actor_type: 'warga', actor_name: window.dk.state.user.name, action: `BAYAR_IURAN_${payId}` }]);
-        alert('✅ Pembayaran dikirim! Tunggu verifikasi.'); fnRenderIuran();
+        await fnLoadData();
+        alert('✅ Pembayaran dikirim! Tunggu verifikasi.'); fnRenderIuran(); fnRenderWargaDash();
       } catch(e) { alert('Gagal: ' + e.message); } finally { showLoader(false); }
     };
 
@@ -721,7 +797,8 @@
         const det = window.dk.state.data.detail.filter(d => d.pembayaran_id === p.id);
         let rincian = det.map(d => { const proj = window.dk.state.data.project.find(x => x.id === d.project_id); return `• <span style="font-weight:700;color:var(--tk-text-primary);">${proj?.nama_project || 'Project'}</span> <span style="color:var(--tk-text-tertiary);">(${formatBulan(d.periode)})</span>`; }).join('<br>');
         const statusClass = p.status==='DISETUJUI' ? 'badge-success' : p.status==='DITOLAK' ? 'badge-danger' : 'badge-warning'; const iconName = p.status==='DISETUJUI' ? 'check-circle' : p.status==='DITOLAK' ? 'x-circle' : 'clock';
-        return `<div style="background:white;padding:20px;border-radius:20px;border:1px solid var(--tk-border);box-shadow:0 4px 12px rgba(0,0,0,0.02);margin-bottom:16px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;"><p style="font-weight:900;color:var(--tk-primary);font-size:24px;margin:0;letter-spacing:-1px;">${formatRp(p.total_nominal)}</p><span class="badge ${statusClass}"><i class="ph ph-${iconName} text-sm"></i> ${p.status}</span></div><p style="font-size:12px;font-weight:700;color:var(--tk-text-secondary);margin-bottom:12px;display:flex;align-items:center;gap:4px;"><i class="ph ph-calendar-blank"></i> ${new Date(p.tanggal).toLocaleDateString('id-ID')} • ${p.metode}</p><div style="font-size:12px;color:var(--tk-text-secondary);background:#F8FAFC;padding:16px;border-radius:16px;margin-bottom:16px;line-height:1.6;border:1px solid var(--tk-border);">${rincian}</div><div style="display:flex;gap:8px;">${p.bukti_url ? `<button onclick="viewBuktiTransfer('${p.bukti_url}')" class="btn-ghost" style="flex:1;text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:4px;background:#F1F5F9;"><i class="ph ph-image"></i> Foto Bukti</button>` : ''}${p.status==='DISETUJUI' ? `<button onclick='fnShowStruk(${JSON.stringify(p).replace(/'/g, "&#39;")})' class="btn-secondary" style="flex:1;padding:10px;"><i class="ph ph-receipt"></i> Buka Struk</button>` : ''}</div></div>`;
+        const displayStatus = p.status === 'MENUNGGU VERIFIKASI' ? 'VERIFIKASI' : p.status;
+        return `<div style="background:white;padding:20px;border-radius:20px;border:1px solid var(--tk-border);box-shadow:0 4px 12px rgba(0,0,0,0.02);margin-bottom:16px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;"><p style="font-weight:900;color:var(--tk-primary);font-size:24px;margin:0;letter-spacing:-1px;">${formatRp(p.total_nominal)}</p><span class="badge ${statusClass}"><i class="ph ph-${iconName} text-sm"></i> ${displayStatus}</span></div><p style="font-size:12px;font-weight:700;color:var(--tk-text-secondary);margin-bottom:12px;display:flex;align-items:center;gap:4px;"><i class="ph ph-calendar-blank"></i> ${new Date(p.tanggal).toLocaleDateString('id-ID')} • ${p.metode}</p><div style="font-size:12px;color:var(--tk-text-secondary);background:#F8FAFC;padding:16px;border-radius:16px;margin-bottom:16px;line-height:1.6;border:1px solid var(--tk-border);">${rincian}</div><div style="display:flex;gap:8px;">${p.bukti_url ? `<button onclick="viewBuktiTransfer('${p.bukti_url}')" class="btn-ghost" style="flex:1;text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:4px;background:#F1F5F9;"><i class="ph ph-image"></i> Foto Bukti</button>` : ''}${p.status==='DISETUJUI' ? `<button onclick='fnShowStruk(${JSON.stringify(p).replace(/'/g, "&#39;")})' class="btn-secondary" style="flex:1;padding:10px;"><i class="ph ph-receipt"></i> Buka Struk</button>` : ''}</div></div>`;
       }).join('');
     };
 
