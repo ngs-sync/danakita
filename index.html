@@ -266,17 +266,11 @@
   <nav id="navAdmin" class="floating-nav hidden"><button onclick="fnSwitchAdminTab('viewAdminVerify', this)" class="nav-item nav-active"><i class="ph ph-check-circle"></i><span>Verifikasi</span></button><button onclick="fnSwitchAdminTab('viewAdminMaster', this)" class="nav-item"><i class="ph ph-users"></i><span>Master</span></button><button onclick="fnSwitchAdminTab('viewAdminKas', this)" class="nav-item"><i class="ph ph-money"></i><span>Kas</span></button><button onclick="fnSwitchAdminTab('viewAdminLaporan', this)" class="nav-item"><i class="ph ph-chart-pie-slice"></i><span>Laporan</span></button></nav>
 
   <script>
+    const SUPABASE_URL = "https://tgcpyatrllswhlysqfer.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_lwmxiQPF5yUSQnDu4JK12A_mN4tMdWH";
+
     window.dk = window.dk || {};
     window.initSupabaseClient = function(token) {
-      const SUPABASE_URL = "VITE_SUPABASE_URL_PLACEHOLDER";
-      const SUPABASE_KEY = "VITE_SUPABASE_KEY_PLACEHOLDER";
-
-      if (SUPABASE_URL.startsWith('VITE_') || !SUPABASE_URL) {
-        console.error("Supabase credentials not configured. Please run 'npm run build' or 'npm run dev' to inject environment variables.");
-        alert("Konfigurasi Sistem Belum Lengkap: Aplikasi harus dijalankan melalui Vite atau di-build terlebih dahulu untuk menyuntikkan kredensial Supabase.");
-        return;
-      }
-
       const options = {};
       if(token) { options.global = { headers: { Authorization: `Bearer ${token}` } }; }
       window.dk.db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, options);
