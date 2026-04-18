@@ -266,17 +266,11 @@
   <nav id="navAdmin" class="floating-nav hidden"><button onclick="fnSwitchAdminTab('viewAdminVerify', this)" class="nav-item nav-active"><i class="ph ph-check-circle"></i><span>Verifikasi</span></button><button onclick="fnSwitchAdminTab('viewAdminMaster', this)" class="nav-item"><i class="ph ph-users"></i><span>Master</span></button><button onclick="fnSwitchAdminTab('viewAdminKas', this)" class="nav-item"><i class="ph ph-money"></i><span>Kas</span></button><button onclick="fnSwitchAdminTab('viewAdminLaporan', this)" class="nav-item"><i class="ph ph-chart-pie-slice"></i><span>Laporan</span></button></nav>
 
   <script>
+    const SUPABASE_URL = "https://tgcpyatrllswhlysqfer.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_lwmxiQPF5yUSQnDu4JK12A_mN4tMdWH";
+
     window.dk = window.dk || {};
     window.initSupabaseClient = function(token) {
-      const SUPABASE_URL = "VITE_SUPABASE_URL_PLACEHOLDER";
-      const SUPABASE_KEY = "VITE_SUPABASE_KEY_PLACEHOLDER";
-
-      if (SUPABASE_URL.startsWith('VITE_') || !SUPABASE_URL) {
-        console.error("Supabase credentials not configured. Please run 'npm run build' or 'npm run dev' to inject environment variables.");
-        alert("Konfigurasi Sistem Belum Lengkap: Aplikasi harus dijalankan melalui Vite atau di-build terlebih dahulu untuk menyuntikkan kredensial Supabase.");
-        return;
-      }
-
       const options = {};
       if(token) { options.global = { headers: { Authorization: `Bearer ${token}` } }; }
       window.dk.db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, options);
@@ -331,13 +325,31 @@
     window.fnValidateKode = async function() {
       const kode = document.getElementById('inpKode').value.trim().toUpperCase(); const err = document.getElementById('errorKode'); err.style.display = 'none';
       if(!kode) { err.textContent = 'Kode wajib diisi!'; err.style.display = 'block'; return; }
-      showLoader(true); const { data: org, error } = await db().from('organizations').select('id, display_name, logo_url, nama').eq('client_code', kode).single(); showLoader(false);
-      if(error || !org) {
-        console.error('Validation Error:', error);
-        err.textContent = error ? `Error: ${error.message}` : 'Kode organisasi tidak ditemukan!';
+      showLoader(true);
+      try {
+        const { data: org, error } = await db().from('organizations').select('id, display_name, logo_url, nama').eq('client_code', kode).single();
+        if(error || !org) {
+          console.error('Validation Error:', error);
+          err.textContent = error ? `Error: ${error.message}` : 'Kode organisasi tidak ditemukan!';
+          err.style.display = 'block';
+        }
+        else {
+          window.dk.state.orgId = org.id;
+          window.dk.state.orgCode = kode;
+          const oName = org.display_name || org.nama;
+          localStorage.setItem('dk_org', JSON.stringify({ id: org.id, name: oName, code: kode, exp: Date.now() + 86400000 }));
+          document.getElementById('org-display-name').innerText = oName;
+          document.getElementById('modal-kode').classList.add('hidden');
+          document.getElementById('loginModal').classList.remove('hidden');
+          document.getElementById('modal-org-name').innerText = oName;
+        }
+      } catch(e) {
+        console.error('System Error:', e);
+        err.textContent = 'Terjadi kesalahan sistem. Periksa koneksi Anda.';
         err.style.display = 'block';
+      } finally {
+        showLoader(false);
       }
-      else { window.dk.state.orgId = org.id; window.dk.state.orgCode = kode; const oName = org.display_name || org.nama; localStorage.setItem('dk_org', JSON.stringify({ id: org.id, name: oName, code: kode, exp: Date.now() + 86400000 })); document.getElementById('org-display-name').innerText = oName; document.getElementById('modal-kode').classList.add('hidden'); document.getElementById('loginModal').classList.remove('hidden'); document.getElementById('modal-org-name').innerText = oName; }
     };
 
     window.switchLoginTab = function(type) {
@@ -351,24 +363,42 @@
     window.fnLoginAdmin = async function() {
       const u = document.getElementById('inpUser').value.trim(), p = document.getElementById('inpPass').value; const err = document.getElementById('loginError'); err.style.display = 'none';
       if(!u || !p) { err.textContent='Isi semua!'; err.style.display='block'; return; }
-      showLoader(true); const tempDb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); const { data, error } = await tempDb.rpc('rpc_login_admin', { p_username: u, p_password: p, p_org_id: window.dk.state.orgId }); showLoader(false);
-      if(error) { err.textContent = error.message; err.style.display = 'block'; return; }
-      if(data?.success) { 
-          window.dk.state.user = { type:'admin', id:data.data.id, name:data.data.nama_admin, is_agreed_policy: data.data.is_agreed_policy }; 
-          if(data.data.nama_admin.includes('(Super Admin)')) window.dk.state.user.role = 'super_admin'; // Identifikasi God Mode
-          window.dk.state.token = data.token; window.initSupabaseClient(data.token); document.getElementById('loginModal').classList.add('hidden'); fnShowApp(); 
-      } else { err.textContent = data?.msg || 'Gagal Login'; err.style.display = 'block'; }
+      showLoader(true);
+      try {
+        const tempDb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const { data, error } = await tempDb.rpc('rpc_login_admin', { p_username: u, p_password: p, p_org_id: window.dk.state.orgId });
+        if(error) { err.textContent = error.message; err.style.display = 'block'; return; }
+        if(data?.success) {
+            window.dk.state.user = { type:'admin', id:data.data.id, name:data.data.nama_admin, is_agreed_policy: data.data.is_agreed_policy };
+            if(data.data.nama_admin.includes('(Super Admin)')) window.dk.state.user.role = 'super_admin';
+            window.dk.state.token = data.token; window.initSupabaseClient(data.token); document.getElementById('loginModal').classList.add('hidden'); fnShowApp();
+        } else { err.textContent = data?.msg || 'Gagal Login'; err.style.display = 'block'; }
+      } catch(e) {
+        err.textContent = 'Gagal terhubung ke server.';
+        err.style.display = 'block';
+      } finally {
+        showLoader(false);
+      }
     };
 
     window.fnLoginWarga = async function() {
       const r = document.getElementById('inpRumah').value.trim(), pin = document.getElementById('inpPin').value; const err = document.getElementById('loginErrorWarga'); err.style.display = 'none';
       if(!r || !pin) { err.textContent='Isi No Rumah & PIN!'; err.style.display='block'; return; }
-      showLoader(true); const tempDb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); const { data, error } = await tempDb.rpc('rpc_login_warga', { p_no_rumah: r, p_pin: pin, p_org_id: window.dk.state.orgId }); showLoader(false);
-      if(error) { err.textContent = error.message; err.style.display = 'block'; return; }
-      if(data?.success) { 
-          window.dk.state.user = { type:'warga', id:data.data.id, name:data.data.nama, noRumah:data.data.no_rumah, wa:data.data.no_wa, is_agreed_policy: data.data.is_agreed_policy }; 
-          window.dk.state.token = data.token; window.initSupabaseClient(data.token); document.getElementById('loginModal').classList.add('hidden'); fnShowApp(); 
-      } else { err.textContent = data?.msg || 'Gagal Login'; err.style.display = 'block'; }
+      showLoader(true);
+      try {
+        const tempDb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const { data, error } = await tempDb.rpc('rpc_login_warga', { p_no_rumah: r, p_pin: pin, p_org_id: window.dk.state.orgId });
+        if(error) { err.textContent = error.message; err.style.display = 'block'; return; }
+        if(data?.success) {
+            window.dk.state.user = { type:'warga', id:data.data.id, name:data.data.nama, noRumah:data.data.no_rumah, wa:data.data.no_wa, is_agreed_policy: data.data.is_agreed_policy };
+            window.dk.state.token = data.token; window.initSupabaseClient(data.token); document.getElementById('loginModal').classList.add('hidden'); fnShowApp();
+        } else { err.textContent = data?.msg || 'Gagal Login'; err.style.display = 'block'; }
+      } catch(e) {
+        err.textContent = 'Gagal terhubung ke server.';
+        err.style.display = 'block';
+      } finally {
+        showLoader(false);
+      }
     };
 
     window.fnLogout = function() { localStorage.removeItem('dk_session'); location.reload(); };
@@ -393,33 +423,63 @@
         if(!chk.checked) return alert("Mohon centang kotak persetujuan terlebih dahulu.");
         
         showLoader(true);
-        const table = window.dk.state.user.type === 'warga' ? 'warga' : 'admin';
-        
-        const { error } = await db().from(table).update({ is_agreed_policy: true }).eq('id', window.dk.state.user.id);
-        
-        if (error) {
-            showLoader(false);
-            return alert("Gagal menyimpan persetujuan: " + error.message);
+        try {
+          const table = window.dk.state.user.type === 'warga' ? 'warga' : 'admin';
+          const { error } = await db().from(table).update({ is_agreed_policy: true }).eq('id', window.dk.state.user.id);
+
+          if (error) {
+              alert("Gagal menyimpan persetujuan: " + error.message);
+              return;
+          }
+
+          window.dk.state.user.is_agreed_policy = true;
+
+          const session = JSON.parse(localStorage.getItem('dk_session'));
+          if(session && session.user) {
+              session.user.is_agreed_policy = true;
+              localStorage.setItem('dk_session', JSON.stringify(session));
+          }
+
+          document.getElementById('modalPrivacy').classList.add('hidden');
+          fnShowApp();
+        } catch(e) {
+          console.error(e);
+          alert('Terjadi kesalahan koneksi.');
+        } finally {
+          showLoader(false);
         }
-        
-        window.dk.state.user.is_agreed_policy = true;
-        
-        // Update memori lokal agar tidak pura-pura lupa saat direfresh
-        const session = JSON.parse(localStorage.getItem('dk_session'));
-        if(session && session.user) {
-            session.user.is_agreed_policy = true;
-            localStorage.setItem('dk_session', JSON.stringify(session));
-        }
-        
-        showLoader(false);
-        document.getElementById('modalPrivacy').classList.add('hidden');
-        fnShowApp(); // Lanjut render dashboard
     };
 
     window.fnSwitchWargaTab = function(tabId, btn) { document.querySelectorAll('.w-sec').forEach(c => c.classList.remove('active')); document.getElementById(tabId).classList.add('active'); document.querySelectorAll('#navWarga .nav-item').forEach(b => b.classList.remove('nav-active')); if(btn) btn.classList.add('nav-active'); document.querySelector('.main-container').scrollTo({ top: 0, behavior: 'smooth' }); };
     window.fnSwitchAdminTab = function(tabId, btn) { document.querySelectorAll('.a-sec').forEach(c => c.classList.remove('active')); document.getElementById(tabId).classList.add('active'); document.querySelectorAll('#navAdmin .nav-item').forEach(b => b.classList.remove('nav-active')); if(btn) btn.classList.add('nav-active'); document.querySelector('.main-container').scrollTo({ top: 0, behavior: 'smooth' }); if(tabId==='viewAdminVerify') fnRenderAdminVerify(); if(tabId==='viewAdminMaster') fnRenderMaster(); if(tabId==='viewAdminKas') fnRenderKas(); if(tabId==='viewAdminLaporan') fnRenderLaporan(); };
 
-    window.fnLoadData = async function() { showLoader(true); const orgId = window.dk.state.orgId; try { const [w, p, pay, det, out, inc] = await Promise.all([ db().from('warga').select('*').eq('organization_id', orgId), db().from('project').select('*').eq('organization_id', orgId).eq('status', 'ACTIVE'), db().from('pembayaran').select('*').eq('organization_id', orgId), db().from('pembayaran_detail').select('*').eq('organization_id', orgId), db().from('pengeluaran').select('*').eq('organization_id', orgId), db().from('dana_lain').select('*').eq('organization_id', orgId) ]); window.dk.state.data = { warga: (w.data||[]).filter(x => x.status !== 'INACTIVE'), project: p.data||[], pembayaran: pay.data||[], detail: det.data||[], pengeluaran: out.data||[], danaLain: inc.data||[] }; } catch(e) { alert('Gagal memuat data.'); } finally { showLoader(false); } };
+    window.fnLoadData = async function() {
+      showLoader(true);
+      const orgId = window.dk.state.orgId;
+      try {
+        const [w, p, pay, det, out, inc] = await Promise.all([
+          db().from('warga').select('*').eq('organization_id', orgId),
+          db().from('project').select('*').eq('organization_id', orgId).eq('status', 'ACTIVE'),
+          db().from('pembayaran').select('*').eq('organization_id', orgId),
+          db().from('pembayaran_detail').select('*').eq('organization_id', orgId),
+          db().from('pengeluaran').select('*').eq('organization_id', orgId),
+          db().from('dana_lain').select('*').eq('organization_id', orgId)
+        ]);
+        window.dk.state.data = {
+          warga: (w.data||[]).filter(x => x.status !== 'INACTIVE'),
+          project: p.data||[],
+          pembayaran: pay.data||[],
+          detail: det.data||[],
+          pengeluaran: out.data||[],
+          danaLain: inc.data||[]
+        };
+      } catch(e) {
+        console.error('Fetch Error:', e);
+        alert('Gagal memuat data. Periksa koneksi internet Anda.');
+      } finally {
+        showLoader(false);
+      }
+    };
 
     window.viewBuktiTransfer = async function(filePath) {
         showLoader(true);
@@ -447,9 +507,16 @@
     window.fnVerify = async function(pid, status) {
       if(!confirm(`Yakin ingin ${status==='DISETUJUI'?'menyetujui':'menolak'} pembayaran ini?`)) return;
       showLoader(true);
-      await db().from('pembayaran').update({ status: status, verified_by: window.dk.state.user.name, verified_at: new Date().toISOString() }).eq('id', pid);
-      await db().from('audit_logs').insert([{ organization_id: window.dk.state.orgId, actor_type: window.dk.state.user.role === 'super_admin' ? 'superadmin' : 'admin', actor_name: window.dk.state.user.name, action: `VERIFY_PAYMENT_${status}_${pid}` }]);
-      await fnLoadData(); fnRenderAdminVerify(); showLoader(false);
+      try {
+        await db().from('pembayaran').update({ status: status, verified_by: window.dk.state.user.name, verified_at: new Date().toISOString() }).eq('id', pid);
+        await db().from('audit_logs').insert([{ organization_id: window.dk.state.orgId, actor_type: window.dk.state.user.role === 'super_admin' ? 'superadmin' : 'admin', actor_name: window.dk.state.user.name, action: `VERIFY_PAYMENT_${status}_${pid}` }]);
+        await fnLoadData(); fnRenderAdminVerify();
+      } catch(e) {
+        console.error(e);
+        alert('Gagal memproses verifikasi.');
+      } finally {
+        showLoader(false);
+      }
     };
 
     window.fnRenderMaster = function() {
@@ -461,13 +528,69 @@
 
     window.fnToggleProjType = function() { const val = document.getElementById('admTipe').value; const targetDiv = document.getElementById('divNominalTarget'); const note = document.getElementById('noteNonIuran'); if(val === 'non_iuran') { targetDiv.style.display = 'none'; note.style.display = 'block'; } else { targetDiv.style.display = 'flex'; note.style.display = 'none'; } };
     window.fnOpenEditWarga = function(w) { document.getElementById('editWId').value = w.id; document.getElementById('editWNama').value = w.nama; document.getElementById('editWRumah').value = w.no_rumah; document.getElementById('editWWa').value = w.no_wa || ''; document.getElementById('editWPin').value = ''; document.getElementById('modalEditWarga').classList.remove('hidden'); };
-    window.fnSimpanEditWarga = async function() { const id = document.getElementById('editWId').value, rmh = document.getElementById('editWRumah').value.trim().toUpperCase(), wa = document.getElementById('editWWa').value.trim(), pinBaru = document.getElementById('editWPin').value; if(!rmh) return alert('No Rumah wajib diisi!'); let updateData = { no_rumah: rmh, no_wa: wa }; showLoader(true); if(pinBaru) { if(pinBaru.length < 4) { showLoader(false); return alert('PIN baru minimal 4 digit!'); } const { data: hash } = await db().rpc('hash_password', { raw_pass: pinBaru }); updateData.pin_hash = hash || pinBaru; } await db().from('warga').update(updateData).eq('id', id); await fnLoadData(); fnRenderMaster(); closeEditModal(); showLoader(false); alert('Data warga berhasil diupdate!'); };
+    window.fnSimpanEditWarga = async function() {
+      const id = document.getElementById('editWId').value, rmh = document.getElementById('editWRumah').value.trim().toUpperCase(), wa = document.getElementById('editWWa').value.trim(), pinBaru = document.getElementById('editWPin').value;
+      if(!rmh) return alert('No Rumah wajib diisi!');
+      let updateData = { no_rumah: rmh, no_wa: wa };
+      showLoader(true);
+      try {
+        if(pinBaru) {
+          if(pinBaru.length < 4) { alert('PIN baru minimal 4 digit!'); return; }
+          const { data: hash } = await db().rpc('hash_password', { raw_pass: pinBaru });
+          updateData.pin_hash = hash || pinBaru;
+        }
+        await db().from('warga').update(updateData).eq('id', id);
+        await fnLoadData();
+        fnRenderMaster();
+        closeEditModal();
+        alert('Data warga berhasil diupdate!');
+      } catch(e) {
+        console.error(e);
+        alert('Gagal menyimpan perubahan.');
+      } finally {
+        showLoader(false);
+      }
+    };
 
     window.fnSendWAInfo = function(nama, rumah, wa) { let phone = wa || ''; if(phone.startsWith('0')) phone = '62' + phone.substring(1); if(!phone) return alert('Oopss, Nomor WA warga ini belum diisi.'); const link = window.location.href.split('?')[0]; let text = `Halo Bapak/Ibu *${nama}* 👋\nIni adalah akses login Anda untuk Portal Warga di komunitas *${window.dk.state.orgCode}*.\n\n🏢 *ID Komunitas:* ${window.dk.state.orgCode}\n🏠 *No Rumah / Blok:* ${rumah}\n🔑 *PIN Login:* 1234 _(Atau PIN terbaru Anda)_\n\nSilakan akses sistem melalui link berikut:\n🌐 ${link}\n\n_Harap rahasiakan PIN Anda._`; window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank'); };
     window.fnDownloadTemplateCSV = function() { const csv = "NamaLengkap,NoRumah,NoWhatsApp,PIN_Default\nBudi Santoso,A-01,081234567890,1234\nSiti Rahma,A-02,089876543210,1234"; const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Template_Data_Warga.csv`; a.click(); };
     window.fnProsesImportCSV = function() { const f = document.getElementById('csvWarga'); if(!f.files.length) return alert('Pilih file CSV!'); showLoader(true); Papa.parse(f.files[0], { header: true, skipEmptyLines: true, complete: async function(res) { const rows = res.data; if(!rows.length) { showLoader(false); return alert('File CSV kosong!'); } let ins = []; const { data: defHash } = await db().rpc('hash_password', { raw_pass: '1234' }); for(let r of rows) { const nama = r.NamaLengkap?.trim(); const rumah = r.NoRumah?.trim()?.toUpperCase(); if(!nama || !rumah) continue; ins.push({ id: genId('WRG'), organization_id: window.dk.state.orgId, nama: nama, no_rumah: rumah, no_wa: r.NoWhatsApp?.trim()||'', pin_hash: defHash, status: 'ACTIVE' }); } if(ins.length) { await db().from('warga').insert(ins); await fnLoadData(); fnRenderMaster(); } showLoader(false); f.value = ''; alert(`✅ Import Selesai!`); }}); };
-    window.fnTambahWarga = async function() { const nama = document.getElementById('admNama').value.trim(), blok = document.getElementById('admRumah').value.trim().toUpperCase(), wa = document.getElementById('admWa').value.trim(); if(!nama || !blok) return alert('Nama dan Blok wajib diisi!'); showLoader(true); const { data: hash } = await db().rpc('hash_password', { raw_pass: '1234' }); await db().from('warga').insert([{ id: genId('WRG'), organization_id: window.dk.state.orgId, nama, no_rumah: blok, no_wa: wa, pin_hash: hash || '1234', status: 'ACTIVE' }]); document.getElementById('admNama').value=''; document.getElementById('admRumah').value=''; document.getElementById('admWa').value=''; alert('✅ Warga berhasil ditambahkan!\nPIN default: 1234'); await fnLoadData(); fnRenderMaster(); showLoader(false); };
-    window.fnTambahProject = async function() { const nama = document.getElementById('admProj').value.trim(), tipe = document.getElementById('admTipe').value, start = document.getElementById('admStart').value; const nom = tipe === 'non_iuran' ? 0 : document.getElementById('admNom').value; const target = tipe === 'non_iuran' ? 0 : document.getElementById('admTarget').value; if(!nama) return alert('Nama Pos wajib diisi!'); showLoader(true); await db().from('project').insert([{ id: genId('PRJ'), organization_id: window.dk.state.orgId, nama_project: nama, tipe, start_periode: start||null, nominal_default: nom||0, target: target||0, status: 'ACTIVE' }]); document.getElementById('admProj').value=''; document.getElementById('admNom').value=''; document.getElementById('admTarget').value=''; await fnLoadData(); fnRenderMaster(); showLoader(false); };
+    window.fnTambahWarga = async function() {
+      const nama = document.getElementById('admNama').value.trim(), blok = document.getElementById('admRumah').value.trim().toUpperCase(), wa = document.getElementById('admWa').value.trim();
+      if(!nama || !blok) return alert('Nama dan Blok wajib diisi!');
+      showLoader(true);
+      try {
+        const { data: hash } = await db().rpc('hash_password', { raw_pass: '1234' });
+        await db().from('warga').insert([{ id: genId('WRG'), organization_id: window.dk.state.orgId, nama, no_rumah: blok, no_wa: wa, pin_hash: hash || '1234', status: 'ACTIVE' }]);
+        document.getElementById('admNama').value=''; document.getElementById('admRumah').value=''; document.getElementById('admWa').value='';
+        alert('✅ Warga berhasil ditambahkan!\nPIN default: 1234');
+        await fnLoadData();
+        fnRenderMaster();
+      } catch(e) {
+        console.error(e);
+        alert('Gagal menambah warga.');
+      } finally {
+        showLoader(false);
+      }
+    };
+    window.fnTambahProject = async function() {
+      const nama = document.getElementById('admProj').value.trim(), tipe = document.getElementById('admTipe').value, start = document.getElementById('admStart').value;
+      const nom = tipe === 'non_iuran' ? 0 : document.getElementById('admNom').value;
+      const target = tipe === 'non_iuran' ? 0 : document.getElementById('admTarget').value;
+      if(!nama) return alert('Nama Pos wajib diisi!');
+      showLoader(true);
+      try {
+        await db().from('project').insert([{ id: genId('PRJ'), organization_id: window.dk.state.orgId, nama_project: nama, tipe, start_periode: start||null, nominal_default: nom||0, target: target||0, status: 'ACTIVE' }]);
+        document.getElementById('admProj').value=''; document.getElementById('admNom').value=''; document.getElementById('admTarget').value='';
+        await fnLoadData();
+        fnRenderMaster();
+      } catch(e) {
+        console.error(e);
+        alert('Gagal menambah pos.');
+      } finally {
+        showLoader(false);
+      }
+    };
 
     window.fnToggleKasForm = function(type) { document.getElementById('formKasOut').style.display = type!=='OUT' ? 'none' : 'block'; document.getElementById('formKasIn').style.display = type!=='IN' ? 'none' : 'block'; const btnOut = document.getElementById('btnTabOut'), btnIn = document.getElementById('btnTabIn'); if(type==='OUT') { btnOut.style.cssText='flex: 1; background: #FEF2F2; color: var(--tk-danger); font-weight: 800; font-size: 13px; padding: 12px; border-radius: 12px; border: none; cursor: pointer; transition: 0.2s;'; btnIn.style.cssText='flex: 1; color: var(--tk-text-secondary); font-weight: 700; font-size: 13px; padding: 12px; border-radius: 12px; border: none; cursor: pointer; background: transparent; transition: 0.2s;'; fnRenderExpenseItems(); } else { btnIn.style.cssText='flex: 1; background: #DCFCE7; color: var(--tk-success); font-weight: 800; font-size: 13px; padding: 12px; border-radius: 12px; border: none; cursor: pointer; transition: 0.2s;'; btnOut.style.cssText='flex: 1; color: var(--tk-text-secondary); font-weight: 700; font-size: 13px; padding: 12px; border-radius: 12px; border: none; cursor: pointer; background: transparent; transition: 0.2s;'; } };
     window.fnRenderExpenseItems = function() { const container = document.getElementById('expenseItemsContainer'); let html = '', total = 0; window.dk.state.expenseItems.forEach((it, i) => { total += Number(it.nom||0); html += `<div style="display:flex;gap:12px;align-items:center;"><input type="text" placeholder="Rincian Barang" value="${it.ket}" onchange="window.dk.state.expenseItems[${i}].ket=this.value;fnRenderExpenseItems()" style="flex:1;background:white;"><input type="number" placeholder="Rp" value="${it.nom}" onchange="window.dk.state.expenseItems[${i}].nom=this.value;fnRenderExpenseItems()" style="width:120px;text-align:right;background:white;font-weight:700;">${i>0 ? `<button onclick="fnRemoveExpenseItem(${i})" class="w-10 h-10 flex items-center justify-center rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition"><i class="ph ph-trash text-lg"></i></button>` : '<div style="width:40px;"></div>'}</div>`; }); container.innerHTML = html; document.getElementById('expenseTotal').innerText = formatRp(total); };
@@ -480,7 +603,31 @@
     window.fnExportCSV = function() { let csv = "Tanggal,Keterangan,Tipe,Debit,Kredit\n"; window.dk.state.data.danaLain.forEach(d => csv += `${new Date(d.tanggal).toLocaleDateString('id-ID')},"${d.sumber} - ${d.keterangan}",DEBIT,${d.nominal},0\n`); window.dk.state.data.pengeluaran.forEach(o => csv += `${new Date(o.tanggal).toLocaleDateString('id-ID')},"${o.keterangan.replace(/"/g,'""')}",KREDIT,0,${o.nominal}\n`); window.dk.state.data.pembayaran.filter(p=>p.status==='DISETUJUI').forEach(p => { const w = window.dk.state.data.warga.find(x=>x.id===p.warga_id); csv += `${new Date(p.tanggal).toLocaleDateString('id-ID')},"Iuran: ${w?.nama||'-'} (Blok ${w?.no_rumah||'-'})",DEBIT,${p.total_nominal},0\n`; }); const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `LPJ_Keuangan_${new Date().toISOString().split('T')[0]}.csv`; a.click(); };
 
     window.fnSetupProfil = function() { const u = window.dk.state.user; if(u && u.type === 'warga') { document.getElementById('profNama').value = u.name; document.getElementById('profRumah').value = u.noRumah; document.getElementById('profWa').value = u.wa || 'Belum diisi'; } };
-    window.fnGantiPinWarga = async function() { const oldPin = document.getElementById('profPinOld').value, newPin = document.getElementById('profPinNew').value, confirmPin = document.getElementById('profPinConfirm').value; if(!oldPin || !newPin || !confirmPin) return alert('Semua kolom PIN wajib diisi!'); if(newPin.length < 4) return alert('PIN baru minimal 4 karakter!'); if(newPin !== confirmPin) return alert('Konfirmasi PIN baru tidak sama!'); showLoader(true); const { data: loginCheck } = await db().rpc('rpc_login_warga', { p_no_rumah: window.dk.state.user.noRumah, p_pin: oldPin, p_org_id: window.dk.state.orgId }); if(loginCheck && loginCheck.success) { const { data: newHash } = await db().rpc('hash_password', { raw_pass: newPin }); await db().from('warga').update({ pin_hash: newHash || newPin }).eq('id', window.dk.state.user.id); document.getElementById('profPinOld').value=''; document.getElementById('profPinNew').value=''; document.getElementById('profPinConfirm').value=''; await db().from('audit_logs').insert([{ organization_id: window.dk.state.orgId, actor_type: 'warga', actor_name: window.dk.state.user.name, action: 'UPDATE_SECURITY_PIN' }]); showLoader(false); alert('✅ PIN Keamanan berhasil diperbarui!'); } else { showLoader(false); alert('Gagal: PIN Lama salah!'); } };
+    window.fnGantiPinWarga = async function() {
+      const oldPin = document.getElementById('profPinOld').value, newPin = document.getElementById('profPinNew').value, confirmPin = document.getElementById('profPinConfirm').value;
+      if(!oldPin || !newPin || !confirmPin) return alert('Semua kolom PIN wajib diisi!');
+      if(newPin.length < 4) return alert('PIN baru minimal 4 karakter!');
+      if(newPin !== confirmPin) return alert('Konfirmasi PIN baru tidak sama!');
+
+      showLoader(true);
+      try {
+        const { data: loginCheck } = await db().rpc('rpc_login_warga', { p_no_rumah: window.dk.state.user.noRumah, p_pin: oldPin, p_org_id: window.dk.state.orgId });
+        if(loginCheck && loginCheck.success) {
+          const { data: newHash } = await db().rpc('hash_password', { raw_pass: newPin });
+          await db().from('warga').update({ pin_hash: newHash || newPin }).eq('id', window.dk.state.user.id);
+          document.getElementById('profPinOld').value=''; document.getElementById('profPinNew').value=''; document.getElementById('profPinConfirm').value='';
+          await db().from('audit_logs').insert([{ organization_id: window.dk.state.orgId, actor_type: 'warga', actor_name: window.dk.state.user.name, action: 'UPDATE_SECURITY_PIN' }]);
+          alert('✅ PIN Keamanan berhasil diperbarui!');
+        } else {
+          alert('Gagal: PIN Lama salah!');
+        }
+      } catch(e) {
+        console.error(e);
+        alert('Gagal terhubung ke server.');
+      } finally {
+        showLoader(false);
+      }
+    };
 
     window.toggleAccordion = function(id) { const el = document.getElementById(id); const icon = document.getElementById('icon-' + id); if(el.classList.contains('open')) { el.classList.remove('open'); icon.style.transform = 'rotate(0deg)'; } else { el.classList.add('open'); icon.style.transform = 'rotate(180deg)'; } };
     window.fnRenderWargaDash = function() {

@@ -77,17 +77,11 @@
   <div id="invoice-template" style="display:none; padding: 40px; background: white; font-family: sans-serif; color: #1e293b; width: 800px;"><div style="display: flex; justify-content: space-between; border-bottom: 2px solid #00A6ED; padding-bottom: 20px; margin-bottom: 30px;"><div><h1 style="color: #00A6ED; font-size: 32px; margin: 0;">INVOICE</h1><p style="font-size: 12px; color: #64748b; margin-top: 5px;">Layanan SaaS DanaKita - Pusat</p></div><div style="text-align: right;"><p style="font-size: 12px; color: #64748b; margin: 0;">Tanggal Terbit: <span id="inv-date" style="color:#0f172a; font-weight:bold;"></span></p></div></div><div style="margin-bottom: 40px; display: flex; justify-content: space-between;"><div><p style="font-size: 12px; color: #64748b; margin: 0 0 5px 0;">DITAGIHKAN KEPADA:</p><h2 id="inv-client-name" style="margin: 0; font-size: 20px; color: #0f172a;">-</h2><p id="inv-client-code" style="margin: 5px 0 0 0; font-size: 14px; color: #64748b; font-family: monospace;">-</p></div><div style="text-align: right; background: #F8FAFC; padding: 12px; border-radius: 8px; border: 1px solid #E2E8F0;"><p style="font-size: 10px; color: #64748b; margin: 0 0 2px 0;">Siklus Tagihan & Periode</p><h3 id="inv-siklus" style="margin: 0; font-size: 16px; color: #FF6B35; font-weight: 800;">-</h3></div></div><table style="width: 100%; border-collapse: collapse; margin-bottom: 40px;"><thead><tr style="background: #f8fafc; text-align: left; font-size: 12px; color: #64748b;"><th style="padding: 12px; border-bottom: 1px solid #e2e8f0;">DESKRIPSI LAYANAN</th><th style="padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: right;">JUMLAH</th></tr></thead><tbody><tr><td style="padding: 16px 12px; border-bottom: 1px solid #e2e8f0; font-size: 14px;">Langganan Sistem DanaKita (DPP)</td><td id="inv-dpp" style="padding: 16px 12px; border-bottom: 1px solid #e2e8f0; text-align: right; font-size: 14px; font-weight: bold;">-</td></tr><tr><td style="padding: 16px 12px; border-bottom: 1px solid #e2e8f0; font-size: 14px;" id="inv-ppn-text">Pajak PPN</td><td id="inv-ppn-amount" style="padding: 16px 12px; border-bottom: 1px solid #e2e8f0; text-align: right; font-size: 14px; font-weight: bold;">-</td></tr></tbody><tfoot><tr><td style="padding: 16px 12px; font-size: 16px; font-weight: bold; color: #0f172a;">TOTAL TAGIHAN</td><td id="inv-total" style="padding: 16px 12px; text-align: right; font-size: 20px; font-weight: bold; color: #00A6ED;">-</td></tr></tfoot></table><div style="font-size: 11px; color: #94a3b8; text-align: center; margin-top: 50px; border-top: 1px solid #e2e8f0; padding-top: 20px;">* Invoice ini sah dan diterbitkan otomatis oleh Sistem DanaKita. Harga tagihan sudah termasuk PPN.</div></div>
 
   <script>
+    const SUPABASE_URL = "https://tgcpyatrllswhlysqfer.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_lwmxiQPF5yUSQnDu4JK12A_mN4tMdWH";
+
     window.dk = window.dk || {};
     window.initSupabaseClient = function(token) {
-      const SUPABASE_URL = "VITE_SUPABASE_URL_PLACEHOLDER";
-      const SUPABASE_KEY = "VITE_SUPABASE_KEY_PLACEHOLDER";
-
-      if (SUPABASE_URL.startsWith('VITE_') || !SUPABASE_URL) {
-        console.error("Supabase credentials not configured. Please run 'npm run build' or 'npm run dev' to inject environment variables.");
-        alert("Konfigurasi Sistem Belum Lengkap: Aplikasi harus dijalankan melalui Vite atau di-build terlebih dahulu untuk menyuntikkan kredensial Supabase.");
-        return;
-      }
-
       const options = {};
       if(token) options.global = { headers: { Authorization: `Bearer ${token}` } };
       window.dk.db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, options);
@@ -100,15 +94,28 @@
     function showLoader(show) { if(show) document.getElementById('loader').classList.remove('!hidden'); else document.getElementById('loader').classList.add('!hidden'); }
 
     async function handleLogin() {
-      const u = document.getElementById('sa-email').value; const p = document.getElementById('sa-pass').value; showLoader(true);
-      const tempDb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); const { data, error } = await tempDb.rpc('rpc_login_super_admin', { p_username: u, p_password: p }); showLoader(false);
-      if (error) { alert('Terjadi kesalahan sistem: ' + error.message); return; }
-      if (data?.success) {
-        window.initSupabaseClient(data.token); const { data: saInfo } = await db().from('super_admins').select('role, nama').eq('id', data.data.id).single();
-        const sessionData = { ...data.data, nama: saInfo?.nama, role: saInfo?.role || 'super_admin', token: data.token }; localStorage.setItem('sa_session', JSON.stringify(sessionData));
-        document.getElementById('login-section').classList.add('!hidden'); document.getElementById('dashboard-section').classList.remove('!hidden'); initDashboard();
-        await db().from('audit_logs').insert([{ actor_type: 'superadmin', actor_name: sessionData.nama, action: 'LOGIN_INTO_SYSTEM' }]);
-      } else { alert('Login Gagal! ' + (data?.msg || 'Periksa kembali.')); }
+      const u = document.getElementById('sa-email').value; const p = document.getElementById('sa-pass').value;
+      showLoader(true);
+      try {
+        const tempDb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const { data, error } = await tempDb.rpc('rpc_login_super_admin', { p_username: u, p_password: p });
+        if (error) { alert('Terjadi kesalahan sistem: ' + error.message); return; }
+        if (data?.success) {
+          window.initSupabaseClient(data.token);
+          const { data: saInfo } = await db().from('super_admins').select('role, nama').eq('id', data.data.id).single();
+          const sessionData = { ...data.data, nama: saInfo?.nama, role: saInfo?.role || 'super_admin', token: data.token };
+          localStorage.setItem('sa_session', JSON.stringify(sessionData));
+          document.getElementById('login-section').classList.add('!hidden');
+          document.getElementById('dashboard-section').classList.remove('!hidden');
+          initDashboard();
+          await db().from('audit_logs').insert([{ actor_type: 'superadmin', actor_name: sessionData.nama, action: 'LOGIN_INTO_SYSTEM' }]);
+        } else { alert('Login Gagal! ' + (data?.msg || 'Periksa kembali.')); }
+      } catch(e) {
+        console.error(e);
+        alert('Gagal terhubung ke server.');
+      } finally {
+        showLoader(false);
+      }
     }
     function handleLogout() { localStorage.removeItem('sa_session'); location.reload(); }
 
@@ -132,7 +139,19 @@
       });
     }
 
-    async function toggleStatus(id, status) { showLoader(true); await db().from('organizations').update({ is_active: status }).eq('id', id); await db().from('audit_logs').insert([{ organization_id: id, actor_type: 'superadmin', actor_name: getActiveSession()?.nama, action: status ? 'ACTIVATE_CLIENT' : 'SUSPEND_CLIENT' }]); showLoader(false); loadClients(); }
+    async function toggleStatus(id, status) {
+      showLoader(true);
+      try {
+        await db().from('organizations').update({ is_active: status }).eq('id', id);
+        await db().from('audit_logs').insert([{ organization_id: id, actor_type: 'superadmin', actor_name: getActiveSession()?.nama, action: status ? 'ACTIVATE_CLIENT' : 'SUSPEND_CLIENT' }]);
+        loadClients();
+      } catch(e) {
+        console.error(e);
+        alert('Gagal mengubah status.');
+      } finally {
+        showLoader(false);
+      }
+    }
     function openDrawer() { document.getElementById('drawer-overlay').classList.add('open'); document.getElementById('client-drawer').classList.add('open'); } function closeDrawer() { document.getElementById('drawer-overlay').classList.remove('open'); document.getElementById('client-drawer').classList.remove('open'); }
 
     async function openClientDrawer(org) {
@@ -147,7 +166,24 @@
       showLoader(false);
     }
 
-    async function updateClientProfile() { const orgId = document.getElementById('edit-org-id').value; const wa = document.getElementById('edit-wa').value; const start = document.getElementById('edit-start').value; const end = document.getElementById('edit-end').value; showLoader(true); await db().from('organizations').update({ kontak_wa_admin: wa, validity_start: start, validity_end: end }).eq('id', orgId); await db().from('audit_logs').insert([{ organization_id: orgId, actor_type: 'superadmin', actor_name: getActiveSession()?.nama, action: 'UPDATE_CLIENT_PROFILE' }]); showLoader(false); alert("Profil berhasil diupdate!"); loadClients(); }
+    async function updateClientProfile() {
+      const orgId = document.getElementById('edit-org-id').value;
+      const wa = document.getElementById('edit-wa').value;
+      const start = document.getElementById('edit-start').value;
+      const end = document.getElementById('edit-end').value;
+      showLoader(true);
+      try {
+        await db().from('organizations').update({ kontak_wa_admin: wa, validity_start: start, validity_end: end }).eq('id', orgId);
+        await db().from('audit_logs').insert([{ organization_id: orgId, actor_type: 'superadmin', actor_name: getActiveSession()?.nama, action: 'UPDATE_CLIENT_PROFILE' }]);
+        alert("Profil berhasil diupdate!");
+        loadClients();
+      } catch(e) {
+        console.error(e);
+        alert('Gagal update profil.');
+      } finally {
+        showLoader(false);
+      }
+    }
 
     function downloadInvoice() {
        if(!currentBillingData) return alert("Data biaya/billing klien ini belum diatur!"); const org = allOrgs.find(o => o.id === document.getElementById('edit-org-id').value);
@@ -157,30 +193,79 @@
        showLoader(true); const element = document.getElementById('invoice-template'); element.style.display = 'block'; const opt = { margin: 0, filename: `Invoice_${org.client_code}_${currentPeriode.replace(/\s/g,'_')}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } }; html2pdf().set(opt).from(element).save().then(() => { element.style.display = 'none'; showLoader(false); });
     }
 
-    async function addClientAdmin() { const orgId = document.getElementById('edit-org-id').value; const u = document.getElementById('new-adm-user').value; const n = document.getElementById('new-adm-nama').value; const p = document.getElementById('new-adm-pass').value; if(!u || !n || !p) return alert("Lengkapi data admin!"); showLoader(true); const { data: cekExist } = await db().from('admin').select('id').eq('organization_id', orgId).eq('username', u); if(cekExist && cekExist.length > 0) { showLoader(false); return alert("Gagal: Username sudah dipakai!"); } const { data: hashedPass } = await db().rpc('hash_password', { raw_pass: p }); const { error } = await db().from('admin').insert([{ organization_id: orgId, username: u, nama_admin: n, password_hash: hashedPass || p, role: 'admin' }]); await db().from('audit_logs').insert([{ organization_id: orgId, actor_type: 'superadmin', actor_name: getActiveSession()?.nama, action: 'ADD_CLIENT_ADMIN' }]); showLoader(false); if(error) return alert("Gagal tambah: " + error.message); document.getElementById('new-adm-user').value = ''; document.getElementById('new-adm-nama').value = ''; document.getElementById('new-adm-pass').value = ''; const orgRefresh = allOrgs.find(o => o.id === orgId); if(orgRefresh) openClientDrawer(orgRefresh); }
-    async function deleteClientAdmin(adminId) { if(!confirm("Cabut hak akses admin ini?")) return; const orgId = document.getElementById('edit-org-id').value; showLoader(true); await db().from('admin').delete().eq('id', adminId); await db().from('audit_logs').insert([{ organization_id: orgId, actor_type: 'superadmin', actor_name: getActiveSession()?.nama, action: 'DELETE_CLIENT_ADMIN' }]); showLoader(false); const orgRefresh = allOrgs.find(o => o.id === orgId); if(orgRefresh) openClientDrawer(orgRefresh); }
+    async function addClientAdmin() {
+      const orgId = document.getElementById('edit-org-id').value;
+      const u = document.getElementById('new-adm-user').value;
+      const n = document.getElementById('new-adm-nama').value;
+      const p = document.getElementById('new-adm-pass').value;
+      if(!u || !n || !p) return alert("Lengkapi data admin!");
+      showLoader(true);
+      try {
+        const { data: cekExist } = await db().from('admin').select('id').eq('organization_id', orgId).eq('username', u);
+        if(cekExist && cekExist.length > 0) { alert("Gagal: Username sudah dipakai!"); return; }
+        const { data: hashedPass } = await db().rpc('hash_password', { raw_pass: p });
+        const { error } = await db().from('admin').insert([{ organization_id: orgId, username: u, nama_admin: n, password_hash: hashedPass || p, role: 'admin' }]);
+        await db().from('audit_logs').insert([{ organization_id: orgId, actor_type: 'superadmin', actor_name: getActiveSession()?.nama, action: 'ADD_CLIENT_ADMIN' }]);
+        if(error) { alert("Gagal tambah: " + error.message); return; }
+        document.getElementById('new-adm-user').value = '';
+        document.getElementById('new-adm-nama').value = '';
+        document.getElementById('new-adm-pass').value = '';
+        const orgRefresh = allOrgs.find(o => o.id === orgId);
+        if(orgRefresh) openClientDrawer(orgRefresh);
+      } catch(e) {
+        console.error(e);
+        alert('Gagal menambah admin.');
+      } finally {
+        showLoader(false);
+      }
+    }
+    async function deleteClientAdmin(adminId) {
+      if(!confirm("Cabut hak akses admin ini?")) return;
+      const orgId = document.getElementById('edit-org-id').value;
+      showLoader(true);
+      try {
+        await db().from('admin').delete().eq('id', adminId);
+        await db().from('audit_logs').insert([{ organization_id: orgId, actor_type: 'superadmin', actor_name: getActiveSession()?.nama, action: 'DELETE_CLIENT_ADMIN' }]);
+        const orgRefresh = allOrgs.find(o => o.id === orgId);
+        if(orgRefresh) openClientDrawer(orgRefresh);
+      } catch(e) {
+        console.error(e);
+        alert('Gagal menghapus admin.');
+      } finally {
+        showLoader(false);
+      }
+    }
 
     // PERBAIKAN LOGIKA FILTER TANGGAL AUDIT LOG
     async function loadAudit() {
-      const orgFilter = document.getElementById('filter-audit-org').value; const actorFilter = document.getElementById('filter-audit-actor').value;
-      const startFilter = document.getElementById('filter-audit-start').value; const endFilter = document.getElementById('filter-audit-end').value;
+      const orgFilter = document.getElementById('filter-audit-org').value;
+      const actorFilter = document.getElementById('filter-audit-actor').value;
+      const startFilter = document.getElementById('filter-audit-start').value;
+      const endFilter = document.getElementById('filter-audit-end').value;
       
-      let query = db().from('audit_logs').select('*').order('created_at', { ascending: false }).limit(200);
-      if(orgFilter) query = query.eq('organization_id', orgFilter); 
-      if(actorFilter) query = query.eq('actor_type', actorFilter); 
-      if(startFilter) query = query.gte('created_at', startFilter + 'T00:00:00.000Z');
-      if(endFilter) query = query.lte('created_at', endFilter + 'T23:59:59.999Z');
-      
-      showLoader(true); const { data } = await query; showLoader(false);
-      const list = document.getElementById('audit-list'); list.innerHTML = '';
+      showLoader(true);
+      try {
+        let query = db().from('audit_logs').select('*').order('created_at', { ascending: false }).limit(200);
+        if(orgFilter) query = query.eq('organization_id', orgFilter);
+        if(actorFilter) query = query.eq('actor_type', actorFilter);
+        if(startFilter) query = query.gte('created_at', startFilter + 'T00:00:00.000Z');
+        if(endFilter) query = query.lte('created_at', endFilter + 'T23:59:59.999Z');
+
+        const { data } = await query;
+        const list = document.getElementById('audit-list'); list.innerHTML = '';
       if (!data || data.length === 0) { list.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">Tidak ada log aktivitas.</p>'; return; }
 
-      data.forEach(log => {
-        let orgName = '-'; if(log.organization_id) { const findOrg = allOrgs.find(o => o.id === log.organization_id); orgName = findOrg ? (findOrg.display_name || findOrg.nama) : 'Unknown Org'; }
-        const actColor = log.actor_type === 'superadmin' ? 'text-blue-600' : (log.actor_type === 'admin' ? 'text-orange-600' : 'text-green-600');
-        const li = document.createElement('li'); li.className = 'bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-col gap-2';
-        li.innerHTML = `<div class="flex justify-between items-start text-xs border-b border-slate-200 pb-2"><span class="font-black text-slate-700 bg-white border px-2 py-0.5 rounded uppercase tracking-widest">${orgName}</span><span class="text-slate-400 font-bold">${new Date(log.created_at).toLocaleString('id-ID')}</span></div><div><p class="font-bold text-slate-800 text-sm">${log.action}</p><p class="text-[10px] text-slate-500 font-mono mt-1">Oleh: <span class="font-bold uppercase ${actColor}">${log.actor_name || 'System'}</span> (${log.actor_type})</p></div>`; list.appendChild(li);
-      });
+        data.forEach(log => {
+          let orgName = '-'; if(log.organization_id) { const findOrg = allOrgs.find(o => o.id === log.organization_id); orgName = findOrg ? (findOrg.display_name || findOrg.nama) : 'Unknown Org'; }
+          const actColor = log.actor_type === 'superadmin' ? 'text-blue-600' : (log.actor_type === 'admin' ? 'text-orange-600' : 'text-green-600');
+          const li = document.createElement('li'); li.className = 'bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-col gap-2';
+          li.innerHTML = `<div class="flex justify-between items-start text-xs border-b border-slate-200 pb-2"><span class="font-black text-slate-700 bg-white border px-2 py-0.5 rounded uppercase tracking-widest">${orgName}</span><span class="text-slate-400 font-bold">${new Date(log.created_at).toLocaleString('id-ID')}</span></div><div><p class="font-bold text-slate-800 text-sm">${log.action}</p><p class="text-[10px] text-slate-500 font-mono mt-1">Oleh: <span class="font-bold uppercase ${actColor}">${log.actor_name || 'System'}</span> (${log.actor_type})</p></div>`; list.appendChild(li);
+        });
+      } catch(e) {
+        console.error(e);
+      } finally {
+        showLoader(false);
+      }
     }
 
     document.getElementById('form-add-client').onsubmit = async function(e) {
@@ -196,9 +281,56 @@
       showLoader(false); closeModal('modal-add-client'); alert("Klien Baru Berhasil Didaftarkan!"); loadClients();
     };
 
-    async function loadSuperAdmins() { const { data } = await db().from('super_admins').select('*'); const tbody = document.getElementById('sa-tbody'); tbody.innerHTML = ''; data.forEach(sa => { const roleColor = sa.role === 'finance' ? 'text-green-600 bg-green-100' : 'text-blue-600 bg-blue-100'; const row = document.createElement('tr'); row.className = 'hover:bg-slate-50 transition border-b border-slate-100'; row.innerHTML = `<td class="p-4"><div class="font-bold text-slate-800 bg-slate-100 px-2 py-1 rounded-md inline-block">@${sa.username}</div></td><td class="p-4"><p class="font-bold text-slate-600">${sa.nama}</p><p class="text-[9px] font-black uppercase ${roleColor} inline-block px-1.5 py-0.5 rounded mt-1">${sa.role}</p></td><td class="p-4 text-right"><button onclick="deleteSuperAdmin('${sa.id}')" class="w-8 h-8 rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition ml-auto"><i class="ph ph-trash text-lg"></i></button></td>`; tbody.appendChild(row); }); }
-    async function addSuperAdmin() { const u = document.getElementById('sa-new-user').value; const n = document.getElementById('sa-new-nama').value; const p = document.getElementById('sa-new-pass').value; const r = document.getElementById('sa-new-role').value; if(!u || !n || !p) return alert('Lengkapi semua!'); showLoader(true); await db().rpc('super_admin_add_super_admin', { p_username: u, p_nama: n, p_plain_pass: p }); await db().from('super_admins').update({ role: r }).eq('username', u); await db().from('audit_logs').insert([{ actor_type: 'superadmin', actor_name: getActiveSession()?.nama, action: `ADD_INTERNAL_TEAM_${r}` }]); showLoader(false); closeModal('modal-add-sa'); loadSuperAdmins(); }
-    async function deleteSuperAdmin(id) { if(!confirm('Hapus akses Tim Internal ini?')) return; showLoader(true); await db().from('super_admins').delete().eq('id', id); await db().from('audit_logs').insert([{ actor_type: 'superadmin', actor_name: getActiveSession()?.nama, action: 'DELETE_INTERNAL_TEAM' }]); showLoader(false); loadSuperAdmins(); }
+    async function loadSuperAdmins() {
+      showLoader(true);
+      try {
+        const { data } = await db().from('super_admins').select('*');
+        const tbody = document.getElementById('sa-tbody'); tbody.innerHTML = '';
+        data.forEach(sa => {
+          const roleColor = sa.role === 'finance' ? 'text-green-600 bg-green-100' : 'text-blue-600 bg-blue-100';
+          const row = document.createElement('tr'); row.className = 'hover:bg-slate-50 transition border-b border-slate-100';
+          row.innerHTML = `<td class="p-4"><div class="font-bold text-slate-800 bg-slate-100 px-2 py-1 rounded-md inline-block">@${sa.username}</div></td><td class="p-4"><p class="font-bold text-slate-600">${sa.nama}</p><p class="text-[9px] font-black uppercase ${roleColor} inline-block px-1.5 py-0.5 rounded mt-1">${sa.role}</p></td><td class="p-4 text-right"><button onclick="deleteSuperAdmin('${sa.id}')" class="w-8 h-8 rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition ml-auto"><i class="ph ph-trash text-lg"></i></button></td>`; tbody.appendChild(row);
+        });
+      } catch(e) {
+        console.error(e);
+      } finally {
+        showLoader(false);
+      }
+    }
+    async function addSuperAdmin() {
+      const u = document.getElementById('sa-new-user').value;
+      const n = document.getElementById('sa-new-nama').value;
+      const p = document.getElementById('sa-new-pass').value;
+      const r = document.getElementById('sa-new-role').value;
+      if(!u || !n || !p) return alert('Lengkapi semua!');
+      showLoader(true);
+      try {
+        await db().rpc('super_admin_add_super_admin', { p_username: u, p_nama: n, p_plain_pass: p });
+        await db().from('super_admins').update({ role: r }).eq('username', u);
+        await db().from('audit_logs').insert([{ actor_type: 'superadmin', actor_name: getActiveSession()?.nama, action: `ADD_INTERNAL_TEAM_${r}` }]);
+        closeModal('modal-add-sa');
+        loadSuperAdmins();
+      } catch(e) {
+        console.error(e);
+        alert('Gagal menambah tim internal.');
+      } finally {
+        showLoader(false);
+      }
+    }
+    async function deleteSuperAdmin(id) {
+      if(!confirm('Hapus akses Tim Internal ini?')) return;
+      showLoader(true);
+      try {
+        await db().from('super_admins').delete().eq('id', id);
+        await db().from('audit_logs').insert([{ actor_type: 'superadmin', actor_name: getActiveSession()?.nama, action: 'DELETE_INTERNAL_TEAM' }]);
+        loadSuperAdmins();
+      } catch(e) {
+        console.error(e);
+        alert('Gagal menghapus tim internal.');
+      } finally {
+        showLoader(false);
+      }
+    }
     function openModal(id) { document.getElementById(id).classList.remove('!hidden'); } function closeModal(id) { document.getElementById(id).classList.add('!hidden'); }
   </script>
 </body>
