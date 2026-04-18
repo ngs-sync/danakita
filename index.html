@@ -244,8 +244,51 @@
       </div>
 
       <div id="viewAdminMaster" class="tab-content a-sec">
-        <div class="card"><h3 style="font-weight:900; color:var(--tk-text-primary); margin-bottom:20px; font-size:18px; display:flex; align-items:center; gap:8px;"><i class="ph ph-users text-[#00A6ED]"></i> Data Warga</h3><div style="display:flex; gap:8px; margin-bottom:16px;"><button onclick="document.getElementById('formAddWarga').classList.toggle('hidden'); document.getElementById('formImportWarga').classList.add('hidden');" class="btn-primary" style="flex:1;"><i class="ph ph-user-plus"></i> Manual</button><button onclick="document.getElementById('formImportWarga').classList.toggle('hidden'); document.getElementById('formAddWarga').classList.add('hidden');" class="btn-secondary" style="flex:1;"><i class="ph ph-file-csv"></i> Import Excel</button></div><div id="formAddWarga" class="hidden" style="background:#F8FAFC; padding:16px; border-radius:16px; border:1px solid var(--tk-border); margin-bottom:24px; display:flex; flex-direction:column; gap:12px;"><input type="text" id="admNama" placeholder="Nama Lengkap"><div style="display:flex; gap:12px;"><input type="text" id="admRumah" placeholder="Blok" style="flex:1;" class="uppercase"><input type="text" id="admWa" placeholder="No. WA" style="flex:1;"></div><button onclick="fnTambahWarga()" class="btn-primary mt-2"><i class="ph ph-floppy-disk text-lg"></i> Simpan Data</button></div><div id="formImportWarga" class="hidden" style="background:#F0FDF4; padding:16px; border-radius:16px; border:1px solid #BBF7D0; margin-bottom:24px; display:flex; flex-direction:column; gap:12px;"><p class="text-xs text-slate-600 font-bold mb-1">Upload Data Sekaligus (CSV)</p><button onclick="fnDownloadTemplateCSV()" class="btn-ghost !bg-white !border-green-200 !text-green-700 !justify-start mb-2"><i class="ph ph-download-simple"></i> Download Template</button><input type="file" id="csvWarga" accept=".csv" class="!bg-white !p-2 !border-green-200"><button onclick="fnProsesImportCSV()" class="btn-secondary !bg-green-600 mt-2"><i class="ph ph-upload-simple text-lg"></i> Proses Import</button></div><h4 style="font-weight:800; color:var(--tk-text-secondary); font-size:12px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--tk-border);">Daftar Aktif</h4><div id="listWarga" style="display:flex; flex-direction:column; gap:12px;"></div></div>
-        <div class="card"><h3 style="font-weight:900; color:var(--tk-text-primary); margin-bottom:20px; font-size:18px; display:flex; align-items:center; gap:8px;"><i class="ph ph-folder text-[#FF6B35]"></i> Pos Iuran/Kas</h3><div style="background:#FFF7ED; padding:16px; border-radius:16px; border:1px solid #FFEDD5; margin-bottom:24px; display:flex; flex-direction:column; gap:12px;"><input type="text" id="admProj" placeholder="Nama Pos (Cth: Kas RT)"><div style="display:flex; gap:12px;"><select id="admTipe" style="flex:1;" onchange="fnToggleProjType()"><option value="bulanan">Bulanan</option><option value="sekali">Sekali Bayar</option><option value="non_iuran">Pos Kas Saja</option></select><input type="month" id="admStart" style="flex:1;"></div><div id="divNominalTarget" style="display:flex; gap:12px;"><input type="number" id="admNom" placeholder="Nominal" style="flex:1;"><input type="number" id="admTarget" placeholder="Target" style="flex:1;"></div><p id="noteNonIuran" class="hidden text-[10px] text-orange-600 italic font-bold">*) Pos Kas Saja: Tidak perlu Nominal & Target.</p><button onclick="fnTambahProject()" class="btn-secondary mt-2"><i class="ph ph-plus-circle text-lg"></i> Terbitkan Pos</button></div><h4 style="font-weight:800; color:var(--tk-text-secondary); font-size:12px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--tk-border);">Daftar Aktif</h4><div id="listProj" style="display:flex; flex-direction:column; gap:12px;"></div></div>
+        <div class="card">
+          <h3 style="font-weight:900; color:var(--tk-text-primary); margin-bottom:20px; font-size:18px; display:flex; align-items:center; gap:8px;"><i class="ph ph-users text-[#00A6ED]"></i> Data Warga</h3>
+          <div style="display:flex; gap:8px; margin-bottom:16px;">
+            <button onclick="document.getElementById('formAddWarga').classList.toggle('hidden'); document.getElementById('formImportWarga').classList.add('hidden');" class="btn-primary" style="flex:1;"><i class="ph ph-user-plus"></i> Manual</button>
+            <button onclick="document.getElementById('formImportWarga').classList.toggle('hidden'); document.getElementById('formAddWarga').classList.add('hidden');" class="btn-secondary" style="flex:1;"><i class="ph ph-file-csv"></i> Import Excel</button>
+          </div>
+
+          <div id="formAddWarga" class="hidden" style="background:#F8FAFC; padding:16px; border-radius:16px; border:1px solid var(--tk-border); margin-bottom:24px; display:flex; flex-direction:column; gap:12px;"><input type="text" id="admNama" placeholder="Nama Lengkap"><div style="display:flex; gap:12px;"><input type="text" id="admRumah" placeholder="Blok" style="flex:1;" class="uppercase"><input type="text" id="admWa" placeholder="No. WA" style="flex:1;"></div><button onclick="fnTambahWarga()" class="btn-primary mt-2"><i class="ph ph-floppy-disk text-lg"></i> Simpan Data</button></div>
+          <div id="formImportWarga" class="hidden" style="background:#F0FDF4; padding:16px; border-radius:16px; border:1px solid #BBF7D0; margin-bottom:24px; display:flex; flex-direction:column; gap:12px;"><p class="text-xs text-slate-600 font-bold mb-1">Upload Data Sekaligus (CSV)</p><button onclick="fnDownloadTemplateCSV()" class="btn-ghost !bg-white !border-green-200 !text-green-700 !justify-start mb-2"><i class="ph ph-download-simple"></i> Download Template</button><input type="file" id="csvWarga" accept=".csv" class="!bg-white !p-2 !border-green-200"><button onclick="fnProsesImportCSV()" class="btn-secondary !bg-green-600 mt-2"><i class="ph ph-upload-simple text-lg"></i> Proses Import</button></div>
+
+          <div style="display:flex; gap:12px; margin-bottom:20px;">
+            <div class="relative flex-1"><i class="ph ph-magnifying-glass absolute left-3 top-3.5 text-slate-400"></i><input type="text" id="filterWarga" onkeyup="fnRenderMasterWarga()" placeholder="Cari Nama/Blok..." class="pl-9 !py-2.5 bg-slate-50 border-slate-200"></div>
+          </div>
+
+          <h4 style="font-weight:800; color:var(--tk-text-secondary); font-size:12px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--tk-border);">Daftar Aktif</h4>
+          <div id="listWarga" style="display:flex; flex-direction:column; gap:12px;"></div>
+          <div id="wargaPagination" style="display:flex; justify-content:center; align-items:center; gap:16px; margin-top:20px; padding-top:16px; border-top:1px solid var(--tk-border);"></div>
+        </div>
+        <div class="card">
+          <h3 style="font-weight:900; color:var(--tk-text-primary); margin-bottom:20px; font-size:18px; display:flex; align-items:center; gap:8px;"><i class="ph ph-folder text-[#FF6B35]"></i> Pos Iuran/Kas</h3>
+          <div id="formProject" style="background:#FFF7ED; padding:16px; border-radius:16px; border:1px solid #FFEDD5; margin-bottom:24px; display:flex; flex-direction:column; gap:12px;">
+            <input type="hidden" id="admProjId">
+            <input type="text" id="admProj" placeholder="Nama Pos (Cth: Kas RT)">
+            <div style="display:flex; gap:12px;"><select id="admTipe" style="flex:1;" onchange="fnToggleProjType()"><option value="bulanan">Bulanan</option><option value="sekali">Sekali Bayar</option><option value="non_iuran">Pos Kas Saja</option></select><input type="month" id="admStart" style="flex:1;"></div>
+            <div id="divNominalTarget" style="display:flex; gap:12px;"><input type="number" id="admNom" placeholder="Nominal" style="flex:1;"><input type="number" id="admTarget" placeholder="Target" style="flex:1;"></div>
+
+            <div id="divTargetWarga" class="mt-2">
+              <label class="text-[11px] font-bold text-orange-600 uppercase tracking-wide flex justify-between items-center mb-2">
+                Pilih Target Warga
+                <button onclick="fnSelectAllWarga(true)" class="text-blue-600 hover:underline">Select All</button>
+              </label>
+              <div id="listTargetWarga" style="max-height:150px; overflow-y:auto; background:white; padding:10px; border-radius:10px; border:1px solid #FFEDD5; display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+                <!-- Warga checkboxes will be rendered here -->
+              </div>
+            </div>
+
+            <p id="noteNonIuran" class="hidden text-[10px] text-orange-600 italic font-bold">*) Pos Kas Saja: Tidak perlu Nominal & Target.</p>
+            <div style="display:flex; gap:8px;">
+              <button id="btnCancelProject" onclick="fnResetProjectForm()" class="btn-ghost hidden !bg-slate-200 !text-slate-600 !flex-1">Batal</button>
+              <button id="btnSaveProject" onclick="fnTambahProject()" class="btn-secondary mt-2 !flex-[2]"><i class="ph ph-plus-circle text-lg"></i> Terbitkan Pos</button>
+            </div>
+          </div>
+          <h4 style="font-weight:800; color:var(--tk-text-secondary); font-size:12px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--tk-border);">Daftar Aktif</h4>
+          <div id="listProj" style="display:flex; flex-direction:column; gap:12px;"></div>
+        </div>
       </div>
 
       <div id="viewAdminKas" class="tab-content a-sec">
@@ -276,7 +319,7 @@
       window.dk.db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, options);
     };
     window.initSupabaseClient(); // Initialize with Anon Key immediately
-    window.dk.state = { orgId: null, orgCode: '', user: null, token: null, data: { warga:[], project:[], pembayaran:[], detail:[], pengeluaran:[], danaLain:[] }, selectedCart: {}, expenseItems: [{ket:'', nom:''}] };
+    window.dk.state = { orgId: null, orgCode: '', user: null, token: null, data: { warga:[], project:[], pembayaran:[], detail:[], pengeluaran:[], danaLain:[] }, selectedCart: {}, expenseItems: [{ket:'', nom:''}], wargaPage: 1 };
     const months = ['01','02','03','04','05','06','07','08','09','10','11','12']; const monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
     let currentStrukData = null; const db = () => window.dk.db;
 
@@ -524,10 +567,96 @@
     };
 
     window.fnRenderMaster = function() {
-      const wList = document.getElementById('listWarga');
-      wList.innerHTML = window.dk.state.data.warga.map(w => `<div class="list-item" style="flex-direction:column; align-items:stretch; gap:12px; padding:16px;"><div style="display:flex; justify-content:space-between; align-items:center;"><div style="flex:1;"><p style="font-weight:800;color:var(--tk-text-primary);font-size:15px;margin:0;">${w.nama}</p><p style="font-size:12px;color:var(--tk-text-secondary);margin:4px 0 0;display:flex;align-items:center;gap:6px;font-weight:600;"><i class="ph ph-house"></i> ${w.no_rumah} &bull; <i class="ph ph-whatsapp-logo"></i> ${maskPhone(w.no_wa)}</p></div><div style="display:flex;gap:8px;"><button onclick='fnOpenEditWarga(${JSON.stringify(w).replace(/'/g, "&#39;")})' class="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-50 text-blue-500 hover:bg-blue-500 hover:text-white transition"><i class="ph ph-pencil-simple text-lg"></i></button></div></div><div style="border-top:1px dashed var(--tk-border); padding-top:12px; display:flex; gap:8px;"><button onclick="fnSendWAInfo('${w.nama}', '${w.no_rumah}', '${w.no_wa}')" class="btn-ghost" style="flex:1; background:#DCFCE7; color:#16A34A; border-color:#BBF7D0; font-size:11px;"><i class="ph ph-whatsapp-logo text-sm"></i> Kirim Info Login</button></div></div>`).join('');
+      fnRenderMasterWarga();
+
       const pList = document.getElementById('listProj');
-      pList.innerHTML = window.dk.state.data.project.map(p => `<div class="list-item"><div style="flex:1;"><p style="font-weight:800;color:var(--tk-text-primary);font-size:15px;margin:0;">${p.nama_project}</p><p style="font-size:12px;color:var(--tk-text-secondary);margin:4px 0 0;font-weight:700;">${p.tipe==='bulanan'?'📅 Bulanan':p.tipe==='sekali'?'🎯 Sekali Bayar':'💰 Pos Kas Saja'} ${p.tipe!=='non_iuran' ? `• <span style="color:var(--tk-primary);">${formatRp(p.nominal_default)}</span>` : ''}</p></div></div>`).join('');
+      pList.innerHTML = window.dk.state.data.project.map(p => `
+        <div class="list-item" style="padding:16px; flex-direction:column; align-items:stretch; gap:8px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="flex:1;">
+              <p style="font-weight:800;color:var(--tk-text-primary);font-size:15px;margin:0;">${p.nama_project}</p>
+              <p style="font-size:12px;color:var(--tk-text-secondary);margin:4px 0 0;font-weight:700;">
+                ${p.tipe==='bulanan'?'📅 Bulanan':p.tipe==='sekali'?'🎯 Sekali Bayar':'💰 Pos Kas Saja'}
+                ${p.tipe!=='non_iuran' ? `• <span style="color:var(--tk-primary);">${formatRp(p.nominal_default)}</span>` : ''}
+              </p>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button onclick='fnEditProject(${JSON.stringify(p).replace(/'/g, "&#39;")})' class="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-50 text-blue-500 hover:bg-blue-500 hover:text-white transition"><i class="ph ph-pencil-simple text-lg"></i></button>
+              <button onclick="fnHapusProject('${p.id}')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition"><i class="ph ph-trash text-lg"></i></button>
+            </div>
+          </div>
+          ${p.target_warga && p.target_warga.length > 0 && p.target_warga.length < window.dk.state.data.warga.length ? `
+            <div style="border-top:1px dashed var(--tk-border); padding-top:8px;">
+              <p style="font-size:10px; font-weight:700; color:var(--tk-text-tertiary); text-transform:uppercase;">
+                <i class="ph ph-users"></i> Target: ${p.target_warga.length} Warga Terpilih
+              </p>
+            </div>
+          ` : (p.target_warga && p.target_warga.length >= window.dk.state.data.warga.length ? `
+            <div style="border-top:1px dashed var(--tk-border); padding-top:8px;">
+              <p style="font-size:10px; font-weight:700; color:var(--tk-success); text-transform:uppercase;">
+                <i class="ph ph-users"></i> Target: Semua Warga
+              </p>
+            </div>
+          ` : '')}
+        </div>
+      `).join('');
+
+      fnRenderWargaChecklist();
+    };
+
+    window.fnRenderMasterWarga = function() {
+      const wList = document.getElementById('listWarga');
+      const keyword = document.getElementById('filterWarga')?.value.toLowerCase() || '';
+      let filtered = window.dk.state.data.warga.slice().sort((a,b) => a.nama.localeCompare(b.nama));
+
+      if(keyword) {
+        filtered = filtered.filter(w => w.nama.toLowerCase().includes(keyword) || w.no_rumah.toLowerCase().includes(keyword));
+        document.getElementById('wargaPagination').innerHTML = '';
+      } else {
+        const perPage = 5;
+        const totalPages = Math.ceil(filtered.length / perPage);
+        if(window.dk.state.wargaPage > totalPages) window.dk.state.wargaPage = 1;
+        if(window.dk.state.wargaPage < 1) window.dk.state.wargaPage = 1;
+
+        const start = (window.dk.state.wargaPage - 1) * perPage;
+        const paged = filtered.slice(start, start + perPage);
+
+        let paginHtml = `
+          <button onclick="fnWargaNav(-1)" ${window.dk.state.wargaPage <= 1 ? 'disabled style="opacity:0.3;cursor:not-allowed;"' : ''} class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 text-slate-600"><i class="ph ph-caret-left font-bold"></i></button>
+          <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Hal ${window.dk.state.wargaPage} / ${totalPages || 1}</span>
+          <button onclick="fnWargaNav(1)" ${window.dk.state.wargaPage >= totalPages ? 'disabled style="opacity:0.3;cursor:not-allowed;"' : ''} class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 text-slate-600"><i class="ph ph-caret-right font-bold"></i></button>
+        `;
+        document.getElementById('wargaPagination').innerHTML = paginHtml;
+        filtered = paged;
+      }
+
+      wList.innerHTML = filtered.map(w => `
+        <div class="list-item" style="flex-direction:column; align-items:stretch; gap:12px; padding:16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="flex:1;">
+              <p style="font-weight:800;color:var(--tk-text-primary);font-size:15px;margin:0;">${w.nama}</p>
+              <p style="font-size:12px;color:var(--tk-text-secondary);margin:4px 0 0;display:flex;align-items:center;gap:6px;font-weight:600;">
+                <i class="ph ph-house"></i> ${w.no_rumah} &bull; <i class="ph ph-whatsapp-logo"></i> ${maskPhone(w.no_wa)}
+              </p>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button onclick='fnOpenEditWarga(${JSON.stringify(w).replace(/'/g, "&#39;")})' class="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-50 text-blue-500 hover:bg-blue-500 hover:text-white transition"><i class="ph ph-pencil-simple text-lg"></i></button>
+            </div>
+          </div>
+          <div style="border-top:1px dashed var(--tk-border); padding-top:12px; display:flex; gap:8px;">
+            <button onclick="fnSendWAInfo('${w.nama}', '${w.no_rumah}', '${w.no_wa}')" class="btn-ghost" style="flex:1; background:#DCFCE7; color:#16A34A; border-color:#BBF7D0; font-size:11px;"><i class="ph ph-whatsapp-logo text-sm"></i> Kirim Info Login</button>
+          </div>
+        </div>
+      `).join('');
+
+      if(filtered.length === 0) {
+        wList.innerHTML = '<p class="text-center text-xs text-slate-400 py-8 italic">Data warga tidak ditemukan.</p>';
+      }
+    };
+
+    window.fnWargaNav = function(dir) {
+      window.dk.state.wargaPage += dir;
+      fnRenderMasterWarga();
     };
 
     window.fnToggleProjType = function() { const val = document.getElementById('admTipe').value; const targetDiv = document.getElementById('divNominalTarget'); const note = document.getElementById('noteNonIuran'); if(val === 'non_iuran') { targetDiv.style.display = 'none'; note.style.display = 'block'; } else { targetDiv.style.display = 'flex'; note.style.display = 'none'; } };
@@ -577,20 +706,96 @@
         showLoader(false);
       }
     };
+    window.fnResetProjectForm = function() {
+      document.getElementById('admProjId').value = '';
+      document.getElementById('admProj').value = '';
+      document.getElementById('admTipe').value = 'bulanan';
+      document.getElementById('admStart').value = '';
+      document.getElementById('admNom').value = '';
+      document.getElementById('admTarget').value = '';
+      document.getElementById('btnCancelProject').classList.add('hidden');
+      document.getElementById('btnSaveProject').innerHTML = '<i class="ph ph-plus-circle text-lg"></i> Terbitkan Pos';
+      fnToggleProjType();
+      fnRenderWargaChecklist();
+    };
+
+    window.fnRenderWargaChecklist = function(selectedIds = []) {
+      const container = document.getElementById('listTargetWarga');
+      container.innerHTML = window.dk.state.data.warga.map(w => `
+        <label class="flex items-center gap-2 text-xs cursor-pointer hover:bg-slate-50 p-1 rounded">
+          <input type="checkbox" name="target_warga" value="${w.id}" ${selectedIds.includes(w.id) ? 'checked' : ''} class="w-4 h-4">
+          <span class="truncate">${w.nama} (${w.no_rumah})</span>
+        </label>
+      `).join('');
+    };
+
+    window.fnSelectAllWarga = function(check) {
+      document.querySelectorAll('input[name="target_warga"]').forEach(el => el.checked = check);
+    };
+
     window.fnTambahProject = async function() {
+      const id = document.getElementById('admProjId').value;
       const nama = document.getElementById('admProj').value.trim(), tipe = document.getElementById('admTipe').value, start = document.getElementById('admStart').value;
       const nom = tipe === 'non_iuran' ? 0 : document.getElementById('admNom').value;
       const target = tipe === 'non_iuran' ? 0 : document.getElementById('admTarget').value;
+      const targetWarga = Array.from(document.querySelectorAll('input[name="target_warga"]:checked')).map(el => el.value);
+
       if(!nama) return alert('Nama Pos wajib diisi!');
       showLoader(true);
       try {
-        await db().from('project').insert([{ id: genId('PRJ'), organization_id: window.dk.state.orgId, nama_project: nama, tipe, start_periode: start||null, nominal_default: nom||0, target: target||0, status: 'ACTIVE' }]);
-        document.getElementById('admProj').value=''; document.getElementById('admNom').value=''; document.getElementById('admTarget').value='';
+        const payload = {
+          organization_id: window.dk.state.orgId,
+          nama_project: nama,
+          tipe,
+          start_periode: start||null,
+          nominal_default: nom||0,
+          target: target||0,
+          status: 'ACTIVE',
+          target_warga: targetWarga
+        };
+
+        if(id) {
+          await db().from('project').update(payload).eq('id', id);
+        } else {
+          await db().from('project').insert([{ id: genId('PRJ'), ...payload }]);
+        }
+
+        fnResetProjectForm();
+        await fnLoadData();
+        fnRenderMaster();
+        alert('✅ Pos iuran berhasil disimpan!');
+      } catch(e) {
+        console.error(e);
+        alert('Gagal menyimpan pos.');
+      } finally {
+        showLoader(false);
+      }
+    };
+
+    window.fnEditProject = function(p) {
+      document.getElementById('admProjId').value = p.id;
+      document.getElementById('admProj').value = p.nama_project;
+      document.getElementById('admTipe').value = p.tipe;
+      document.getElementById('admStart').value = p.start_periode || '';
+      document.getElementById('admNom').value = p.nominal_default;
+      document.getElementById('admTarget').value = p.target;
+      document.getElementById('btnCancelProject').classList.remove('hidden');
+      document.getElementById('btnSaveProject').innerHTML = '<i class="ph ph-floppy-disk text-lg"></i> Update Pos';
+      fnToggleProjType();
+      fnRenderWargaChecklist(p.target_warga || []);
+      document.getElementById('formProject').scrollIntoView({ behavior: 'smooth' });
+    };
+
+    window.fnHapusProject = async function(id) {
+      if(!confirm('Yakin ingin menonaktifkan pos ini? Data pembayaran yang sudah ada akan tetap tersimpan.')) return;
+      showLoader(true);
+      try {
+        await db().from('project').update({ status: 'INACTIVE' }).eq('id', id);
         await fnLoadData();
         fnRenderMaster();
       } catch(e) {
         console.error(e);
-        alert('Gagal menambah pos.');
+        alert('Gagal menonaktifkan pos.');
       } finally {
         showLoader(false);
       }
@@ -642,8 +847,10 @@
       document.getElementById('totalIn').innerText = formatRp(totalIn);
       document.getElementById('totalOut').innerText = formatRp(totalOut);
 
-      // Hitung Tagihan Belum Dibayar
       const wId = window.dk.state.user?.id;
+      const myProjects = window.dk.state.data.project.filter(p => !p.target_warga || p.target_warga.length === 0 || p.target_warga.includes(wId));
+
+      // Hitung Tagihan Belum Dibayar
       let unpaidTotal = 0;
       if(wId) {
         let paid = {};
@@ -657,7 +864,7 @@
         const currentYear = now.getFullYear();
         const currentMonth = now.getMonth() + 1;
 
-        window.dk.state.data.project.forEach(p => {
+        myProjects.forEach(p => {
           if(p.tipe === 'bulanan') {
             const startPeriode = p.start_periode || '2000-01';
             const [startY, startM] = startPeriode.split('-').map(Number);
@@ -683,10 +890,10 @@
         cardTagihan.classList.add('hidden');
       }
 
-      let html = ''; window.dk.state.data.project.forEach((proj, idx) => { let terkumpulWarga = window.dk.state.data.detail.filter(d => d.project_id === proj.id && approved.some(p => p.id === d.pembayaran_id)).reduce((s,d)=>s+Number(d.nominal),0); let terkumpulLain = window.dk.state.data.danaLain.filter(d => d.kategori_project === proj.id).reduce((s,d)=>s+Number(d.nominal),0); let terkumpul = terkumpulWarga + terkumpulLain; let perc = Number(proj.target) > 0 ? Math.min(Math.round((terkumpul / proj.target) * 100), 100) : 0; let accId = 'acc-' + idx; html += `<div style="background:#F8FAFC;padding:16px;border-radius:16px;border:1px solid var(--tk-border);"><div style="display:flex;justify-content:space-between;margin-bottom:8px;align-items:center;cursor:pointer;" onclick="toggleAccordion('${accId}')"><span style="font-weight:800;color:var(--tk-text-primary);font-size:14px;display:flex;align-items:center;gap:6px;"><i class="ph ph-caret-down text-slate-400 transition" id="icon-${accId}"></i> <i class="ph ph-target text-[#FF6B35]"></i> ${proj.nama_project}</span><span class="badge badge-success">${perc}%</span></div><div style="width:100%;height:8px;background:var(--tk-border);border-radius:4px;overflow:hidden;margin-bottom:8px;"><div style="height:100%;background:linear-gradient(90deg,var(--tk-primary),var(--tk-primary-dark));border-radius:4px;width:${perc}%;transition:width 0.6s cubic-bezier(0.16, 1, 0.3, 1);"></div></div><p style="font-size:11px;font-weight:700;color:var(--tk-text-secondary);text-align:right;">Terkumpul: <span style="color:var(--tk-text-primary);">${formatRp(terkumpul)}</span> ${proj.target>0?' / '+formatRp(proj.target):''}</p><div id="${accId}" class="accordion-content"><p style="font-size:10px;font-weight:800;text-transform:uppercase;color:var(--tk-text-tertiary);margin:0 0 6px;">Rincian Pemasukan Pos</p><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tk-text-secondary);padding:4px 0;"><span style="display:flex;align-items:center;gap:4px;"><i class="ph ph-users text-blue-500"></i> Dari Iuran Warga</span><span style="font-weight:700;color:var(--tk-text-primary);">${formatRp(terkumpulWarga)}</span></div><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tk-text-secondary);padding:4px 0;"><span style="display:flex;align-items:center;gap:4px;"><i class="ph ph-gift text-green-500"></i> Donasi/Sumbangan Luar</span><span style="font-weight:700;color:var(--tk-text-primary);">${formatRp(terkumpulLain)}</span></div></div></div>`; }); document.getElementById('progressContainer').innerHTML = html || '<p style="font-size:13px;font-weight:600;color:var(--tk-text-tertiary);text-align:center;padding:24px;">Belum ada pos kas yang aktif.</p>';
+      let html = ''; myProjects.forEach((proj, idx) => { let terkumpulWarga = window.dk.state.data.detail.filter(d => d.project_id === proj.id && approved.some(p => p.id === d.pembayaran_id)).reduce((s,d)=>s+Number(d.nominal),0); let terkumpulLain = window.dk.state.data.danaLain.filter(d => d.kategori_project === proj.id).reduce((s,d)=>s+Number(d.nominal),0); let terkumpul = terkumpulWarga + terkumpulLain; let perc = Number(proj.target) > 0 ? Math.min(Math.round((terkumpul / proj.target) * 100), 100) : 0; let accId = 'acc-' + idx; html += `<div style="background:#F8FAFC;padding:16px;border-radius:16px;border:1px solid var(--tk-border);"><div style="display:flex;justify-content:space-between;margin-bottom:8px;align-items:center;cursor:pointer;" onclick="toggleAccordion('${accId}')"><span style="font-weight:800;color:var(--tk-text-primary);font-size:14px;display:flex;align-items:center;gap:6px;"><i class="ph ph-caret-down text-slate-400 transition" id="icon-${accId}"></i> <i class="ph ph-target text-[#FF6B35]"></i> ${proj.nama_project}</span><span class="badge badge-success">${perc}%</span></div><div style="width:100%;height:8px;background:var(--tk-border);border-radius:4px;overflow:hidden;margin-bottom:8px;"><div style="height:100%;background:linear-gradient(90deg,var(--tk-primary),var(--tk-primary-dark));border-radius:4px;width:${perc}%;transition:width 0.6s cubic-bezier(0.16, 1, 0.3, 1);"></div></div><p style="font-size:11px;font-weight:700;color:var(--tk-text-secondary);text-align:right;">Terkumpul: <span style="color:var(--tk-text-primary);">${formatRp(terkumpul)}</span> ${proj.target>0?' / '+formatRp(proj.target):''}</p><div id="${accId}" class="accordion-content"><p style="font-size:10px;font-weight:800;text-transform:uppercase;color:var(--tk-text-tertiary);margin:0 0 6px;">Rincian Pemasukan Pos</p><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tk-text-secondary);padding:4px 0;"><span style="display:flex;align-items:center;gap:4px;"><i class="ph ph-users text-blue-500"></i> Dari Iuran Warga</span><span style="font-weight:700;color:var(--tk-text-primary);">${formatRp(terkumpulWarga)}</span></div><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tk-text-secondary);padding:4px 0;"><span style="display:flex;align-items:center;gap:4px;"><i class="ph ph-gift text-green-500"></i> Donasi/Sumbangan Luar</span><span style="font-weight:700;color:var(--tk-text-primary);">${formatRp(terkumpulLain)}</span></div></div></div>`; }); document.getElementById('progressContainer').innerHTML = html || '<p style="font-size:13px;font-weight:600;color:var(--tk-text-tertiary);text-align:center;padding:24px;">Belum ada pos kas yang aktif.</p>';
     };
 
-    window.fnRenderIuran = function() { const wId = window.dk.state.user?.id; const tahun = document.getElementById('pilihTahun')?.value || '2026'; const container = document.getElementById('iuranContainer'); if(!wId || !container) return; document.getElementById('lblWargaBayar').innerText = `${window.dk.state.user.name} (${window.dk.state.user.noRumah})`; container.innerHTML = ''; window.dk.state.selectedCart = {}; document.getElementById('summaryBayar').style.display = 'none'; let paid = {}; window.dk.state.data.pembayaran.filter(p => p.warga_id === wId && p.status !== 'DITOLAK').forEach(p => { window.dk.state.data.detail.filter(d => d.pembayaran_id === p.id).forEach(d => { if(!paid[d.project_id]) paid[d.project_id]=[]; paid[d.project_id].push(d.periode); }); }); window.dk.state.data.project.forEach(p => { if(p.tipe === 'non_iuran') return; let html = ''; if(p.tipe === 'bulanan') { let listHtml = ''; const startPeriode = p.start_periode || '2000-01'; months.forEach((m, i) => { const periode = `${tahun}-${m}`; const isPaid = paid[p.id]?.includes(periode); const isBeforeStart = periode < startPeriode; if(!isPaid && !isBeforeStart) { listHtml += `<label class="list-item"><input type="checkbox" value="${periode}" onchange="fnToggleIuran('${p.id}', this, ${p.nominal_default}, '${periode}')"><div style="flex:1;margin-left:16px;"><p style="font-weight:800;color:var(--tk-text-primary);font-size:15px;margin:0;">${monthNames[i]} ${tahun}</p><p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--tk-text-tertiary);margin:2px 0 0;">Iuran Rutin</p></div><span style="font-weight:900;color:var(--tk-primary);font-size:16px;letter-spacing:-0.5px;">${formatRp(p.nominal_default)}</span></label>`; } }); html = listHtml || '<div style="padding:20px;background:#DCFCE7;border:1px dashed #86EFAC;border-radius:16px;text-align:center;"><i class="ph ph-check-circle text-3xl text-green-500 mb-2"></i><p style="color:var(--tk-success);font-weight:800;font-size:14px;margin:0;">Hebat! Semua tagihan aktif lunas.</p></div>'; } else if(p.tipe === 'sekali') { const isPaid = paid[p.id]?.includes('SEKALI'); html = isPaid ? '<div style="padding:20px;background:#DCFCE7;border:1px dashed #86EFAC;border-radius:16px;text-align:center;"><i class="ph ph-check-circle text-3xl text-green-500 mb-2"></i><p style="color:var(--tk-success);font-weight:800;font-size:14px;margin:0;">Pembayaran Selesai / Lunas</p></div>' : `<label class="list-item"><input type="checkbox" value="SEKALI" onchange="fnToggleIuran('${p.id}', this, ${p.nominal_default}, 'SEKALI')"><div style="flex:1;margin-left:16px;"><p style="font-weight:800;color:var(--tk-text-primary);font-size:15px;margin:0;">Tagihan Penuh</p><p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--tk-text-tertiary);margin:2px 0 0;">Pembayaran Satu Kali</p></div><span style="font-weight:900;color:var(--tk-primary);font-size:16px;letter-spacing:-0.5px;">${formatRp(p.nominal_default)}</span></label>`; } if(html) { const div = document.createElement('div'); div.style.background = '#F8FAFC'; div.style.padding = '20px'; div.style.borderRadius = '20px'; div.style.border = '1px solid var(--tk-border)'; div.innerHTML = `<h4 style="font-weight:900;color:var(--tk-text-primary);font-size:16px;margin:0 0 16px;display:flex;align-items:center;gap:8px;"><i class="ph ph-folder text-[#FF6B35]"></i> ${p.nama_project}</h4>${html}`; container.appendChild(div); } }); };
+    window.fnRenderIuran = function() { const wId = window.dk.state.user?.id; const tahun = document.getElementById('pilihTahun')?.value || '2026'; const container = document.getElementById('iuranContainer'); if(!wId || !container) return; document.getElementById('lblWargaBayar').innerText = `${window.dk.state.user.name} (${window.dk.state.user.noRumah})`; container.innerHTML = ''; window.dk.state.selectedCart = {}; document.getElementById('summaryBayar').style.display = 'none'; let paid = {}; window.dk.state.data.pembayaran.filter(p => p.warga_id === wId && p.status !== 'DITOLAK').forEach(p => { window.dk.state.data.detail.filter(d => d.pembayaran_id === p.id).forEach(d => { if(!paid[d.project_id]) paid[d.project_id]=[]; paid[d.project_id].push(d.periode); }); }); const myProjects = window.dk.state.data.project.filter(p => !p.target_warga || p.target_warga.length === 0 || p.target_warga.includes(wId)); myProjects.forEach(p => { if(p.tipe === 'non_iuran') return; let html = ''; if(p.tipe === 'bulanan') { let listHtml = ''; const startPeriode = p.start_periode || '2000-01'; months.forEach((m, i) => { const periode = `${tahun}-${m}`; const isPaid = paid[p.id]?.includes(periode); const isBeforeStart = periode < startPeriode; if(!isPaid && !isBeforeStart) { listHtml += `<label class="list-item"><input type="checkbox" value="${periode}" onchange="fnToggleIuran('${p.id}', this, ${p.nominal_default}, '${periode}')"><div style="flex:1;margin-left:16px;"><p style="font-weight:800;color:var(--tk-text-primary);font-size:15px;margin:0;">${monthNames[i]} ${tahun}</p><p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--tk-text-tertiary);margin:2px 0 0;">Iuran Rutin</p></div><span style="font-weight:900;color:var(--tk-primary);font-size:16px;letter-spacing:-0.5px;">${formatRp(p.nominal_default)}</span></label>`; } }); html = listHtml || '<div style="padding:20px;background:#DCFCE7;border:1px dashed #86EFAC;border-radius:16px;text-align:center;"><i class="ph ph-check-circle text-3xl text-green-500 mb-2"></i><p style="color:var(--tk-success);font-weight:800;font-size:14px;margin:0;">Hebat! Semua tagihan aktif lunas.</p></div>'; } else if(p.tipe === 'sekali') { const isPaid = paid[p.id]?.includes('SEKALI'); html = isPaid ? '<div style="padding:20px;background:#DCFCE7;border:1px dashed #86EFAC;border-radius:16px;text-align:center;"><i class="ph ph-check-circle text-3xl text-green-500 mb-2"></i><p style="color:var(--tk-success);font-weight:800;font-size:14px;margin:0;">Pembayaran Selesai / Lunas</p></div>' : `<label class="list-item"><input type="checkbox" value="SEKALI" onchange="fnToggleIuran('${p.id}', this, ${p.nominal_default}, 'SEKALI')"><div style="flex:1;margin-left:16px;"><p style="font-weight:800;color:var(--tk-text-primary);font-size:15px;margin:0;">Tagihan Penuh</p><p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--tk-text-tertiary);margin:2px 0 0;">Pembayaran Satu Kali</p></div><span style="font-weight:900;color:var(--tk-primary);font-size:16px;letter-spacing:-0.5px;">${formatRp(p.nominal_default)}</span></label>`; } if(html) { const div = document.createElement('div'); div.style.background = '#F8FAFC'; div.style.padding = '20px'; div.style.borderRadius = '20px'; div.style.border = '1px solid var(--tk-border)'; div.innerHTML = `<h4 style="font-weight:900;color:var(--tk-text-primary);font-size:16px;margin:0 0 16px;display:flex;align-items:center;gap:8px;"><i class="ph ph-folder text-[#FF6B35]"></i> ${p.nama_project}</h4>${html}`; container.appendChild(div); } }); };
     window.fnToggleIuran = function(pid, el, price, periode) { if(!window.dk.state.selectedCart[pid]) window.dk.state.selectedCart[pid] = { periods:[], nominal:0, base:price }; let cart = window.dk.state.selectedCart[pid]; if(el.checked) { if(!cart.periods.includes(periode)) cart.periods.push(periode); } else { cart.periods = cart.periods.filter(x => x !== periode); } cart.nominal = cart.periods.length * price; if(cart.periods.length === 0) delete window.dk.state.selectedCart[pid]; let total = Object.values(window.dk.state.selectedCart).reduce((s,c)=>s+c.nominal, 0); document.getElementById('totalBayarDisplay').innerText = formatRp(total); document.getElementById('summaryBayar').style.display = total === 0 ? 'none' : 'block'; };
     window.fnToggleBukti = function() { document.getElementById('buktiSection').style.display = document.getElementById('metodeBayar').value === 'TRANSFER' ? 'block' : 'none'; };
 
