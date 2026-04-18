@@ -280,7 +280,7 @@
               </div>
             </div>
 
-            <p id="noteNonIuran" class="hidden text-[10px] text-orange-600 italic font-bold">*) Pos Kas Saja: Tidak perlu Nominal & Target.</p>
+            <p id="noteNonIuran" class="hidden text-[10px] text-orange-600 italic font-bold">Pos Kas Saja: Tidak perlu Nominal & Target.</p>
             <div style="display:flex; gap:8px;">
               <button id="btnCancelProject" onclick="fnResetProjectForm()" class="btn-ghost hidden !bg-slate-200 !text-slate-600 !flex-1">Batal</button>
               <button id="btnSaveProject" onclick="fnTambahProject()" class="btn-secondary mt-2 !flex-[2]"><i class="ph ph-plus-circle text-lg"></i> Terbitkan Pos</button>
@@ -570,7 +570,7 @@
         const w = window.dk.state.data.warga.find(x => x.id === p.warga_id); const det = window.dk.state.data.detail.filter(d => d.pembayaran_id === p.id);
         let rincian = det.map(d => { const proj = window.dk.state.data.project.find(x => x.id === d.project_id); return `• ${proj?.nama_project || 'Project'} <span style="font-size:11px;color:var(--tk-text-tertiary);">(${formatBulan(d.periode)})</span>`; }).join('<br>');
         const statusClass = p.status==='DISETUJUI' ? 'badge-success' : p.status==='DITOLAK' ? 'badge-danger' : 'badge-warning'; const iconName = isPending ? 'clock' : 'check-circle';
-        const actions = isPending ? `<div style="display:flex;gap:12px;margin-top:20px;border-top:1px dashed var(--tk-border);padding-top:16px;"><button onclick="fnVerify('${p.id}','DISETUJUI')" class="btn-primary" style="flex:1; background: var(--tk-success); box-shadow: none;"><i class="ph ph-check-circle"></i> Setujui</button><button onclick="fnVerify('${p.id}','DITOLAK')" class="btn-danger" style="flex:1;"><i class="ph ph-x-circle"></i> Tolak</button></div>` : (p.status==='DISETUJUI' ? `<button onclick='fnShowStruk(${JSON.stringify(p).replace(/'/g,"&#39;")})' class="btn-secondary" style="margin-top:16px;"><i class="ph ph-receipt"></i> Buka Struk</button>` : '');
+        const actions = isPending ? `<div style="display:flex;gap:12px;margin-top:20px;border-top:1px dashed var(--tk-border);padding-top:16px;"><button onclick="fnVerify('${p.id}','DISETUJUI')" class="btn-primary" style="flex:1; background: var(--tk-success); box-shadow: none;"><i class="ph ph-check-circle"></i> Setujui</button><button onclick="fnVerify('${p.id}','DITOLAK')" class="btn-danger" style="flex:1;"><i class="ph ph-x-circle"></i> Tolak</button></div>` : (p.status==='DISETUJUI' ? `<button onclick="fnShowStrukById('${p.id}')" class="btn-secondary" style="margin-top:16px;"><i class="ph ph-receipt"></i> Buka Struk</button>` : '');
         return `<div class="card" style="margin-bottom:0;"><div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:12px;"><div style="display:flex; gap:12px; align-items:center;"><div style="width:40px;height:40px;border-radius:12px;background:#F1F5F9;display:flex;align-items:center;justify-content:center;color:var(--tk-primary);font-weight:900;font-size:18px;">${w?.nama?.charAt(0).toUpperCase() || '?'}</div><div><p style="font-weight:900;color:var(--tk-text-primary);font-size:15px;margin:0;">${w?.nama || 'Unknown'}</p><p style="font-size:11px;font-weight:800;color:var(--tk-text-tertiary);text-transform:uppercase;letter-spacing:0.5px;margin:2px 0 0;"><i class="ph ph-house"></i> ${w?.no_rumah || '-'}</p></div></div><span class="badge ${statusClass}"><i class="ph ph-${iconName}"></i> ${p.status}</span></div><p style="font-weight:900;color:var(--tk-primary);font-size:28px;margin:16px 0 4px;letter-spacing:-1px;">${formatRp(p.total_nominal)}</p><p style="font-size:12px;color:var(--tk-text-secondary);font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:4px;"><i class="ph ph-calendar-blank"></i> ${new Date(p.tanggal).toLocaleDateString('id-ID')} • ${p.metode}</p><div style="font-size:13px;color:var(--tk-text-secondary);background:#F8FAFC;padding:16px;border-radius:16px;margin-bottom:12px;border:1px solid var(--tk-border);line-height:1.6;font-weight:600;">${rincian}</div>${p.bukti_url ? `<button onclick="viewBuktiTransfer('${p.bukti_url}')" class="btn-ghost" style="font-size:12px;color:var(--tk-primary);font-weight:800;text-decoration:none;display:flex;align-items:center;gap:6px;background:#F0F9FF;padding:10px 16px;border-radius:12px;width:fit-content;border:none;"><i class="ph ph-image"></i> Lihat Foto Bukti</button>`:''} ${actions}</div>`;
       }
       document.getElementById('pendingList').innerHTML = pendingData.length > 0 ? pendingData.map(p => renderCard(p, true)).join('') : ''; document.getElementById('processedList').innerHTML = approvedData.length > 0 ? approvedData.map(p => renderCard(p, false)).join('') : ''; document.getElementById('emptyPending').style.display = pendingData.length > 0 ? 'none' : 'block';
@@ -595,47 +595,47 @@
     window.fnRenderMaster = function() {
       try {
         fnRenderMasterWarga();
-        console.log("Debug Project List:", window.dk.state.data.project);
-
         const pList = document.getElementById('listProj');
-        if (window.dk.state.data.project.length === 0) {
+        if (!window.dk.state.data.project || window.dk.state.data.project.length === 0) {
           pList.innerHTML = '<p class="text-center text-xs text-slate-400 py-8 italic">Belum ada pos iuran aktif.</p>';
           fnRenderWargaChecklist();
           return;
         }
 
-        pList.innerHTML = window.dk.state.data.project.map(p => `
-        <div class="list-item" style="padding:16px; flex-direction:column; align-items:stretch; gap:8px;">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div style="flex:1;">
-              <p style="font-weight:800;color:var(--tk-text-primary);font-size:15px;margin:0;">${p.nama_project}</p>
-              <p style="font-size:12px;color:var(--tk-text-secondary);margin:4px 0 0;font-weight:700;">
-                ${p.tipe==='bulanan'?'📅 Bulanan':p.tipe==='sekali'?'🎯 Sekali Bayar':'💰 Pos Kas Saja'}
-                ${p.tipe!=='non_iuran' ? `• <span style="color:var(--tk-primary);">${formatRp(p.nominal_default)}</span>` : ''}
-              </p>
-            </div>
-            <div style="display:flex; gap:8px;">
-              <button onclick='fnEditProject(${JSON.stringify(p).replace(/'/g, "&#39;")})' class="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-50 text-blue-500 hover:bg-blue-500 hover:text-white transition"><i class="ph ph-pencil-simple text-lg"></i></button>
-              <button onclick="fnHapusProject('${p.id}')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition"><i class="ph ph-trash text-lg"></i></button>
-            </div>
-          </div>
-          ${p.target_warga && p.target_warga.length > 0 && p.target_warga.length < window.dk.state.data.warga.length ? `
-            <div style="border-top:1px dashed var(--tk-border); padding-top:8px;">
-              <p style="font-size:10px; font-weight:700; color:var(--tk-text-tertiary); text-transform:uppercase;">
-                <i class="ph ph-users"></i> Target: ${p.target_warga.length} Warga Terpilih
-              </p>
-            </div>
-          ` : (p.target_warga && p.target_warga.length >= window.dk.state.data.warga.length ? `
-            <div style="border-top:1px dashed var(--tk-border); padding-top:8px;">
-              <p style="font-size:10px; font-weight:700; color:var(--tk-success); text-transform:uppercase;">
-                <i class="ph ph-users"></i> Target: Semua Warga
-              </p>
-            </div>
-          ` : '')}
-        </div>
-      `).join('');
+        let html = '';
+        window.dk.state.data.project.forEach(p => {
+            let targetLabel = '';
+            if (p.target_warga && p.target_warga.length > 0) {
+                if (p.target_warga.length >= window.dk.state.data.warga.length) {
+                    targetLabel = `<div style="border-top:1px dashed var(--tk-border); padding-top:8px;"><p style="font-size:10px; font-weight:700; color:var(--tk-success); text-transform:uppercase;"><i class="ph ph-users"></i> Target: Semua Warga</p></div>`;
+                } else {
+                    targetLabel = `<div style="border-top:1px dashed var(--tk-border); padding-top:8px;"><p style="font-size:10px; font-weight:700; color:var(--tk-text-tertiary); text-transform:uppercase;"><i class="ph ph-users"></i> Target: ${p.target_warga.length} Warga Terpilih</p></div>`;
+                }
+            }
 
-      fnRenderWargaChecklist();
+            html += `
+            <div class="list-item" style="padding:16px; flex-direction:column; align-items:stretch; gap:8px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div style="flex:1;">
+                  <p style="font-weight:800;color:var(--tk-text-primary);font-size:15px;margin:0;">${p.nama_project}</p>
+                  <p style="font-size:12px;color:var(--tk-text-secondary);margin:4px 0 0;font-weight:700;">
+                    ${p.tipe==='bulanan'?'📅 Bulanan':p.tipe==='sekali'?'🎯 Sekali Bayar':'💰 Pos Kas Saja'}
+                    ${p.tipe!=='non_iuran' ? '• <span style="color:var(--tk-primary); font-weight:bold;">' + formatRp(p.nominal_default) + '</span>' : ''}
+                  </p>
+                </div>
+                <div style="display:flex; gap:8px;">
+                  <button onclick="fnEditProjectById('${p.id}')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-50 text-blue-500 hover:bg-blue-500 hover:text-white transition"><i class="ph ph-pencil-simple text-lg"></i></button>
+                  <button onclick="fnHapusProject('${p.id}')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition"><i class="ph ph-trash text-lg"></i></button>
+                </div>
+              </div>
+              ${targetLabel}
+            </div>`;
+        });
+        pList.innerHTML = html;
+        fnRenderWargaChecklist();
+      } catch(e) {
+        console.error("fnRenderMaster Error:", e);
+      }
     };
 
     window.fnRenderMasterWarga = function() {
@@ -674,7 +674,7 @@
               </p>
             </div>
             <div style="display:flex;gap:8px;">
-              <button onclick='fnOpenEditWarga(${JSON.stringify(w).replace(/'/g, "&#39;")})' class="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-50 text-blue-500 hover:bg-blue-500 hover:text-white transition"><i class="ph ph-pencil-simple text-lg"></i></button>
+              <button onclick="fnOpenEditWargaById('${w.id}')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-50 text-blue-500 hover:bg-blue-500 hover:text-white transition"><i class="ph ph-pencil-simple text-lg"></i></button>
             </div>
           </div>
           <div style="border-top:1px dashed var(--tk-border); padding-top:12px; display:flex; gap:8px;">
@@ -691,6 +691,16 @@
     window.fnWargaNav = function(dir) {
       window.dk.state.wargaPage += dir;
       fnRenderMasterWarga();
+    };
+
+    window.fnEditProjectById = function(id) {
+        const p = window.dk.state.data.project.find(x => x.id === id);
+        if(p) fnEditProject(p);
+    };
+
+    window.fnOpenEditWargaById = function(id) {
+        const w = window.dk.state.data.warga.find(x => x.id === id);
+        if(w) fnOpenEditWarga(w);
     };
 
     window.fnToggleProjType = function() { const val = document.getElementById('admTipe').value; const targetDiv = document.getElementById('divNominalTarget'); const note = document.getElementById('noteNonIuran'); if(val === 'non_iuran') { targetDiv.style.display = 'none'; note.style.display = 'block'; } else { targetDiv.style.display = 'flex'; note.style.display = 'none'; } };
@@ -1082,8 +1092,13 @@
         const statusClass = p.status==='DISETUJUI' ? 'badge-success' : p.status==='DITOLAK' ? 'badge-danger' : 'badge-warning';
         const statusText = p.status==='MENUNGGU VERIFIKASI' ? 'VERIFIKASI' : p.status;
         const iconName = p.status==='DISETUJUI' ? 'check-circle' : p.status==='DITOLAK' ? 'x-circle' : 'clock';
-        return `<div style="background:white;padding:20px;border-radius:20px;border:1px solid var(--tk-border);box-shadow:0 4px 12px rgba(0,0,0,0.02);margin-bottom:16px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;"><p style="font-weight:900;color:var(--tk-primary);font-size:24px;margin:0;letter-spacing:-1px;">${formatRp(p.total_nominal)}</p><span class="badge ${statusClass}"><i class="ph ph-${iconName} text-sm"></i> ${statusText}</span></div><p style="font-size:12px;font-weight:700;color:var(--tk-text-secondary);margin-bottom:12px;display:flex;align-items:center;gap:4px;"><i class="ph ph-calendar-blank"></i> ${new Date(p.tanggal).toLocaleDateString('id-ID')} • ${p.metode}</p><div style="font-size:12px;color:var(--tk-text-secondary);background:#F8FAFC;padding:16px;border-radius:16px;margin-bottom:16px;line-height:1.6;border:1px solid var(--tk-border);">${rincian}</div><div style="display:flex;gap:8px;">${p.bukti_url ? `<button onclick="viewBuktiTransfer('${p.bukti_url}')" class="btn-ghost" style="flex:1;text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:4px;background:#F1F5F9;"><i class="ph ph-image"></i> Foto Bukti</button>` : ''}${p.status==='DISETUJUI' ? `<button onclick='fnShowStruk(${JSON.stringify(p).replace(/'/g, "&#39;")})' class="btn-secondary" style="flex:1;padding:10px;"><i class="ph ph-receipt"></i> Buka Struk</button>` : ''}</div></div>`;
+        return `<div style="background:white;padding:20px;border-radius:20px;border:1px solid var(--tk-border);box-shadow:0 4px 12px rgba(0,0,0,0.02);margin-bottom:16px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;"><p style="font-weight:900;color:var(--tk-primary);font-size:24px;margin:0;letter-spacing:-1px;">${formatRp(p.total_nominal)}</p><span class="badge ${statusClass}"><i class="ph ph-${iconName} text-sm"></i> ${statusText}</span></div><p style="font-size:12px;font-weight:700;color:var(--tk-text-secondary);margin-bottom:12px;display:flex;align-items:center;gap:4px;"><i class="ph ph-calendar-blank"></i> ${new Date(p.tanggal).toLocaleDateString('id-ID')} • ${p.metode}</p><div style="font-size:12px;color:var(--tk-text-secondary);background:#F8FAFC;padding:16px;border-radius:16px;margin-bottom:16px;line-height:1.6;border:1px solid var(--tk-border);">${rincian}</div><div style="display:flex;gap:8px;">${p.bukti_url ? `<button onclick="viewBuktiTransfer('${p.bukti_url}')" class="btn-ghost" style="flex:1;text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:4px;background:#F1F5F9;"><i class="ph ph-image"></i> Foto Bukti</button>` : ''}${p.status==='DISETUJUI' ? `<button onclick="fnShowStrukById('${p.id}')" class="btn-secondary" style="flex:1;padding:10px;"><i class="ph ph-receipt"></i> Buka Struk</button>` : ''}</div></div>`;
       }).join('');
+    };
+
+    window.fnShowStrukById = function(id) {
+        const p = window.dk.state.data.pembayaran.find(x => x.id === id);
+        if(p) fnShowStruk(p);
     };
 
     window.fnShowStruk = function(payment) {
