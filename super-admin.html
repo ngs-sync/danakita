@@ -62,7 +62,10 @@
           <div><label class="text-[10px] font-black uppercase text-slate-500 tracking-widest">Filter Aktor</label><select id="filter-audit-actor" onchange="loadAudit()" class="input-field mt-1 !p-2"><option value="">Semua Aktor</option><option value="superadmin">Super Admin / Finance</option><option value="admin">Admin Pengurus</option><option value="warga">Warga</option></select></div>
           <div><label class="text-[10px] font-black uppercase text-slate-500 tracking-widest">Dari Tgl</label><input type="date" id="filter-audit-start" onchange="loadAudit()" class="input-field mt-1 !p-2"></div>
           <div><label class="text-[10px] font-black uppercase text-slate-500 tracking-widest">Sampai Tgl</label><input type="date" id="filter-audit-end" onchange="loadAudit()" class="input-field mt-1 !p-2"></div>
-          <div class="flex items-end"><button onclick="loadAudit()" class="btn-primary w-full !py-2.5 flex items-center justify-center gap-2"><i class="ph ph-arrows-clockwise"></i> Refresh</button></div>
+          <div class="flex items-end gap-2">
+            <button onclick="loadAudit()" class="btn-primary flex-1 !py-2.5 flex items-center justify-center gap-2"><i class="ph ph-arrows-clockwise"></i> Refresh</button>
+            <button onclick="exportAuditCSV()" class="btn-secondary flex-1 !py-2.5 flex items-center justify-center gap-2 !bg-green-600 !shadow-green-200"><i class="ph ph-file-csv"></i> Export</button>
+          </div>
         </div>
 
         <div class="bg-white rounded-2xl shadow-sm border p-4"><ul id="audit-list" class="space-y-3 text-sm"></ul></div>
@@ -83,10 +86,11 @@
     window.dk = window.dk || {};
     window.initSupabaseClient = function(token) {
       const options = {};
-      if(token) options.global = { headers: { Authorization: `Bearer ${token}` } };
+      if(token && token !== SUPABASE_KEY) options.global = { headers: { Authorization: `Bearer ${token}` } };
       window.dk.db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, options);
     };
-    let currentBillingData = null; let allOrgs = []; const monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    window.initSupabaseClient(); // Initialize immediately
+    let currentBillingData = null; let allOrgs = []; let currentAuditData = []; const monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
     const db = () => window.dk.db;
     function getActiveSession() { try { return JSON.parse(localStorage.getItem('sa_session')); } catch(e) { return null; } }
     const formatDate = (dateStr) => { if(!dateStr) return '-'; const d = new Date(dateStr); return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }); };
@@ -119,7 +123,15 @@
     }
     function handleLogout() { localStorage.removeItem('sa_session'); location.reload(); }
 
-    window.addEventListener('DOMContentLoaded', () => { const savedSession = getActiveSession(); let initialToken = null; if(savedSession) { initialToken = savedSession.token; document.getElementById('login-section').classList.add('!hidden'); document.getElementById('dashboard-section').classList.remove('!hidden'); } window.initSupabaseClient(initialToken); if(initialToken) { initDashboard(); } });
+    window.addEventListener('DOMContentLoaded', () => {
+      const savedSession = getActiveSession();
+      if(savedSession) {
+        window.initSupabaseClient(savedSession.token);
+        document.getElementById('login-section').classList.add('!hidden');
+        document.getElementById('dashboard-section').classList.remove('!hidden');
+        initDashboard();
+      }
+    });
 
     function initDashboard() { const session = getActiveSession(); if(session?.role === 'finance') { document.getElementById('header-role').innerText = 'Finance & Billing'; document.getElementById('btn-superadmins').style.display = 'none'; document.getElementById('btn-tambah-klien').style.display = 'none'; } else { document.getElementById('header-role').innerText = 'Console Management'; } loadClients(); if(session?.role !== 'finance') loadSuperAdmins(); loadAudit(); }
     function showTab(name) { document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active')); document.getElementById('tab-' + name).classList.add('active'); document.querySelectorAll('.tab-btn').forEach(btn => { btn.classList.remove('active-tab'); }); document.getElementById('btn-' + name).classList.add('active-tab'); }
@@ -252,6 +264,7 @@
         if(endFilter) query = query.lte('created_at', endFilter + 'T23:59:59.999Z');
 
         const { data } = await query;
+        currentAuditData = data || [];
         const list = document.getElementById('audit-list'); list.innerHTML = '';
       if (!data || data.length === 0) { list.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">Tidak ada log aktivitas.</p>'; return; }
 
@@ -332,6 +345,25 @@
       }
     }
     function openModal(id) { document.getElementById(id).classList.remove('!hidden'); } function closeModal(id) { document.getElementById(id).classList.add('!hidden'); }
+
+    window.exportAuditCSV = function() {
+      if(!currentAuditData || currentAuditData.length === 0) return alert("Tidak ada data untuk di-export.");
+      let csv = "Waktu,Organisasi,Aksi,Aktor,Tipe Aktor\n";
+      currentAuditData.forEach(log => {
+        let orgName = '-';
+        if(log.organization_id) {
+          const findOrg = allOrgs.find(o => o.id === log.organization_id);
+          orgName = findOrg ? (findOrg.display_name || findOrg.nama) : 'Unknown Org';
+        }
+        csv += `"${new Date(log.created_at).toLocaleString('id-ID')}","${orgName}","${log.action}","${log.actor_name || 'System'}","${log.actor_type}"\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Audit_Log_${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+    };
   </script>
 </body>
 </html>

@@ -272,9 +272,10 @@
     window.dk = window.dk || {};
     window.initSupabaseClient = function(token) {
       const options = {};
-      if(token) { options.global = { headers: { Authorization: `Bearer ${token}` } }; }
+      if(token && token !== SUPABASE_KEY) { options.global = { headers: { Authorization: `Bearer ${token}` } }; }
       window.dk.db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, options);
     };
+    window.initSupabaseClient(); // Initialize with Anon Key immediately
     window.dk.state = { orgId: null, orgCode: '', user: null, token: null, data: { warga:[], project:[], pembayaran:[], detail:[], pengeluaran:[], danaLain:[] }, selectedCart: {}, expenseItems: [{ket:'', nom:''}] };
     const months = ['01','02','03','04','05','06','07','08','09','10','11','12']; const monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
     let currentStrukData = null; const db = () => window.dk.db;
@@ -285,8 +286,11 @@
       if (authSession && authSession.exp > Date.now()) { window.dk.state.orgId = authSession.orgId; window.dk.state.user = authSession.user; window.dk.state.token = authSession.token; window.dk.state.orgCode = orgSession?.code || ''; initialToken = authSession.token; } 
       else if (orgSession && orgSession.exp > Date.now()) { window.dk.state.orgId = orgSession.id; window.dk.state.orgCode = orgSession.code; document.getElementById('org-display-name').innerText = orgSession.name; document.getElementById('modal-org-name').innerText = orgSession.name; document.getElementById('modal-kode').classList.add('hidden'); document.getElementById('loginModal').classList.remove('hidden'); } 
       else { document.getElementById('modal-kode').classList.remove('hidden'); }
-      window.initSupabaseClient(initialToken);
-      if (initialToken) { document.getElementById('org-display-name').innerText = authSession.orgName || orgSession?.name || 'Memuat...'; fnShowApp(); }
+      if (initialToken) {
+        window.initSupabaseClient(initialToken);
+        document.getElementById('org-display-name').innerText = authSession.orgName || orgSession?.name || 'Memuat...';
+        fnShowApp();
+      }
     });
 
     function showLoader(show) { document.getElementById('loader').classList.toggle('hidden', !show); }
