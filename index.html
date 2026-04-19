@@ -319,7 +319,7 @@
       window.dk.db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, options);
     };
     window.initSupabaseClient(); // Initialize with Anon Key immediately
-    window.dk.state = { orgId: null, orgCode: '', user: null, token: null, data: { warga:[], project:[], pembayaran:[], detail:[], pengeluaran:[], danaLain:[] }, selectedCart: {}, expenseItems: [{ket:'', nom:''}], wargaPage: 1 };
+    window.dk.state = { orgId: null, orgCode: '', user: null, token: null, data: { warga:[], project:[], pembayaran:[], detail:[], pengeluaran:[], danaLain:[] }, selectedCart: {}, expenseItems: [{ket:'', nom:''}], wargaPage: 1, hasTargetWargaColumn: true };
     const months = ['01','02','03','04','05','06','07','08','09','10','11','12']; const monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
     let currentStrukData = null; const db = () => window.dk.db;
 
@@ -518,6 +518,7 @@
       showLoader(true);
       const orgId = window.dk.state.orgId;
       try {
+        // Try fetching projects without target_warga first if known missing, but for now we try all
         const [w, p, pay, det, out, inc] = await Promise.all([
           db().from('warga').select('*').eq('organization_id', orgId),
           db().from('project').select('*').eq('organization_id', orgId).eq('status', 'ACTIVE'),
@@ -527,19 +528,27 @@
           db().from('dana_lain').select('*').eq('organization_id', orgId)
         ]);
 
+        let projectData = p.data || [];
         const errs = [w, p, pay, det, out, inc].filter(r => r.error).map(r => r.error.message);
+
         if(errs.length > 0) {
           console.error('Data Fetch Errors:', errs);
           if(errs.some(m => m.includes('target_warga'))) {
-            alert('⚠️ Database Error: Kolom "target_warga" (tipe JSONB) tidak ditemukan di tabel "project". Segera tambahkan kolom tersebut di panel SQL Supabase Anda.');
+            window.dk.state.hasTargetWargaColumn = false;
+            // Retry fetching project without target_warga
+            const { data: pRetry, error: pErr } = await db().from('project').select('id, organization_id, nama_project, tipe, start_periode, nominal_default, target, status').eq('organization_id', orgId).eq('status', 'ACTIVE');
+            if(!pErr) projectData = pRetry;
+            console.warn('⚠️ Feature "Targeted Billing" disabled because "target_warga" column is missing in database.');
           } else {
             alert('⚠️ Ada masalah saat mengambil data: ' + errs.join(', '));
           }
+        } else {
+            window.dk.state.hasTargetWargaColumn = true;
         }
 
         window.dk.state.data = {
           warga: (w.data||[]).filter(x => x.status !== 'INACTIVE'),
-          project: p.data||[],
+          project: projectData,
           pembayaran: pay.data||[],
           detail: det.data||[],
           pengeluaran: out.data||[],
@@ -594,6 +603,12 @@
 
     window.fnRenderMaster = function() {
       try {
+        if (!window.dk.state.hasTargetWargaColumn) {
+          document.getElementById('divTargetWarga').classList.add('hidden');
+        } else {
+          document.getElementById('divTargetWarga').classList.remove('hidden');
+        }
+
         fnRenderMasterWarga();
         const pList = document.getElementById('listProj');
         if (!window.dk.state.data.project || window.dk.state.data.project.length === 0) {
@@ -605,7 +620,7 @@
         let html = '';
         window.dk.state.data.project.forEach(p => {
             let targetLabel = '';
-            if (p.target_warga && p.target_warga.length > 0) {
+            if (window.dk.state.hasTargetWargaColumn && p.target_warga && p.target_warga.length > 0) {
                 if (p.target_warga.length >= window.dk.state.data.warga.length) {
                     targetLabel = `<div style="border-top:1px dashed var(--tk-border); padding-top:8px;"><p style="font-size:10px; font-weight:700; color:var(--tk-success); text-transform:uppercase;"><i class="ph ph-users"></i> Target: Semua Warga</p></div>`;
                 } else {
@@ -831,9 +846,11 @@
           start_periode: start||null,
           nominal_default: nom||0,
           target: target||0,
-          status: 'ACTIVE',
-          target_warga: targetWarga.length > 0 ? targetWarga : []
+          status: 'ACTIVE'
         };
+        if (window.dk.state.hasTargetWargaColumn) {
+          payload.target_warga = targetWarga.length > 0 ? targetWarga : [];
+        }
 
         let res;
         if(id) {
@@ -961,6 +978,7 @@
 
       const wId = window.dk.state.user?.id;
       const myProjects = window.dk.state.data.project.filter(p => {
+        if (!window.dk.state.hasTargetWargaColumn) return true;
         const isTargeted = Array.isArray(p.target_warga) && p.target_warga.length > 0;
         if (!isTargeted) return true;
         return (p.target_warga || []).includes(wId);
@@ -1025,6 +1043,7 @@
         });
       });
       const myProjects = window.dk.state.data.project.filter(p => {
+        if (!window.dk.state.hasTargetWargaColumn) return true;
         const isTargeted = Array.isArray(p.target_warga) && p.target_warga.length > 0;
         if (!isTargeted) return true;
         return (p.target_warga || []).includes(wId);
