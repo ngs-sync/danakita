@@ -9,6 +9,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
   
   <style>
     :root {
@@ -237,10 +238,16 @@
 
     <div id="areaAdmin" style="display:none;">
       <div id="viewAdminVerify" class="tab-content active a-sec">
-        <div style="display:flex; gap:8px; background:white; padding:6px; border-radius:16px; margin-bottom:16px; box-shadow:0 4px 12px rgba(0,0,0,0.03); border:1px solid var(--tk-border);"><button id="btnPending" onclick="fnToggleVerifikasi('PENDING')" style="flex:1; background:#F1F5F9; color:var(--tk-primary); font-weight:800; font-size:13px; padding:12px; border-radius:12px; border:none; cursor:pointer; transition:0.2s;">Menunggu</button><button id="btnProcessed" onclick="fnToggleVerifikasi('PROCESSED')" style="flex:1; color:var(--tk-text-secondary); font-weight:700; font-size:13px; padding:12px; border-radius:12px; border:none; cursor:pointer; background:transparent; transition:0.2s;">Selesai</button></div>
+        <div style="display:flex; gap:6px; background:white; padding:6px; border-radius:18px; margin-bottom:16px; box-shadow:0 4px 12px rgba(0,0,0,0.03); border:1px solid var(--tk-border); overflow-x: auto;">
+          <button id="btnPending" onclick="fnToggleVerifikasi('PENDING')" style="flex:1; background:#F1F5F9; color:var(--tk-primary); font-weight:800; font-size:12px; padding:12px 8px; border-radius:14px; border:none; cursor:pointer; transition:0.2s; white-space:nowrap;">Menunggu</button>
+          <button id="btnProcessed" onclick="fnToggleVerifikasi('PROCESSED')" style="flex:1; color:var(--tk-text-secondary); font-weight:700; font-size:12px; padding:12px 8px; border-radius:14px; border:none; cursor:pointer; background:transparent; transition:0.2s; white-space:nowrap;">Selesai</button>
+          <button id="btnUnpaid" onclick="fnToggleVerifikasi('UNPAID')" style="flex:1; color:var(--tk-text-secondary); font-weight:700; font-size:12px; padding:12px 8px; border-radius:14px; border:none; cursor:pointer; background:transparent; transition:0.2s; white-space:nowrap;">Belum Bayar</button>
+        </div>
         <div class="relative mb-6"><i class="ph ph-magnifying-glass absolute left-4 top-3.5 text-slate-400 text-lg"></i><input type="text" id="searchVerify" onkeyup="fnRenderAdminVerify()" placeholder="Cari Nama atau Blok..." class="pl-11 bg-white border-slate-200 shadow-sm"></div>
-        <div id="pendingList" style="display:flex; flex-direction:column; gap:16px;"></div><div id="processedList" style="display:flex; flex-direction:column; gap:16px; display:none;"></div>
-        <div id="emptyPending" style="background:white; border-radius:24px; padding:40px 20px; text-align:center; border:1px dashed var(--tk-border); display:none;"><i class="ph ph-check-circle text-4xl text-green-400 mb-2"></i><p style="font-size:14px; font-weight:700; color:var(--tk-text-secondary);">Semua beres!</p><p style="font-size:12px; color:var(--tk-text-tertiary); margin-top:4px;">Tidak ada antrean verifikasi.</p></div>
+        <div id="pendingList" style="display:flex; flex-direction:column; gap:16px;"></div>
+        <div id="processedList" style="display:flex; flex-direction:column; gap:16px; display:none;"></div>
+        <div id="unpaidList" style="display:flex; flex-direction:column; gap:16px; display:none;"></div>
+        <div id="emptyPending" style="background:white; border-radius:24px; padding:40px 20px; text-align:center; border:1px dashed var(--tk-border); display:none;"><i class="ph ph-check-circle text-4xl text-green-400 mb-2"></i><p style="font-size:14px; font-weight:700; color:var(--tk-text-secondary);">Semua beres!</p><p style="font-size:12px; color:var(--tk-text-tertiary); margin-top:4px;">Tidak ada data ditampilkan.</p></div>
       </div>
 
       <div id="viewAdminMaster" class="tab-content a-sec">
@@ -299,14 +306,32 @@
       </div>
 
       <div id="viewAdminLaporan" class="tab-content a-sec">
-        <div class="card"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding-bottom:16px; border-bottom:1px dashed var(--tk-border);"><h3 style="font-weight:900; color:var(--tk-text-primary); font-size:18px; margin:0; display:flex; align-items:center; gap:8px;"><i class="ph ph-chart-pie-slice text-[#00A6ED]"></i> LPJ Keuangan</h3><button onclick="fnExportCSV()" class="btn-ghost" style="color:var(--tk-success); background:#DCFCE7; border:none; font-weight:800;"><i class="ph ph-download-simple"></i> Excel</button></div><div id="laporanBukukas"></div></div>
-        <div class="card"><h3 style="font-weight:900; color:var(--tk-text-primary); font-size:18px; margin-bottom:12px; display:flex; align-items:center; gap:8px;"><i class="ph ph-table text-[#FF6B35]"></i> Rekap Status Iuran</h3><div class="relative mb-6"><i class="ph ph-magnifying-glass absolute left-4 top-3.5 text-slate-400 text-lg"></i><input type="text" id="searchRekap" onkeyup="fnRenderLaporan()" placeholder="Cari Nama atau Blok..." class="pl-11 bg-slate-50 border-slate-200"></div><div id="rekapList" style="display:flex; flex-direction:column; gap:16px;"></div></div>
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding-bottom:16px; border-bottom:1px dashed var(--tk-border);">
+            <h3 style="font-weight:900; color:var(--tk-text-primary); font-size:18px; margin:0; display:flex; align-items:center; gap:8px;"><i class="ph ph-chart-pie-slice text-[#00A6ED]"></i> LPJ Keuangan</h3>
+            <button onclick="fnExportExcel()" class="btn-ghost" style="color:var(--tk-success); background:#DCFCE7; border:none; font-weight:800;"><i class="ph ph-download-simple"></i> Excel</button>
+          </div>
+
+          <!-- Filter Tanggal -->
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:24px; background:#F8FAFC; padding:16px; border-radius:16px; border:1px solid var(--tk-border);">
+            <div>
+              <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Tgl Mulai</label>
+              <input type="date" id="lpjStart" onchange="fnRenderLaporan()" class="!py-2 !px-3 !text-xs">
+            </div>
+            <div>
+              <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Tgl Selesai</label>
+              <input type="date" id="lpjEnd" onchange="fnRenderLaporan()" class="!py-2 !px-3 !text-xs">
+            </div>
+          </div>
+
+          <div id="laporanBukukas"></div>
+        </div>
       </div>
     </div>
   </main>
 
   <nav id="navWarga" class="floating-nav hidden"><button onclick="fnSwitchWargaTab('viewDashboard', this)" class="nav-item nav-active"><i class="ph ph-house"></i><span>Beranda</span></button><button onclick="fnSwitchWargaTab('viewIuran', this)" class="nav-item"><i class="ph ph-wallet"></i><span>Bayar</span></button><button onclick="fnSwitchWargaTab('viewRiwayat', this)" class="nav-item"><i class="ph ph-receipt"></i><span>Riwayat</span></button><button onclick="fnSwitchWargaTab('viewProfil', this)" class="nav-item"><i class="ph ph-user-circle"></i><span>Profil</span></button></nav>
-  <nav id="navAdmin" class="floating-nav hidden"><button onclick="fnSwitchAdminTab('viewAdminVerify', this)" class="nav-item nav-active"><i class="ph ph-check-circle"></i><span>Verifikasi</span></button><button onclick="fnSwitchAdminTab('viewAdminMaster', this)" class="nav-item"><i class="ph ph-users"></i><span>Master</span></button><button onclick="fnSwitchAdminTab('viewAdminKas', this)" class="nav-item"><i class="ph ph-money"></i><span>Kas</span></button><button onclick="fnSwitchAdminTab('viewAdminLaporan', this)" class="nav-item"><i class="ph ph-chart-pie-slice"></i><span>Laporan</span></button></nav>
+  <nav id="navAdmin" class="floating-nav hidden"><button onclick="fnSwitchAdminTab('viewAdminVerify', this)" class="nav-item nav-active"><i class="ph ph-check-circle"></i><span>Status Bayar</span></button><button onclick="fnSwitchAdminTab('viewAdminMaster', this)" class="nav-item"><i class="ph ph-users"></i><span>Master</span></button><button onclick="fnSwitchAdminTab('viewAdminKas', this)" class="nav-item"><i class="ph ph-money"></i><span>Kas</span></button><button onclick="fnSwitchAdminTab('viewAdminLaporan', this)" class="nav-item"><i class="ph ph-chart-pie-slice"></i><span>Laporan</span></button></nav>
 
   <script>
     const SUPABASE_URL = "https://tgcpyatrllswhlysqfer.supabase.co";
@@ -570,7 +595,21 @@
         window.open(data.signedUrl, '_blank');
     };
 
-    window.fnToggleVerifikasi = function(type) { const pending = document.getElementById('pendingList'), processed = document.getElementById('processedList'); const btnP = document.getElementById('btnPending'), btnPr = document.getElementById('btnProcessed'); if(type==='PENDING') { pending.style.display = 'flex'; processed.style.display = 'none'; btnP.style.cssText='flex: 1; background: #F1F5F9; color: var(--tk-primary); font-weight: 800; font-size: 13px; padding: 12px; border-radius: 12px; border: none; cursor: pointer; transition: 0.2s;'; btnPr.style.cssText='flex: 1; color: var(--tk-text-secondary); font-weight: 700; font-size: 13px; padding: 12px; border-radius: 12px; border: none; cursor: pointer; background: transparent; transition: 0.2s;'; } else { processed.style.display = 'flex'; pending.style.display = 'none'; btnPr.style.cssText='flex: 1; background: #F1F5F9; color: var(--tk-primary); font-weight: 800; font-size: 13px; padding: 12px; border-radius: 12px; border: none; cursor: pointer; transition: 0.2s;'; btnP.style.cssText='flex: 1; color: var(--tk-text-secondary); font-weight: 700; font-size: 13px; padding: 12px; border-radius: 12px; border: none; cursor: pointer; background: transparent; transition: 0.2s;'; } };
+    window.fnToggleVerifikasi = function(type) {
+      const pending = document.getElementById('pendingList'), processed = document.getElementById('processedList'), unpaid = document.getElementById('unpaidList');
+      const btnP = document.getElementById('btnPending'), btnPr = document.getElementById('btnProcessed'), btnU = document.getElementById('btnUnpaid');
+
+      [pending, processed, unpaid].forEach(el => el.style.display = 'none');
+      [btnP, btnPr, btnU].forEach(btn => btn.style.cssText = 'flex: 1; color: var(--tk-text-secondary); font-weight: 700; font-size: 12px; padding: 12px 8px; border-radius: 14px; border: none; cursor: pointer; background: transparent; transition: 0.2s; white-space:nowrap;');
+
+      const activeStyle = 'flex: 1; background: #F1F5F9; color: var(--tk-primary); font-weight: 800; font-size: 12px; padding: 12px 8px; border-radius: 14px; border: none; cursor: pointer; transition: 0.2s; white-space:nowrap;';
+
+      if(type==='PENDING') { pending.style.display = 'flex'; btnP.style.cssText = activeStyle; }
+      else if(type==='PROCESSED') { processed.style.display = 'flex'; btnPr.style.cssText = activeStyle; }
+      else { unpaid.style.display = 'flex'; btnU.style.cssText = activeStyle; fnRenderUnpaid(); }
+
+      fnRenderAdminVerify();
+    };
 
     window.fnRenderAdminVerify = function() {
       let pendingData = window.dk.state.data.pembayaran.filter(p => p.status === 'MENUNGGU VERIFIKASI'); let approvedData = window.dk.state.data.pembayaran.filter(p => p.status === 'DISETUJUI'); const keyword = document.getElementById('searchVerify')?.value.toLowerCase() || '';
@@ -582,7 +621,105 @@
         const actions = isPending ? `<div style="display:flex;gap:12px;margin-top:20px;border-top:1px dashed var(--tk-border);padding-top:16px;"><button onclick="fnVerify('${p.id}','DISETUJUI')" class="btn-primary" style="flex:1; background: var(--tk-success); box-shadow: none;"><i class="ph ph-check-circle"></i> Setujui</button><button onclick="fnVerify('${p.id}','DITOLAK')" class="btn-danger" style="flex:1;"><i class="ph ph-x-circle"></i> Tolak</button></div>` : (p.status==='DISETUJUI' ? `<button onclick="fnShowStrukById('${p.id}')" class="btn-secondary" style="margin-top:16px;"><i class="ph ph-receipt"></i> Buka Struk</button>` : '');
         return `<div class="card" style="margin-bottom:0;"><div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:12px;"><div style="display:flex; gap:12px; align-items:center;"><div style="width:40px;height:40px;border-radius:12px;background:#F1F5F9;display:flex;align-items:center;justify-content:center;color:var(--tk-primary);font-weight:900;font-size:18px;">${w?.nama?.charAt(0).toUpperCase() || '?'}</div><div><p style="font-weight:900;color:var(--tk-text-primary);font-size:15px;margin:0;">${w?.nama || 'Unknown'}</p><p style="font-size:11px;font-weight:800;color:var(--tk-text-tertiary);text-transform:uppercase;letter-spacing:0.5px;margin:2px 0 0;"><i class="ph ph-house"></i> ${w?.no_rumah || '-'}</p></div></div><span class="badge ${statusClass}"><i class="ph ph-${iconName}"></i> ${p.status}</span></div><p style="font-weight:900;color:var(--tk-primary);font-size:28px;margin:16px 0 4px;letter-spacing:-1px;">${formatRp(p.total_nominal)}</p><p style="font-size:12px;color:var(--tk-text-secondary);font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:4px;"><i class="ph ph-calendar-blank"></i> ${new Date(p.tanggal).toLocaleDateString('id-ID')} • ${p.metode}</p><div style="font-size:13px;color:var(--tk-text-secondary);background:#F8FAFC;padding:16px;border-radius:16px;margin-bottom:12px;border:1px solid var(--tk-border);line-height:1.6;font-weight:600;">${rincian}</div>${p.bukti_url ? `<button onclick="viewBuktiTransfer('${p.bukti_url}')" class="btn-ghost" style="font-size:12px;color:var(--tk-primary);font-weight:800;text-decoration:none;display:flex;align-items:center;gap:6px;background:#F0F9FF;padding:10px 16px;border-radius:12px;width:fit-content;border:none;"><i class="ph ph-image"></i> Lihat Foto Bukti</button>`:''} ${actions}</div>`;
       }
-      document.getElementById('pendingList').innerHTML = pendingData.length > 0 ? pendingData.map(p => renderCard(p, true)).join('') : ''; document.getElementById('processedList').innerHTML = approvedData.length > 0 ? approvedData.map(p => renderCard(p, false)).join('') : ''; document.getElementById('emptyPending').style.display = pendingData.length > 0 ? 'none' : 'block';
+
+      const isUnpaidVisible = document.getElementById('unpaidList').style.display === 'flex';
+      if (isUnpaidVisible) {
+        fnRenderUnpaid();
+      } else {
+        document.getElementById('pendingList').innerHTML = pendingData.length > 0 ? pendingData.map(p => renderCard(p, true)).join('') : '';
+        document.getElementById('processedList').innerHTML = approvedData.length > 0 ? approvedData.map(p => renderCard(p, false)).join('') : '';
+        document.getElementById('emptyPending').style.display = (pendingData.length === 0 && document.getElementById('pendingList').style.display === 'flex') ? 'block' : 'none';
+      }
+    };
+
+    window.fnRenderUnpaid = function() {
+      const container = document.getElementById('unpaidList');
+      const keyword = document.getElementById('searchVerify')?.value.toLowerCase() || '';
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth() + 1;
+
+      let html = '';
+
+      window.dk.state.data.warga.forEach(w => {
+        if(keyword && !w.nama.toLowerCase().includes(keyword) && !w.no_rumah.toLowerCase().includes(keyword)) return;
+
+        let paid = {};
+        window.dk.state.data.pembayaran.filter(p => p.warga_id === w.id && p.status !== 'DITOLAK').forEach(p => {
+          window.dk.state.data.detail.filter(d => d.pembayaran_id === p.id).forEach(d => {
+            if(!paid[d.project_id]) paid[d.project_id]=[]; paid[d.project_id].push(d.periode);
+          });
+        });
+
+        let unpaidInfo = [];
+        let totalUnpaidNominal = 0;
+
+        window.dk.state.data.project.filter(p => p.tipe !== 'non_iuran').forEach(p => {
+          const isTargeted = Array.isArray(p.target_warga) && p.target_warga.length > 0;
+          if (isTargeted && !p.target_warga.includes(w.id)) return;
+
+          if (p.tipe === 'bulanan') {
+            const startPeriode = p.start_periode || `${currentYear}-01`;
+            const [startY, startM] = startPeriode.split('-').map(Number);
+
+            // Batasi hanya tahun berjalan
+            let mStart = (startY < currentYear) ? 1 : startM;
+            if (startY > currentYear) return;
+
+            let missingMonths = [];
+            for (let m = mStart; m <= currentMonth; m++) {
+              const per = `${currentYear}-${m.toString().padStart(2, '0')}`;
+              if (!paid[p.id]?.includes(per)) {
+                missingMonths.push(monthNames[m-1]);
+                totalUnpaidNominal += Number(p.nominal_default);
+              }
+            }
+            if (missingMonths.length > 0) {
+              unpaidInfo.push(`• <b>${p.nama_project}</b>: ${missingMonths.join(', ')}`);
+            }
+          } else if (p.tipe === 'sekali') {
+            if (!paid[p.id]?.includes('SEKALI')) {
+              unpaidInfo.push(`• <b>${p.nama_project}</b>: Belum Bayar`);
+              totalUnpaidNominal += Number(p.nominal_default);
+            }
+          }
+        });
+
+        if (unpaidInfo.length > 0) {
+          html += `
+          <div class="card" style="margin-bottom:0; border-left: 4px solid var(--tk-danger);">
+            <div style="display:flex;justify-content:space-between;align-items:start;">
+              <div style="display:flex; gap:12px; align-items:center;">
+                <div style="width:40px;height:40px;border-radius:12px;background:#FEE2E2;display:flex;align-items:center;justify-content:center;color:var(--tk-danger);font-weight:900;font-size:18px;">${w.nama.charAt(0).toUpperCase()}</div>
+                <div>
+                  <p style="font-weight:900;color:var(--tk-text-primary);font-size:15px;margin:0;">${w.nama}</p>
+                  <p style="font-size:11px;font-weight:800;color:var(--tk-text-tertiary);text-transform:uppercase;letter-spacing:0.5px;margin:2px 0 0;"><i class="ph ph-house"></i> ${w.no_rumah}</p>
+                </div>
+              </div>
+              <div style="text-align:right;">
+                <p style="font-weight:900;color:var(--tk-danger);font-size:18px;margin:0;">${formatRp(totalUnpaidNominal)}</p>
+                <p style="font-size:10px;font-weight:800;color:var(--tk-text-tertiary);text-transform:uppercase;">Total Tunggakan</p>
+              </div>
+            </div>
+            <div style="font-size:12px;color:var(--tk-text-secondary);background:#F8FAFC;padding:12px;border-radius:12px;margin-top:12px;border:1px solid var(--tk-border);line-height:1.6;">
+              ${unpaidInfo.join('<br>')}
+            </div>
+            <button onclick="fnSendReminderWA('${w.nama}', '${w.no_wa}', '${totalUnpaidNominal}', \`${unpaidInfo.join('\n').replace(/<b>|<\/b>/g, '*')}\`)" class="btn-ghost" style="margin-top:12px; width:100%; justify-content:center; background:#DCFCE7; color:#16A34A; border:1px solid #BBF7D0; font-size:12px;">
+              <i class="ph ph-whatsapp-logo text-lg"></i> Kirim Tagihan ke WA
+            </button>
+          </div>`;
+        }
+      });
+
+      container.innerHTML = html || '<p class="text-center text-xs text-slate-400 py-8 italic">Semua warga sudah lunas iuran tahun ini.</p>';
+    };
+
+    window.fnSendReminderWA = function(nama, wa, total, rincian) {
+      let phone = wa || ''; if(phone.startsWith('0')) phone = '62' + phone.substring(1);
+      if(!phone) return alert('Nomor WA tidak tersedia.');
+
+      const text = `Halo Bapak/Ibu *${nama}* 👋\n\nMenginformasikan mengenai status iuran Anda di *${window.dk.state.orgCode}*.\n\n*Rincian Tunggakan Tahun ${new Date().getFullYear()}:*\n${rincian}\n\n*Total Tunggakan: ${formatRp(total)}*\n\nMohon segera melakukan pembayaran melalui portal warga. Terima kasih! 🙏`;
+      window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank');
     };
 
     window.fnVerify = async function(pid, status) {
@@ -937,8 +1074,134 @@
     
     window.fnRenderKas = function() { let optProj = '<option value="">-- Tidak Diambil/Dimasukkan dari Pos --</option>'; window.dk.state.data.project.forEach(p => optProj += `<option value="${p.id}">${p.nama_project}</option>`); document.getElementById('kasOutKategori').innerHTML = optProj; document.getElementById('kasInKategori').innerHTML = optProj; let list = []; window.dk.state.data.danaLain.forEach(d => { const proj = d.kategori_project ? (window.dk.state.data.project.find(p=>p.id===d.kategori_project)?.nama_project || d.kategori_project) : 'Kas Umum'; list.push({ tgl: new Date(d.tanggal), html: `<div class="list-item" style="padding:20px;"><div style="flex:1;"><span class="badge badge-success mb-2"><i class="ph ph-trend-up font-bold"></i> MASUK</span><p style="font-weight:900;color:var(--tk-success);font-size:18px;margin:0 0 6px;letter-spacing:-0.5px;">+ ${formatRp(d.nominal)}</p><p style="font-weight:800;font-size:13px;color:var(--tk-text-primary);margin:0 0 2px;">${d.sumber}</p><p style="font-size:11px;color:var(--tk-text-secondary);margin:0 0 8px;font-weight:600;">Masuk Ke: ${proj}</p><p style="font-size:11px;color:var(--tk-text-tertiary);margin:0;"><i class="ph ph-calendar-blank"></i> ${new Date(d.tanggal).toLocaleDateString('id-ID')} ${d.keterangan ? ' • '+d.keterangan : ''}</p></div></div>` }); }); window.dk.state.data.pengeluaran.forEach(o => { const proj = o.kategori_project ? (window.dk.state.data.project.find(p=>p.id===o.kategori_project)?.nama_project || o.kategori_project) : 'Kas Umum'; list.push({ tgl: new Date(o.tanggal), html: `<div class="list-item" style="padding:20px;"><div style="flex:1;"><span class="badge badge-danger mb-2"><i class="ph ph-trend-down font-bold"></i> KELUAR</span><p style="font-weight:900;color:var(--tk-danger);font-size:18px;margin:0 0 6px;letter-spacing:-0.5px;">- ${formatRp(o.nominal)}</p><p style="font-size:12px;color:var(--tk-text-secondary);margin:0 0 8px;line-height:1.6;font-weight:600;">${o.keterangan.split('\n').join('<br>')}</p><p style="font-size:11px;color:var(--tk-text-tertiary);margin:0;"><i class="ph ph-calendar-blank"></i> ${new Date(o.tanggal).toLocaleDateString('id-ID')} • Diambil dari: ${proj}</p></div></div>` }); }); list.sort((a,b) => b.tgl - a.tgl); document.getElementById('kasList').innerHTML = list.length > 0 ? list.map(l=>l.html).join('') : '<p style="font-size:13px;font-weight:600;color:var(--tk-text-tertiary);text-align:center;padding:32px 16px;">✨ Belum ada mutasi/transaksi kas.</p>'; };
 
-    window.fnRenderLaporan = function() { const approved = window.dk.state.data.pembayaran.filter(p => p.status === 'DISETUJUI'); const totalIn = approved.reduce((s,p)=>s+Number(p.total_nominal),0) + window.dk.state.data.danaLain.reduce((s,d)=>s+Number(d.nominal),0); const totalOut = window.dk.state.data.pengeluaran.reduce((s,o)=>s+Number(o.nominal),0); document.getElementById('laporanBukukas').innerHTML = `<div style="display:flex;justify-content:space-between;padding:16px 20px;background:#F8FAFC;border:1px solid var(--tk-border);border-radius:20px;margin-bottom:12px;"><div><p style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;color:var(--tk-text-secondary);margin:0;display:flex;align-items:center;gap:4px;"><i class="ph ph-trend-up text-green-500 text-lg"></i> Total Pemasukan</p><p style="font-weight:900;color:var(--tk-success);font-size:20px;margin:4px 0 0;letter-spacing:-0.5px;">+ ${formatRp(totalIn)}</p></div></div><div style="display:flex;justify-content:space-between;padding:16px 20px;background:#F8FAFC;border:1px solid var(--tk-border);border-radius:20px;margin-bottom:20px;"><div><p style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;color:var(--tk-text-secondary);margin:0;display:flex;align-items:center;gap:4px;"><i class="ph ph-trend-down text-red-500 text-lg"></i> Total Pengeluaran</p><p style="font-weight:900;color:var(--tk-danger);font-size:20px;margin:4px 0 0;letter-spacing:-0.5px;">- ${formatRp(totalOut)}</p></div></div><div style="display:flex;justify-content:space-between;padding:24px;background:linear-gradient(135deg,var(--tk-primary),var(--tk-primary-dark));border-radius:24px;color:white;box-shadow:0 10px 25px rgba(0,166,237,0.3);"><div><p style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1px;opacity:0.9;margin:0;display:flex;align-items:center;gap:6px;"><i class="ph ph-wallet text-xl"></i> Saldo Kas Akhir</p><p style="font-weight:900;font-size:32px;margin:8px 0 0;letter-spacing:-1px;">${formatRp(totalIn - totalOut)}</p></div></div>`; let rekap = {}; const keyword = document.getElementById('searchRekap')?.value.toLowerCase() || ''; approved.forEach(p => { const w = window.dk.state.data.warga.find(x=>x.id===p.warga_id); const wNamaLengkap = w ? `${w.nama} (${w.no_rumah})` : 'Unknown'; if(keyword && w && !w.nama.toLowerCase().includes(keyword) && !w.no_rumah.toLowerCase().includes(keyword)) return; if(!rekap[wNamaLengkap]) rekap[wNamaLengkap] = {}; window.dk.state.data.detail.filter(d=>d.pembayaran_id===p.id).forEach(d => { const pNama = window.dk.state.data.project.find(pj=>pj.id===d.project_id)?.nama_project || ''; if(!rekap[wNamaLengkap][d.project_id]) rekap[wNamaLengkap][d.project_id] = { nama: pNama, bulan: [] }; rekap[wNamaLengkap][d.project_id].bulan.push(formatBulan(d.periode)); }); }); let rekHtml = ''; for(const w in rekap) { if(Object.keys(rekap[w]).length === 0) continue; rekHtml += `<div style="background:#F8FAFC;padding:20px;border-radius:20px;border:1px solid var(--tk-border);"><p style="font-weight:900;color:var(--tk-text-primary);font-size:15px;margin:0 0 16px;border-bottom:1px dashed var(--tk-border);padding-bottom:12px;display:flex;align-items:center;gap:8px;"><i class="ph ph-user text-[#00A6ED]"></i> ${w}</p>`; for(const pid in rekap[w]) rekHtml += `<div style="margin-bottom:12px;background:white;padding:12px;border-radius:12px;border:1px solid var(--tk-border);"><span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;color:var(--tk-secondary);"><i class="ph ph-folder-open"></i> ${rekap[w][pid].nama}</span><p style="font-size:13px;font-weight:700;color:var(--tk-text-primary);margin:6px 0 0;line-height:1.6;">✅ Lunas: ${rekap[w][pid].bulan.sort().join(', ')}</p></div>`; rekHtml += `</div>`; } document.getElementById('rekapList').innerHTML = rekHtml || '<p style="font-size:13px;font-weight:600;color:var(--tk-text-tertiary);text-align:center;padding:24px;">Belum ada data iuran yang lunas.</p>'; };
-    window.fnExportCSV = function() { let csv = "Tanggal,Keterangan,Tipe,Kas Masuk,Kas Keluar\n"; window.dk.state.data.danaLain.forEach(d => csv += `${new Date(d.tanggal).toLocaleDateString('id-ID')},"${d.sumber} - ${d.keterangan}",MASUK,${d.nominal},0\n`); window.dk.state.data.pengeluaran.forEach(o => csv += `${new Date(o.tanggal).toLocaleDateString('id-ID')},"${o.keterangan.replace(/"/g,'""')}",KELUAR,0,${o.nominal}\n`); window.dk.state.data.pembayaran.filter(p=>p.status==='DISETUJUI').forEach(p => { const w = window.dk.state.data.warga.find(x=>x.id===p.warga_id); csv += `${new Date(p.tanggal).toLocaleDateString('id-ID')},"Iuran: ${w?.nama||'-'} (Blok ${w?.no_rumah||'-'})",MASUK,${p.total_nominal},0\n`; }); const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `LPJ_Keuangan_${new Date().toISOString().split('T')[0]}.csv`; a.click(); };
+    window.fnRenderLaporan = function() {
+      const start = document.getElementById('lpjStart').value;
+      const end = document.getElementById('lpjEnd').value;
+
+      const filterByDate = (dateIso) => {
+        if (!start && !end) return true;
+        const d = dateIso.split('T')[0];
+        if (start && d < start) return false;
+        if (end && d > end) return false;
+        return true;
+      };
+
+      const filterBeforeStart = (dateIso) => {
+        if (!start) return false;
+        return dateIso.split('T')[0] < start;
+      };
+
+      const approved = window.dk.state.data.pembayaran.filter(p => p.status === 'DISETUJUI');
+      const danaLain = window.dk.state.data.danaLain;
+      const pengeluaran = window.dk.state.data.pengeluaran;
+
+      // Hitung Saldo Awal (sebelum tgl mulai)
+      const saldoAwalIn = approved.filter(p => filterBeforeStart(p.tanggal)).reduce((s,p)=>s+Number(p.total_nominal),0) +
+                          danaLain.filter(d => filterBeforeStart(d.tanggal)).reduce((s,d)=>s+Number(d.nominal),0);
+      const saldoAwalOut = pengeluaran.filter(o => filterBeforeStart(o.tanggal)).reduce((s,o)=>s+Number(o.nominal),0);
+      const saldoAwal = saldoAwalIn - saldoAwalOut;
+
+      // Data terfilter sesuai rentang
+      const fApproved = approved.filter(p => filterByDate(p.tanggal));
+      const fDanaLain = danaLain.filter(d => filterByDate(d.tanggal));
+      const fPengeluaran = pengeluaran.filter(o => filterByDate(o.tanggal));
+
+      const totalIn = fApproved.reduce((s,p)=>s+Number(p.total_nominal),0) + fDanaLain.reduce((s,d)=>s+Number(d.nominal),0);
+      const totalOut = fPengeluaran.reduce((s,o)=>s+Number(o.nominal),0);
+      const saldoAkhir = saldoAwal + totalIn - totalOut;
+
+      document.getElementById('laporanBukukas').innerHTML = `
+        <div style="background:#F8FAFC; border:1px solid var(--tk-border); border-radius:20px; padding:20px; margin-bottom:20px;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:12px; border-bottom:1px dashed var(--tk-border); padding-bottom:12px;">
+            <p style="font-size:11px; font-weight:800; color:var(--tk-text-secondary); text-transform:uppercase;">Saldo Awal</p>
+            <p style="font-weight:800; color:var(--tk-text-primary);">${formatRp(saldoAwal)}</p>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+            <p style="font-size:11px; font-weight:800; color:var(--tk-success); text-transform:uppercase;">+ Kas Masuk</p>
+            <p style="font-weight:800; color:var(--tk-success);">${formatRp(totalIn)}</p>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:12px; border-bottom:1px dashed var(--tk-border); padding-bottom:12px;">
+            <p style="font-size:11px; font-weight:800; color:var(--tk-danger); text-transform:uppercase;">- Kas Keluar</p>
+            <p style="font-weight:800; color:var(--tk-danger);">${formatRp(totalOut)}</p>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px;">
+            <p style="font-size:12px; font-weight:900; color:var(--tk-primary); text-transform:uppercase; letter-spacing:1px;">Saldo Akhir</p>
+            <p style="font-weight:900; font-size:24px; color:var(--tk-primary); letter-spacing:-0.5px;">${formatRp(saldoAkhir)}</p>
+          </div>
+        </div>
+      `;
+    };
+    window.fnExportExcel = function() {
+      const start = document.getElementById('lpjStart').value;
+      const end = document.getElementById('lpjEnd').value;
+
+      const filterByDate = (dateIso) => {
+        if (!start && !end) return true;
+        const d = dateIso.split('T')[0];
+        if (start && d < start) return false;
+        if (end && d > end) return false;
+        return true;
+      };
+
+      let rows = [
+        ["Tanggal", "Keterangan", "Tipe", "Kas Masuk", "Kas Keluar"]
+      ];
+
+      // Pemasukan Dana Lain
+      window.dk.state.data.danaLain.filter(d => filterByDate(d.tanggal)).forEach(d => {
+        rows.push([
+          new Date(d.tanggal).toLocaleDateString('id-ID'),
+          `${d.sumber} - ${d.keterangan}`,
+          "MASUK",
+          Number(d.nominal),
+          0
+        ]);
+      });
+
+      // Pengeluaran
+      window.dk.state.data.pengeluaran.filter(o => filterByDate(o.tanggal)).forEach(o => {
+        rows.push([
+          new Date(o.tanggal).toLocaleDateString('id-ID'),
+          o.keterangan,
+          "KELUAR",
+          0,
+          Number(o.nominal)
+        ]);
+      });
+
+      // Iuran Warga
+      window.dk.state.data.pembayaran.filter(p => p.status==='DISETUJUI' && filterByDate(p.tanggal)).forEach(p => {
+        const w = window.dk.state.data.warga.find(x => x.id === p.warga_id);
+        rows.push([
+          new Date(p.tanggal).toLocaleDateString('id-ID'),
+          `Iuran: ${w?.nama||'-'} (Blok ${w?.no_rumah||'-'})`,
+          "MASUK",
+          Number(p.total_nominal),
+          0
+        ]);
+      });
+
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+
+      // Styling Header
+      const range = XLSX.utils.decode_range(ws['!ref']);
+      for (let C = range.s.c; C <= range.e.c; ++C) {
+        const address = XLSX.utils.encode_col(C) + "1";
+        if (!ws[address]) continue;
+        ws[address].s = {
+          font: { bold: true },
+          alignment: { horizontal: "center" },
+          fill: { fgColor: { rgb: "E2E8F0" } }
+        };
+      }
+
+      // Column widths
+      ws['!cols'] = [{wch:15}, {wch:40}, {wch:10}, {wch:15}, {wch:15}];
+
+      XLSX.utils.book_append_sheet(wb, ws, "LPJ Keuangan");
+      XLSX.writeFile(wb, `LPJ_Keuangan_${new Date().toISOString().split('T')[0]}.xlsx`);
+    };
 
     window.fnSetupProfil = function() { const u = window.dk.state.user; if(u && u.type === 'warga') { document.getElementById('profNama').value = u.name; document.getElementById('profRumah').value = u.noRumah; document.getElementById('profWa').value = u.wa || 'Belum diisi'; } };
     window.fnGantiPinWarga = async function() {
