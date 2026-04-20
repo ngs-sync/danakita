@@ -87,6 +87,8 @@
         .printHideArea { display: none !important; }
         .floating-nav { display: none !important; }
     }
+    .print-safe { page-break-inside: avoid; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   </style>
 </head>
 <body>
@@ -173,6 +175,26 @@
 
   <div id="modalEditWarga" class="modal-overlay hidden"><div class="modal-content"><div style="display:flex; justify-content:space-between; align-items: center; margin-bottom:20px;"><h3 style="font-size:18px; font-weight:900;"><i class="ph ph-pencil-simple text-blue-500"></i> Edit Data Warga</h3><button onclick="closeEditModal()" class="btn-ghost !p-2"><i class="ph ph-x text-lg"></i></button></div><input type="hidden" id="editWId"><div style="display:flex; flex-direction:column; gap:16px;"><div><label class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Nama</label><input type="text" id="editWNama" disabled style="background:#F1F5F9; color:#94A3B8; cursor:not-allowed;"></div><div><label class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">No Rumah</label><input type="text" id="editWRumah" class="uppercase"></div><div><label class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">No Whatsapp</label><input type="text" id="editWWa" placeholder="628..."></div><div style="background:#FFF7ED; padding:12px; border-radius:12px; border:1px dashed #FDBA74; margin-top:8px;"><label class="text-[11px] font-bold text-[#EA580C] uppercase tracking-wide">Reset PIN Baru</label><input type="password" id="editWPin" placeholder="Kosongkan jika tidak diubah..." maxlength="6" style="margin-top:4px;"></div><button onclick="fnSimpanEditWarga()" class="btn-primary mt-2">Simpan Perubahan</button></div></div></div>
 
+  <div id="verifyModal" class="modal-overlay hidden">
+    <div class="modal-content" style="max-width: 400px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h3 id="verifyTitle" style="font-size:18px; font-weight:900;">Verifikasi Pembayaran</h3>
+            <button onclick="document.getElementById('verifyModal').classList.add('hidden')" class="btn-ghost !p-2"><i class="ph ph-x text-lg"></i></button>
+        </div>
+        <div id="verifyInfo" style="background:#F8FAFC; padding:16px; border-radius:16px; border:1px solid var(--tk-border); margin-bottom:20px;"></div>
+        <div id="verifyForm" style="display:flex; flex-direction:column; gap:16px;">
+            <div id="divVerifierJab">
+                <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Jabatan Verifikator</label>
+                <input type="text" id="verifierJabatan" placeholder="Cth: Bendahara / Sekretaris" maxlength="50" style="margin-top:4px;">
+            </div>
+            <div style="display:flex; gap:12px; margin-top:8px;">
+                <button onclick="document.getElementById('verifyModal').classList.add('hidden')" class="btn-secondary" style="flex:1;">Batal</button>
+                <button id="btnConfirmVerify" class="btn-primary" style="flex:1;">Proses</button>
+            </div>
+        </div>
+    </div>
+  </div>
+
   <div id="strukModal" class="modal-overlay hidden">
     <div class="modal-content" style="max-width: 400px; padding: 0; background: #F8FAFC; display: flex; flex-direction: column; max-height: 90vh;">
       <div class="printHideArea" style="background: linear-gradient(135deg, var(--tk-primary), var(--tk-primary-dark)); padding: 20px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
@@ -200,13 +222,19 @@
   <main class="main-container">
     <div id="areaWarga">
       <div id="viewDashboard" class="tab-content active w-sec">
-        <div id="cardTagihan" class="card hidden" style="border-left: 6px solid var(--tk-secondary); background: #FFF7ED;">
+        <div id="cardTagihan" class="card hidden" style="border-left: 6px solid var(--tk-secondary); background: #FFF7ED; cursor:pointer;" onclick="const ac=this.querySelector('.accordion-content'); ac.classList.toggle('open'); this.querySelector('.ph-caret-down').style.transform=ac.classList.contains('open')?'rotate(180deg)':'rotate(0deg)'">
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <div>
               <p style="font-size: 11px; font-weight: 800; color: var(--tk-secondary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">Tagihan Belum Dibayar</p>
               <h2 id="valTagihan" style="font-size: 24px; font-weight: 900; color: var(--tk-text-primary); margin: 0; letter-spacing: -0.5px;">Rp 0</h2>
             </div>
-            <button onclick="fnSwitchWargaTab('viewIuran', document.querySelector('#navWarga button:nth-child(2)'))" class="btn-secondary !w-auto !py-2 !px-4 !text-xs">Bayar Sekarang <i class="ph ph-arrow-right"></i></button>
+            <div style="display:flex; gap:8px; align-items:center;">
+                <button onclick="event.stopPropagation(); fnSwitchWargaTab('viewIuran', document.querySelector('#navWarga button:nth-child(2)'))" class="btn-secondary !w-auto !py-2 !px-4 !text-xs">Bayar <i class="ph ph-arrow-right"></i></button>
+                <i class="ph ph-caret-down text-slate-400 font-bold transition"></i>
+            </div>
+          </div>
+          <div class="accordion-content">
+              <div id="listTagihanDetail" style="display:flex; flex-direction:column; gap:8px;"></div>
           </div>
         </div>
         <div class="card-hero"><p class="label"><i class="ph ph-wallet"></i> Saldo Kas Aktif</p><h2 id="cardSaldo" class="amount">Rp 0</h2><div style="display:flex; gap:12px; border-top:1px solid rgba(255,255,255,0.2); padding-top:16px;"><div style="flex:1;"><p style="font-size:10px; opacity:0.8; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px;">Total Masuk</p><p id="totalIn" style="font-weight:800; font-size:14px; margin:0;">Rp 0</p></div><div style="width:1px; background:rgba(255,255,255,0.2);"></div><div style="flex:1;"><p style="font-size:10px; opacity:0.8; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px;">Total Keluar</p><p id="totalOut" style="font-weight:800; font-size:14px; margin:0;">Rp 0</p></div></div></div>
@@ -269,6 +297,18 @@
           <div id="listWarga" style="display:flex; flex-direction:column; gap:12px;"></div>
           <div id="wargaPagination" style="display:flex; justify-content:center; align-items:center; gap:16px; margin-top:20px; padding-top:16px; border-top:1px solid var(--tk-border);"></div>
         </div>
+
+        <div class="card">
+          <h3 style="font-weight:900; color:var(--tk-text-primary); margin-bottom:20px; font-size:18px; display:flex; align-items:center; gap:8px;"><i class="ph ph-user-gear text-[#00A6ED]"></i> Manajemen Tim Admin</h3>
+          <div style="background:#F8FAFC; padding:16px; border-radius:16px; border:1px solid var(--tk-border); margin-bottom:24px; display:flex; flex-direction:column; gap:12px;">
+            <div class="grid-2"><input type="text" id="newAdmUser" placeholder="Username (Unik)"><input type="text" id="newAdmNama" placeholder="Nama Lengkap"></div>
+            <div class="grid-2"><input type="text" id="newAdmJabatan" placeholder="Jabatan (Cth: Bendahara)"><input type="password" id="newAdmPass" placeholder="Password Sementara"></div>
+            <button onclick="fnTambahTimAdmin()" class="btn-primary mt-2"><i class="ph ph-plus-circle"></i> Tambah Admin</button>
+          </div>
+          <h4 style="font-weight:800; color:var(--tk-text-secondary); font-size:12px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--tk-border);">Tim Pengurus Aktif</h4>
+          <div id="listAdmin" style="display:flex; flex-direction:column; gap:12px;"></div>
+        </div>
+
         <div class="card">
           <h3 style="font-weight:900; color:var(--tk-text-primary); margin-bottom:20px; font-size:18px; display:flex; align-items:center; gap:8px;"><i class="ph ph-folder text-[#FF6B35]"></i> Pos Iuran/Kas</h3>
           <div id="formProject" style="background:#FFF7ED; padding:16px; border-radius:16px; border:1px solid #FFEDD5; margin-bottom:24px; display:flex; flex-direction:column; gap:12px;">
@@ -330,7 +370,7 @@
     </div>
   </main>
 
-  <nav id="navWarga" class="floating-nav hidden"><button onclick="fnSwitchWargaTab('viewDashboard', this)" class="nav-item nav-active"><i class="ph ph-house"></i><span>Beranda</span></button><button onclick="fnSwitchWargaTab('viewIuran', this)" class="nav-item"><i class="ph ph-wallet"></i><span>Bayar</span></button><button onclick="fnSwitchWargaTab('viewRiwayat', this)" class="nav-item"><i class="ph ph-receipt"></i><span>Riwayat</span></button><button onclick="fnSwitchWargaTab('viewProfil', this)" class="nav-item"><i class="ph ph-user-circle"></i><span>Profil</span></button></nav>
+  <nav id="navWarga" class="floating-nav hidden"><button onclick="fnSwitchWargaTab('viewDashboard', this)" class="nav-item nav-active"><i class="ph ph-house"></i><span>Beranda</span></button><button onclick="fnSwitchWargaTab('viewIuran', this)" class="nav-item"><i class="ph ph-wallet"></i><span>Tagihan</span></button><button onclick="fnSwitchWargaTab('viewRiwayat', this)" class="nav-item"><i class="ph ph-receipt"></i><span>Riwayat</span></button><button onclick="fnSwitchWargaTab('viewProfil', this)" class="nav-item"><i class="ph ph-user-circle"></i><span>Profil</span></button></nav>
   <nav id="navAdmin" class="floating-nav hidden"><button onclick="fnSwitchAdminTab('viewAdminVerify', this)" class="nav-item nav-active"><i class="ph ph-check-circle"></i><span>Status Bayar</span></button><button onclick="fnSwitchAdminTab('viewAdminMaster', this)" class="nav-item"><i class="ph ph-users"></i><span>Master</span></button><button onclick="fnSwitchAdminTab('viewAdminKas', this)" class="nav-item"><i class="ph ph-money"></i><span>Kas</span></button><button onclick="fnSwitchAdminTab('viewAdminLaporan', this)" class="nav-item"><i class="ph ph-chart-pie-slice"></i><span>Laporan</span></button></nav>
 
   <script>
@@ -346,7 +386,7 @@
     window.initSupabaseClient(); // Initialize with Anon Key immediately
     window.dk.state = { orgId: null, orgCode: '', user: null, token: null, data: { warga:[], project:[], pembayaran:[], detail:[], pengeluaran:[], danaLain:[] }, selectedCart: {}, expenseItems: [{ket:'', nom:''}], wargaPage: 1, hasTargetWargaColumn: true };
     const months = ['01','02','03','04','05','06','07','08','09','10','11','12']; const monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-    let currentStrukData = null; const db = () => window.dk.db;
+    let currentStrukData = null; let currentVerifyPid = null, currentVerifyStatus = null; const db = () => window.dk.db;
 
     window.addEventListener('DOMContentLoaded', () => {
       const orgSession = JSON.parse(localStorage.getItem('dk_org')); const authSession = JSON.parse(localStorage.getItem('dk_session'));
@@ -616,8 +656,13 @@
           pembayaran: pay.data||[],
           detail: det.data||[],
           pengeluaran: out.data||[],
-          danaLain: inc.data||[]
+          danaLain: inc.data||[],
+          admin: []
         };
+        if(window.dk.state.user.role === 'admin' || window.dk.state.user.role === 'super_admin') {
+            const { data: admins } = await db().from('admin').select('*').eq('organization_id', orgId);
+            window.dk.state.data.admin = admins || [];
+        }
       } catch(e) {
         console.error('Fetch Error:', e);
         alert('Gagal terhubung ke server (Network/System Error).');
@@ -657,7 +702,7 @@
         const w = window.dk.state.data.warga.find(x => x.id === p.warga_id); const det = window.dk.state.data.detail.filter(d => d.pembayaran_id === p.id);
         let rincian = det.map(d => { const proj = window.dk.state.data.project.find(x => x.id === d.project_id); return `• ${proj?.nama_project || 'Project'} <span style="font-size:11px;color:var(--tk-text-tertiary);">(${formatBulan(d.periode)})</span>`; }).join('<br>');
         const statusClass = p.status==='DISETUJUI' ? 'badge-success' : p.status==='DITOLAK' ? 'badge-danger' : 'badge-warning'; const iconName = isPending ? 'clock' : 'check-circle';
-        const actions = isPending ? `<div style="display:flex;gap:12px;margin-top:20px;border-top:1px dashed var(--tk-border);padding-top:16px;"><button onclick="fnVerify('${p.id}','DISETUJUI')" class="btn-primary" style="flex:1; background: var(--tk-success); box-shadow: none;"><i class="ph ph-check-circle"></i> Setujui</button><button onclick="fnVerify('${p.id}','DITOLAK')" class="btn-danger" style="flex:1;"><i class="ph ph-x-circle"></i> Tolak</button></div>` : (p.status==='DISETUJUI' ? `<button onclick="fnShowStrukById('${p.id}')" class="btn-secondary" style="margin-top:16px;"><i class="ph ph-receipt"></i> Buka Struk</button>` : '');
+        const actions = isPending ? `<div style="display:flex;gap:12px;margin-top:20px;border-top:1px dashed var(--tk-border);padding-top:16px;"><button onclick="fnVerify('${p.id}','DISETUJUI')" class="btn-primary" style="flex:1; background: var(--tk-success); box-shadow: none;"><i class="ph ph-check-circle"></i> Setujui</button><button onclick="fnVerify('${p.id}','DITOLAK')" class="btn-danger" style="flex:1;"><i class="ph ph-x-circle"></i> Tolak</button></div>` : (p.status==='DISETUJUI' ? `<div style="display:flex; gap:8px; margin-top:16px;"><button onclick="fnShowStrukById('${p.id}')" class="btn-secondary" style="flex:1;"><i class="ph ph-receipt"></i> Buka Struk</button><button onclick="fnVerify('${p.id}','DISETUJUI', true)" class="btn-ghost" style="padding:10px; background:#F1F5F9; border-radius:12px;"><i class="ph ph-pencil-simple"></i></button></div>` : '');
         return `<div class="card" style="margin-bottom:0;"><div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:12px;"><div style="display:flex; gap:12px; align-items:center;"><div style="width:40px;height:40px;border-radius:12px;background:#F1F5F9;display:flex;align-items:center;justify-content:center;color:var(--tk-primary);font-weight:900;font-size:18px;">${w?.nama?.charAt(0).toUpperCase() || '?'}</div><div><p style="font-weight:900;color:var(--tk-text-primary);font-size:15px;margin:0;">${w?.nama || 'Unknown'}</p><p style="font-size:11px;font-weight:800;color:var(--tk-text-tertiary);text-transform:uppercase;letter-spacing:0.5px;margin:2px 0 0;"><i class="ph ph-house"></i> ${w?.no_rumah || '-'}</p></div></div><span class="badge ${statusClass}"><i class="ph ph-${iconName}"></i> ${p.status}</span></div><p style="font-weight:900;color:var(--tk-primary);font-size:28px;margin:16px 0 4px;letter-spacing:-1px;">${formatRp(p.total_nominal)}</p><p style="font-size:12px;color:var(--tk-text-secondary);font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:4px;"><i class="ph ph-calendar-blank"></i> ${new Date(p.tanggal).toLocaleDateString('id-ID')} • ${p.metode}</p><div style="font-size:13px;color:var(--tk-text-secondary);background:#F8FAFC;padding:16px;border-radius:16px;margin-bottom:12px;border:1px solid var(--tk-border);line-height:1.6;font-weight:600;">${rincian}</div>${p.bukti_url ? `<button onclick="viewBuktiTransfer('${p.bukti_url}')" class="btn-ghost" style="font-size:12px;color:var(--tk-primary);font-weight:800;text-decoration:none;display:flex;align-items:center;gap:6px;background:#F0F9FF;padding:10px 16px;border-radius:12px;width:fit-content;border:none;"><i class="ph ph-image"></i> Lihat Foto Bukti</button>`:''} ${actions}</div>`;
       }
 
@@ -786,6 +831,14 @@
         }
 
         fnRenderMasterWarga();
+
+        const listAdmin = document.getElementById('listAdmin');
+        if(listAdmin) {
+            listAdmin.innerHTML = window.dk.state.data.admin.map(adm => {
+                const jabatan = adm.jabatan || adm.permissions?.jabatan || 'Pengurus';
+                return `<div style="background:white; padding:12px; border-radius:12px; border:1px solid var(--tk-border); display:flex; justify-content:space-between; align-items:center;"><div style="display:flex; align-items:center; gap:10px;"><div style="width:32px; height:32px; border-radius:10px; background:var(--tk-primary-light); color:var(--tk-primary); display:flex; align-items:center; justify-content:center;"><i class="ph ph-user text-lg"></i></div><div><p style="font-size:13px; font-weight:800; color:var(--tk-text-primary); margin:0;">${adm.nama_admin}</p><p style="font-size:11px; font-weight:700; color:var(--tk-text-tertiary); margin:0;">@${adm.username} • ${jabatan}</p></div></div><span class="badge badge-primary text-[10px]">${adm.role}</span></div>`;
+            }).join('');
+        }
         const pList = document.getElementById('listProj');
         if (!window.dk.state.data.project || window.dk.state.data.project.length === 0) {
           pList.innerHTML = '<p class="text-center text-xs text-slate-400 py-8 italic">Belum ada pos iuran aktif.</p>';
@@ -959,6 +1012,38 @@
         }
       });
     };
+    window.fnTambahTimAdmin = async function() {
+      const user = document.getElementById('newAdmUser').value.trim(), nama = document.getElementById('newAdmNama').value.trim(), jab = document.getElementById('newAdmJabatan').value.trim(), pass = document.getElementById('newAdmPass').value.trim();
+      if(!user || !nama || !pass) return alert('Username, Nama, dan Password wajib diisi!');
+      if(pass.length < 6) return alert('Password minimal 6 karakter!');
+      showLoader(true);
+      try {
+        const { data: hashed } = await db().rpc('hash_password', { raw_pass: pass });
+        const finalJabatan = jab || 'Pengurus';
+        const payload = { organization_id: window.dk.state.orgId, username: user, nama_admin: nama, password_hash: hashed || pass, role: 'admin', must_change_password: true };
+
+        // Attempt to save jab to column first, fallback to permissions JSONB
+        const { error: err1 } = await db().from('admin').insert([{ ...payload, jabatan: finalJabatan }]);
+        if(err1) {
+            console.warn('Jabatan column might be missing, falling back to permissions JSONB', err1);
+            const { error: err2 } = await db().from('admin').insert([{ ...payload, permissions: { jabatan: finalJabatan } }]);
+            if(err2) throw err2;
+            alert('⚠️ Admin berhasil ditambahkan!\nCatatan: Kolom "jabatan" belum ada di DB, data disimpan di metadata.');
+        } else {
+            alert('✅ Admin baru berhasil ditambahkan!');
+        }
+
+        await db().from('audit_logs').insert([{ organization_id: window.dk.state.orgId, actor_type: 'admin', actor_name: window.dk.state.user.name, action: 'ADMIN_CREATED' }]);
+        document.getElementById('newAdmUser').value=''; document.getElementById('newAdmNama').value=''; document.getElementById('newAdmJabatan').value=''; document.getElementById('newAdmPass').value='';
+        await fnLoadData(); fnRenderMaster();
+      } catch(e) {
+        console.error(e);
+        alert('Gagal menambah admin: ' + (e.message || e));
+      } finally {
+        showLoader(false);
+      }
+    };
+
     window.fnTambahWarga = async function() {
       const nama = document.getElementById('admNama').value.trim(), blok = document.getElementById('admRumah').value.trim().toUpperCase(), wa = document.getElementById('admWa').value.trim();
       if(!nama || !blok) return alert('Nama dan Blok wajib diisi!');
@@ -1288,6 +1373,7 @@
 
       // Hitung Tagihan Belum Dibayar
       let unpaidTotal = 0;
+      let unpaidList = [];
       if(wId) {
         let paid = {};
         window.dk.state.data.pembayaran.filter(p => p.warga_id === wId && p.status !== 'DITOLAK').forEach(p => {
@@ -1309,21 +1395,33 @@
               let mEnd = (y === currentYear) ? currentMonth : 12;
               for(let m = mStart; m <= mEnd; m++) {
                 const periode = `${y}-${m.toString().padStart(2, '0')}`;
-                if(!paid[p.id]?.includes(periode)) unpaidTotal += Number(p.nominal_default);
+                if(!paid[p.id]?.includes(periode)) {
+                    unpaidTotal += Number(p.nominal_default);
+                    unpaidList.push({ name: p.nama_project, periode: formatBulan(periode), nominal: p.nominal_default });
+                }
               }
             }
           } else if(p.tipe === 'sekali') {
-            if(!paid[p.id]?.includes('SEKALI')) unpaidTotal += Number(p.nominal_default);
+            if(!paid[p.id]?.includes('SEKALI')) {
+                unpaidTotal += Number(p.nominal_default);
+                unpaidList.push({ name: p.nama_project, periode: 'Sekali', nominal: p.nominal_default });
+            }
           }
         });
       }
 
       const cardTagihan = document.getElementById('cardTagihan');
+      const detailContainer = document.getElementById('listTagihanDetail');
       if(unpaidTotal > 0) {
         cardTagihan.classList.remove('hidden');
         document.getElementById('valTagihan').innerText = formatRp(unpaidTotal);
+        detailContainer.innerHTML = unpaidList.map(item => `<p style="font-size:12px; color:var(--tk-text-secondary); margin:0; font-weight:700;">• ${item.name} <span style="font-weight:600; color:var(--tk-text-tertiary);">(${item.periode})</span>: <span style="color:var(--tk-secondary);">${formatRp(item.nominal)}</span></p>`).join('');
       } else {
-        cardTagihan.classList.add('hidden');
+        cardTagihan.classList.remove('hidden');
+        cardTagihan.style.background = '#F0FDF4';
+        cardTagihan.style.borderLeftColor = '#22C55E';
+        cardTagihan.onclick = null;
+        cardTagihan.innerHTML = '<p style="font-size:13px; font-weight:800; color:#16A34A; margin:0; text-align:center;">🎉 Tidak ada tagihan bulan ini.</p>';
       }
 
       let html = ''; myProjects.forEach((proj, idx) => { let terkumpulWarga = window.dk.state.data.detail.filter(d => d.project_id === proj.id && approved.some(p => p.id === d.pembayaran_id)).reduce((s,d)=>s+Number(d.nominal),0); let terkumpulLain = window.dk.state.data.danaLain.filter(d => d.kategori_project === proj.id).reduce((s,d)=>s+Number(d.nominal),0); let terkumpul = terkumpulWarga + terkumpulLain; let perc = Number(proj.target) > 0 ? Math.min(Math.round((terkumpul / proj.target) * 100), 100) : 0; let accId = 'acc-' + idx; html += `<div style="background:#F8FAFC;padding:16px;border-radius:16px;border:1px solid var(--tk-border);"><div style="display:flex;justify-content:space-between;margin-bottom:8px;align-items:center;cursor:pointer;" onclick="toggleAccordion('${accId}')"><span style="font-weight:800;color:var(--tk-text-primary);font-size:14px;display:flex;align-items:center;gap:6px;"><i class="ph ph-caret-down text-slate-400 transition" id="icon-${accId}"></i> <i class="ph ph-target text-[#FF6B35]"></i> ${proj.nama_project}</span><span class="badge badge-success">${perc}%</span></div><div style="width:100%;height:8px;background:var(--tk-border);border-radius:4px;overflow:hidden;margin-bottom:8px;"><div style="height:100%;background:linear-gradient(90deg,var(--tk-primary),var(--tk-primary-dark));border-radius:4px;width:${perc}%;transition:width 0.6s cubic-bezier(0.16, 1, 0.3, 1);"></div></div><p style="font-size:11px;font-weight:700;color:var(--tk-text-secondary);text-align:right;">Terkumpul: <span style="color:var(--tk-text-primary);">${formatRp(terkumpul)}</span> ${proj.target>0?' / '+formatRp(proj.target):''}</p><div id="${accId}" class="accordion-content"><p style="font-size:10px;font-weight:800;text-transform:uppercase;color:var(--tk-text-tertiary);margin:0 0 6px;">Rincian Pemasukan Pos</p><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tk-text-secondary);padding:4px 0;"><span style="display:flex;align-items:center;gap:4px;"><i class="ph ph-users text-blue-500"></i> Dari Iuran Warga</span><span style="font-weight:700;color:var(--tk-text-primary);">${formatRp(terkumpulWarga)}</span></div><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tk-text-secondary);padding:4px 0;"><span style="display:flex;align-items:center;gap:4px;"><i class="ph ph-gift text-green-500"></i> Donasi/Sumbangan Luar</span><span style="font-weight:700;color:var(--tk-text-primary);">${formatRp(terkumpulLain)}</span></div></div></div>`; }); document.getElementById('progressContainer').innerHTML = html || '<p style="font-size:13px;font-weight:600;color:var(--tk-text-tertiary);text-align:center;padding:24px;">Belum ada pos kas yang aktif.</p>';
@@ -1425,7 +1523,13 @@
     window.fnShowStruk = function(payment) {
       currentStrukData = payment; const w = window.dk.state.data.warga.find(x => x.id === payment.warga_id); const det = window.dk.state.data.detail.filter(d => d.pembayaran_id === payment.id);
       let rows = det.map(d => { const proj = window.dk.state.data.project.find(x => x.id === d.project_id); return `<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px dashed var(--tk-border);"><span style="font-size:13px;font-weight:700;color:var(--tk-text-primary);">${proj?.nama_project || 'Project'}<br><span style="font-size:11px;font-weight:600;color:var(--tk-text-tertiary);text-transform:uppercase;letter-spacing:0.5px;">${formatBulan(d.periode)}</span></span><span style="font-weight:800;color:var(--tk-text-primary);">${formatRp(d.nominal)}</span></div>`; }).join('');
-      document.getElementById('strukContent').innerHTML = `<div style="text-align:center;margin-bottom:24px;border-bottom:2px solid #F1F5F9;padding-bottom:20px;"><div style="width:48px;height:48px;background:#DCFCE7;color:#16A34A;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 12px;"><i class="ph ph-check-bold"></i></div><p style="font-size:11px;font-weight:800;color:var(--tk-text-tertiary);text-transform:uppercase;letter-spacing:1px;margin:0;">Status Pembayaran</p><h3 style="font-weight:900;color:var(--tk-text-primary);font-size:24px;margin:4px 0 0;letter-spacing:-0.5px;">LUNAS</h3></div><table style="width:100%;font-size:12px;color:var(--tk-text-secondary);margin-bottom:20px;border-collapse:collapse;"><tr><td style="padding:6px 0;font-weight:600;">Warga / Blok</td><td style="text-align:right;font-weight:800;color:var(--tk-text-primary);">${w?.nama || '-'} (${w?.no_rumah || '-'})</td></tr><tr><td style="padding:6px 0;font-weight:600;">Tanggal Lunas</td><td style="text-align:right;font-weight:800;color:var(--tk-text-primary);">${new Date(payment.tanggal).toLocaleDateString('id-ID')}</td></tr><tr><td style="padding:6px 0;font-weight:600;">Metode</td><td style="text-align:right;font-weight:800;color:var(--tk-text-primary);">${payment.metode}</td></tr><tr><td style="padding:6px 0;font-weight:600;">Payment ID</td><td style="text-align:right;font-family:monospace;font-size:10px;font-weight:700;color:var(--tk-text-tertiary);">${payment.id}</td></tr></table><div style="margin-bottom:20px;background:#F8FAFC;padding:12px;border-radius:12px;border:1px solid var(--tk-border);"><p style="font-size:10px;font-weight:800;color:var(--tk-text-tertiary);text-transform:uppercase;letter-spacing:1px;margin:0 0 8px;border-bottom:1px solid var(--tk-border);padding-bottom:8px;">Rincian Transaksi</p>${rows}</div><div style="display:flex;justify-content:space-between;align-items:center;padding-top:16px;border-top:2px dashed var(--tk-border);"><span style="font-weight:800;color:var(--tk-text-tertiary);font-size:13px;text-transform:uppercase;letter-spacing:0.5px;">Total Bayar</span><span style="font-weight:900;color:var(--tk-primary);font-size:28px;letter-spacing:-1px;">${formatRp(payment.total_nominal)}</span></div>`;
+
+      const vBy = payment.verified_by || 'Sistem Otomatis';
+      const vRole = payment.verifier_role || payment.permissions?.verifier_role || (payment.verified_by ? 'Pengurus' : 'Admin Pusat');
+      const vTime = payment.verified_at ? new Date(payment.verified_at) : null;
+      const vDisplay = vTime ? `${vTime.getDate()} ${monthNames[vTime.getMonth()]} ${vTime.getFullYear()}, ${vTime.getHours().toString().padStart(2,'0')}:${vTime.getMinutes().toString().padStart(2,'0')}` : '-';
+
+      document.getElementById('strukContent').innerHTML = `<div style="text-align:center;margin-bottom:24px;border-bottom:2px solid #F1F5F9;padding-bottom:20px;"><div style="width:48px;height:48px;background:#DCFCE7;color:#16A34A;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 12px;"><i class="ph ph-check-bold"></i></div><p style="font-size:11px;font-weight:800;color:var(--tk-text-tertiary);text-transform:uppercase;letter-spacing:1px;margin:0;">Status Pembayaran</p><h3 style="font-weight:900;color:var(--tk-text-primary);font-size:24px;margin:4px 0 0;letter-spacing:-0.5px;">LUNAS</h3></div><table style="width:100%;font-size:12px;color:var(--tk-text-secondary);margin-bottom:20px;border-collapse:collapse;"><tr><td style="padding:6px 0;font-weight:600;">Warga / Blok</td><td style="text-align:right;font-weight:800;color:var(--tk-text-primary);">${w?.nama || '-'} (${w?.no_rumah || '-'})</td></tr><tr><td style="padding:6px 0;font-weight:600;">Tanggal Lunas</td><td style="text-align:right;font-weight:800;color:var(--tk-text-primary);">${new Date(payment.tanggal).toLocaleDateString('id-ID')}</td></tr><tr><td style="padding:6px 0;font-weight:600;">Metode</td><td style="text-align:right;font-weight:800;color:var(--tk-text-primary);">${payment.metode}</td></tr><tr><td style="padding:6px 0;font-weight:600;">Payment ID</td><td style="text-align:right;font-family:monospace;font-size:10px;font-weight:700;color:var(--tk-text-tertiary);">${payment.id}</td></tr></table><div style="margin-bottom:20px;background:#F8FAFC;padding:12px;border-radius:12px;border:1px solid var(--tk-border);"><p style="font-size:10px;font-weight:800;color:var(--tk-text-tertiary);text-transform:uppercase;letter-spacing:1px;margin:0 0 8px;border-bottom:1px solid var(--tk-border);padding-bottom:8px;">Rincian Transaksi</p>${rows}</div><div class="print-safe" style="margin-bottom:20px; padding:12px; border:1px solid var(--tk-border); border-radius:12px; page-break-inside:avoid;"><p style="font-size:10px; font-weight:800; color:var(--tk-text-tertiary); text-transform:uppercase; letter-spacing:1px; margin:0 0 8px;">Diverifikasi Oleh:</p><p style="font-size:13px; font-weight:900; color:var(--tk-text-primary); margin:0;">${vBy}</p><p style="font-size:11px; font-weight:700; color:var(--tk-text-secondary); margin:2px 0 0;">${vRole}</p><p style="font-size:10px; color:var(--tk-text-tertiary); margin:8px 0 0; font-family:monospace;">${vDisplay}</p></div><div style="display:flex;justify-content:space-between;align-items:center;padding-top:16px;border-top:2px dashed var(--tk-border);"><span style="font-weight:800;color:var(--tk-text-tertiary);font-size:13px;text-transform:uppercase;letter-spacing:0.5px;">Total Bayar</span><span style="font-weight:900;color:var(--tk-primary);font-size:28px;letter-spacing:-1px;">${formatRp(payment.total_nominal)}</span></div>`;
       document.getElementById('strukModal').classList.remove('hidden');
     };
     
