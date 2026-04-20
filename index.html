@@ -399,7 +399,15 @@
       if(!kode) { err.textContent = 'Kode wajib diisi!'; err.style.display = 'block'; return; }
       showLoader(true);
       try {
-        const { data: org, error } = await db().from('organizations').select('id, display_name, logo_url, nama').eq('client_code', kode).single();
+        let { data: org, error } = await db().from('organizations').select('id, display_name, logo_url, nama, config').eq('client_code', kode).single();
+
+        // Resiliency: if 'config' column is missing, retry without it
+        if(error && error.code === 'PGRST100' || (error && error.message && error.message.includes('config'))) {
+            const retry = await db().from('organizations').select('id, display_name, logo_url, nama').eq('client_code', kode).single();
+            org = retry.data;
+            error = retry.error;
+        }
+
         if(error || !org) {
           console.error('Validation Error:', error);
           err.textContent = error ? `Error: ${error.message}` : 'Kode organisasi tidak ditemukan!';
@@ -409,7 +417,7 @@
           window.dk.state.orgId = org.id;
           window.dk.state.orgCode = kode;
           const oName = org.display_name || org.nama;
-          localStorage.setItem('dk_org', JSON.stringify({ id: org.id, name: oName, code: kode, exp: Date.now() + 86400000 }));
+          localStorage.setItem('dk_org', JSON.stringify({ id: org.id, name: oName, code: kode, config: org.config || {}, exp: Date.now() + 86400000 }));
           document.getElementById('org-display-name').innerText = oName;
           document.getElementById('modal-kode').classList.add('hidden');
           document.getElementById('loginModal').classList.remove('hidden');
@@ -477,7 +485,10 @@
 
     function fnShowApp() {
       const orgSession = JSON.parse(localStorage.getItem('dk_org'));
-      localStorage.setItem('dk_session', JSON.stringify({ orgId: window.dk.state.orgId, orgName: orgSession?.name, user: window.dk.state.user, token: window.dk.state.token, exp: Date.now() + 86400000 }));
+      const config = orgSession?.config || {};
+      const portal = config.warga_portal || { show_dashboard_saldo: true, show_pos_kas: true };
+
+      localStorage.setItem('dk_session', JSON.stringify({ orgId: window.dk.state.orgId, orgName: orgSession?.name, user: window.dk.state.user, token: window.dk.state.token, config: config, exp: Date.now() + 86400000 }));
       
       // LOGIKA GERBANG PRIVASI (DENGAN SUPER ADMIN BYPASS)
       if (window.dk.state.user.is_agreed_policy === false && window.dk.state.user.role !== 'super_admin') {
@@ -497,6 +508,34 @@
         document.getElementById('areaWarga').style.display = 'block'; document.getElementById('areaAdmin').style.display = 'none';
         document.getElementById('navWarga').classList.remove('hidden'); document.getElementById('navAdmin').classList.add('hidden');
         document.getElementById('logoutBtn').classList.remove('hidden');
+
+        const showSaldo = portal.show_dashboard_saldo !== false;
+        const showPos = portal.show_pos_kas !== false;
+        const saldoCard = document.querySelector('.card-hero');
+        const posCard = document.querySelector('#progressContainer')?.closest('.card');
+        const berandaBtn = document.querySelector('#navWarga button:nth-child(1)');
+
+        if(saldoCard) saldoCard.style.display = showSaldo ? 'block' : 'none';
+        if(posCard) posCard.style.display = showPos ? 'block' : 'none';
+
+        let startTab = 'viewDashboard';
+        let startBtn = berandaBtn;
+
+        if(!showSaldo && !showPos) {
+            if(berandaBtn) berandaBtn.style.display = 'none';
+            const cardTagihan = document.getElementById('cardTagihan');
+            const viewIuran = document.getElementById('viewIuran');
+            if(cardTagihan && viewIuran) viewIuran.prepend(cardTagihan);
+            startTab = 'viewIuran';
+            startBtn = document.querySelector('#navWarga button:nth-child(2)');
+        } else {
+            if(berandaBtn) berandaBtn.style.display = 'flex';
+            const cardTagihan = document.getElementById('cardTagihan');
+            const viewDashboard = document.getElementById('viewDashboard');
+            if(cardTagihan && viewDashboard) viewDashboard.prepend(cardTagihan);
+        }
+        fnSwitchWargaTab(startTab, startBtn);
+
         fnLoadData().then(() => {
           try { fnRenderWargaDash(); fnRenderIuran(); fnRenderRiwayat(); fnSetupProfil(); } catch(e) { console.error("Render Error:", e); alert("Kesalahan tampilan: " + e.message); }
         }).catch(e => { console.error("Load Data Error:", e); alert("Gagal memuat data awal."); });
