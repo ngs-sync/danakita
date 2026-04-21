@@ -439,18 +439,22 @@
       if(!kode) { err.textContent = 'Kode wajib diisi!'; err.style.display = 'block'; return; }
       showLoader(true);
       try {
-        let { data: org, error } = await db().from('organizations').select('id, display_name, logo_url, nama, config').eq('client_code', kode).single();
+        // Try to get all necessary columns including is_active
+        let { data: org, error } = await db().from('organizations').select('id, display_name, logo_url, nama, config, is_active').eq('client_code', kode).single();
 
-        // Resiliency: if 'config' column is missing, retry without it
-        if(error && error.code === 'PGRST100' || (error && error.message && error.message.includes('config'))) {
+        // Resiliency: handle missing columns (config/is_active) by retrying with base columns
+        if(error && (error.message?.includes('column') || error.code?.startsWith('42') || error.code === 'PGRST204')) {
             const retry = await db().from('organizations').select('id, display_name, logo_url, nama').eq('client_code', kode).single();
-            org = retry.data;
-            error = retry.error;
+            if(!retry.error) { org = retry.data; error = null; }
         }
 
         if(error || !org) {
           console.error('Validation Error:', error);
-          err.textContent = error ? `Error: ${error.message}` : 'Kode organisasi tidak ditemukan!';
+          err.textContent = (error && error.code === 'PGRST116') ? 'Kode organisasi tidak ditemukan!' : (error ? `Error [${error.code||'N/A'}]: ${error.message}` : 'Organisasi tidak ditemukan!');
+          err.style.display = 'block';
+        }
+        else if (org.is_active === false) {
+          err.textContent = 'Akses ditangguhkan. Silakan hubungi pengurus pusat.';
           err.style.display = 'block';
         }
         else {
@@ -703,16 +707,24 @@
         let rincian = det.map(d => { const proj = window.dk.state.data.project.find(x => x.id === d.project_id); return `• ${proj?.nama_project || 'Project'} <span style="font-size:11px;color:var(--tk-text-tertiary);">(${formatBulan(d.periode)})</span>`; }).join('<br>');
         const statusClass = p.status==='DISETUJUI' ? 'badge-success' : p.status==='DITOLAK' ? 'badge-danger' : 'badge-warning'; const iconName = isPending ? 'clock' : 'check-circle';
         const actions = isPending ? `<div style="display:flex;gap:12px;margin-top:20px;border-top:1px dashed var(--tk-border);padding-top:16px;"><button onclick="fnVerify('${p.id}','DISETUJUI')" class="btn-primary" style="flex:1; background: var(--tk-success); box-shadow: none;"><i class="ph ph-check-circle"></i> Setujui</button><button onclick="fnVerify('${p.id}','DITOLAK')" class="btn-danger" style="flex:1;"><i class="ph ph-x-circle"></i> Tolak</button></div>` : (p.status==='DISETUJUI' ? `<div style="display:flex; gap:8px; margin-top:16px;"><button onclick="fnShowStrukById('${p.id}')" class="btn-secondary" style="flex:1;"><i class="ph ph-receipt"></i> Buka Struk</button><button onclick="fnVerify('${p.id}','DISETUJUI', true)" class="btn-ghost" style="padding:10px; background:#F1F5F9; border-radius:12px;"><i class="ph ph-pencil-simple"></i></button></div>` : '');
-        return `<div class="card" style="margin-bottom:0;"><div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:12px;"><div style="display:flex; gap:12px; align-items:center;"><div style="width:40px;height:40px;border-radius:12px;background:#F1F5F9;display:flex;align-items:center;justify-content:center;color:var(--tk-primary);font-weight:900;font-size:18px;">${w?.nama?.charAt(0).toUpperCase() || '?'}</div><div><p style="font-weight:900;color:var(--tk-text-primary);font-size:15px;margin:0;">${w?.nama || 'Unknown'}</p><p style="font-size:11px;font-weight:800;color:var(--tk-text-tertiary);text-transform:uppercase;letter-spacing:0.5px;margin:2px 0 0;"><i class="ph ph-house"></i> ${w?.no_rumah || '-'}</p></div></div><span class="badge ${statusClass}"><i class="ph ph-${iconName}"></i> ${p.status}</span></div><p style="font-weight:900;color:var(--tk-primary);font-size:28px;margin:16px 0 4px;letter-spacing:-1px;">${formatRp(p.total_nominal)}</p><p style="font-size:12px;color:var(--tk-text-secondary);font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:4px;"><i class="ph ph-calendar-blank"></i> ${new Date(p.tanggal).toLocaleDateString('id-ID')} • ${p.metode}</p><div style="font-size:13px;color:var(--tk-text-secondary);background:#F8FAFC;padding:16px;border-radius:16px;margin-bottom:12px;border:1px solid var(--tk-border);line-height:1.6;font-weight:600;">${rincian}</div>${p.bukti_url ? `<button onclick="viewBuktiTransfer('${p.bukti_url}')" class="btn-ghost" style="font-size:12px;color:var(--tk-primary);font-weight:800;text-decoration:none;display:flex;align-items:center;gap:6px;background:#F0F9FF;padding:10px 16px;border-radius:12px;width:fit-content;border:none;"><i class="ph ph-image"></i> Lihat Foto Bukti</button>`:''} ${actions}</div>`;
+        const buktiBtn = p.bukti_url ? `<button onclick="viewBuktiTransfer('${p.bukti_url.replace(/'/g, "\\'")}')" class="btn-ghost" style="font-size:12px;color:var(--tk-primary);font-weight:800;text-decoration:none;display:flex;align-items:center;gap:6px;background:#F0F9FF;padding:10px 16px;border-radius:12px;width:fit-content;border:none;"><i class="ph ph-image"></i> Lihat Foto Bukti</button>` : '';
+        return `<div class="card" style="margin-bottom:0;"><div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:12px;"><div style="display:flex; gap:12px; align-items:center;"><div style="width:40px;height:40px;border-radius:12px;background:#F1F5F9;display:flex;align-items:center;justify-content:center;color:var(--tk-primary);font-weight:900;font-size:18px;">${w?.nama?.charAt(0).toUpperCase() || '?'}</div><div><p style="font-weight:900;color:var(--tk-text-primary);font-size:15px;margin:0;">${w?.nama || 'Unknown'}</p><p style="font-size:11px;font-weight:800;color:var(--tk-text-tertiary);text-transform:uppercase;letter-spacing:0.5px;margin:2px 0 0;"><i class="ph ph-house"></i> ${w?.no_rumah || '-'}</p></div></div><span class="badge ${statusClass}"><i class="ph ph-${iconName}"></i> ${p.status}</span></div><p style="font-weight:900;color:var(--tk-primary);font-size:28px;margin:16px 0 4px;letter-spacing:-1px;">${formatRp(p.total_nominal)}</p><p style="font-size:12px;color:var(--tk-text-secondary);font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:4px;"><i class="ph ph-calendar-blank"></i> ${new Date(p.tanggal).toLocaleDateString('id-ID')} • ${p.metode}</p><div style="font-size:13px;color:var(--tk-text-secondary);background:#F8FAFC;padding:16px;border-radius:16px;margin-bottom:12px;border:1px solid var(--tk-border);line-height:1.6;font-weight:600;">${rincian}</div>${buktiBtn} ${actions}</div>`;
       }
 
       const isUnpaidVisible = document.getElementById('unpaidList').style.display === 'flex';
       if (isUnpaidVisible) {
         fnRenderUnpaid();
       } else {
-        document.getElementById('pendingList').innerHTML = pendingData.length > 0 ? pendingData.map(p => renderCard(p, true)).join('') : '';
-        document.getElementById('processedList').innerHTML = approvedData.length > 0 ? approvedData.map(p => renderCard(p, false)).join('') : '';
-        document.getElementById('emptyPending').style.display = (pendingData.length === 0 && document.getElementById('pendingList').style.display === 'flex') ? 'block' : 'none';
+        const isPendingActive = document.getElementById('pendingList').style.display === 'flex';
+        const isProcessedActive = document.getElementById('processedList').style.display === 'flex';
+
+        if(isPendingActive) {
+            document.getElementById('pendingList').innerHTML = pendingData.length > 0 ? pendingData.map(p => renderCard(p, true)).join('') : '';
+            document.getElementById('emptyPending').style.display = pendingData.length === 0 ? 'block' : 'none';
+        } else if(isProcessedActive) {
+            document.getElementById('processedList').innerHTML = approvedData.length > 0 ? approvedData.map(p => renderCard(p, false)).join('') : '';
+            document.getElementById('emptyPending').style.display = approvedData.length === 0 ? 'block' : 'none';
+        }
       }
     };
 
@@ -788,7 +800,7 @@
             <div style="font-size:12px;color:var(--tk-text-secondary);background:#F8FAFC;padding:12px;border-radius:12px;margin-top:12px;border:1px solid var(--tk-border);line-height:1.6;">
               ${unpaidInfo.join('<br>')}
             </div>
-            <button onclick="fnSendReminderWA('${w.nama}', '${w.no_wa}', '${totalUnpaidNominal}', \`${unpaidInfo.join('\n').replace(/<b>|<\/b>/g, '*')}\`)" class="btn-ghost" style="margin-top:12px; width:100%; justify-content:center; background:#DCFCE7; color:#16A34A; border:1px solid #BBF7D0; font-size:12px;">
+            <button onclick="fnSendReminderWA('${w.id}', '${totalUnpaidNominal}')" class="btn-ghost" style="margin-top:12px; width:100%; justify-content:center; background:#DCFCE7; color:#16A34A; border:1px solid #BBF7D0; font-size:12px;">
               <i class="ph ph-whatsapp-logo text-lg"></i> Kirim Tagihan ke WA
             </button>
           </div>`;
@@ -798,28 +810,94 @@
       container.innerHTML = html || '<p class="text-center text-xs text-slate-400 py-8 italic">Semua warga sudah lunas iuran tahun ini.</p>';
     };
 
-    window.fnSendReminderWA = function(nama, wa, total, rincian) {
-      let phone = wa || ''; if(phone.startsWith('0')) phone = '62' + phone.substring(1);
+    window.fnSendReminderWA = function(wId, total) {
+      const w = window.dk.state.data.warga.find(x => x.id === wId);
+      if(!w) return;
+      let phone = w.no_wa || ''; if(phone.startsWith('0')) phone = '62' + phone.substring(1);
       if(!phone) return alert('Nomor WA tidak tersedia.');
 
-      const text = `Halo Bapak/Ibu *${nama}* 👋\n\nMenginformasikan mengenai status iuran Anda di *${window.dk.state.orgCode}*.\n\n*Rincian Tunggakan Tahun ${new Date().getFullYear()}:*\n${rincian}\n\n*Total Tunggakan: ${formatRp(total)}*\n\nMohon segera melakukan pembayaran melalui portal warga. Terima kasih! 🙏`;
+      // Re-calculate rincian to avoid passing large unsafe strings in onclick
+      let paid = {};
+      window.dk.state.data.pembayaran.filter(p => p.warga_id === w.id && p.status !== 'DITOLAK').forEach(p => {
+        window.dk.state.data.detail.filter(d => d.pembayaran_id === p.id).forEach(d => {
+          if(!paid[d.project_id]) paid[d.project_id]=[]; paid[d.project_id].push(d.periode);
+        });
+      });
+
+      let info = [];
+      const now = new Date();
+      window.dk.state.data.project.filter(p => p.tipe !== 'non_iuran').forEach(p => {
+        const isTargeted = Array.isArray(p.target_warga) && p.target_warga.length > 0;
+        if (isTargeted && !p.target_warga.includes(w.id)) return;
+        if (p.tipe === 'bulanan') {
+          for (let m = 1; m <= (now.getMonth() + 1); m++) {
+            const per = `${now.getFullYear()}-${m.toString().padStart(2, '0')}`;
+            if (!paid[p.id]?.includes(per)) info.push(`- ${p.nama_project}: ${monthNames[m-1]}`);
+          }
+        } else if (p.tipe === 'sekali' && !paid[p.id]?.includes('SEKALI')) {
+          info.push(`- ${p.nama_project}: Belum Bayar`);
+        }
+      });
+
+      const rincianText = info.join('\n');
+      const text = `Halo Bapak/Ibu *${w.nama}* 👋\n\nMenginformasikan mengenai status iuran Anda di *${window.dk.state.orgCode}*.\n\n*Rincian Tunggakan Tahun ${now.getFullYear()}:*\n${rincianText}\n\n*Total Tunggakan: ${formatRp(total)}*\n\nMohon segera melakukan pembayaran melalui portal warga. Terima kasih! 🙏`;
       window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank');
     };
 
-    window.fnVerify = async function(pid, status) {
-      if(!confirm(`Yakin ingin ${status==='DISETUJUI'?'menyetujui':'menolak'} pembayaran ini?`)) return;
-      showLoader(true);
-      try {
-        const { error } = await db().from('pembayaran').update({ status: status, verified_by: window.dk.state.user.name, verified_at: new Date().toISOString() }).eq('id', pid);
-        if(error) throw error;
-        await db().from('audit_logs').insert([{ organization_id: window.dk.state.orgId, actor_type: window.dk.state.user.role === 'super_admin' ? 'superadmin' : 'admin', actor_name: window.dk.state.user.name, action: `VERIFY_PAYMENT_${status}_${pid}` }]);
-        await fnLoadData(); fnRenderAdminVerify();
-      } catch(e) {
-        console.error(e);
-        alert('Gagal memproses verifikasi: ' + (e.message || e));
-      } finally {
-        showLoader(false);
-      }
+    window.fnVerify = function(pid, status, isEdit = false) {
+        currentVerifyPid = pid;
+        currentVerifyStatus = status;
+        const p = window.dk.state.data.pembayaran.find(x => x.id === pid);
+        const w = window.dk.state.data.warga.find(x => x.id === p.warga_id);
+
+        document.getElementById('verifyTitle').innerText = isEdit ? 'Edit Verifikator' : 'Verifikasi Pembayaran';
+        document.getElementById('verifyInfo').innerHTML = `
+            <p style="font-size:13px; font-weight:800; color:var(--tk-text-primary); margin:0;">${w?.nama || 'Unknown'}</p>
+            <p style="font-size:11px; color:var(--tk-text-secondary); margin:4px 0 0;">Total: <b>${formatRp(p.total_nominal)}</b></p>
+            <p style="font-size:11px; color:${status==='DISETUJUI'?'var(--tk-success)':'var(--tk-danger)'}; font-weight:900; text-transform:uppercase; margin-top:8px;">${isEdit ? 'Update Data' : 'Set Status: ' + status}</p>
+        `;
+
+        // Auto-fill jabatan from previous session or profile if available
+        document.getElementById('verifierJabatan').value = p.verifier_role || p.permissions?.verifier_role || localStorage.getItem('dk_last_jabatan') || '';
+        document.getElementById('verifyModal').classList.remove('hidden');
+
+        document.getElementById('btnConfirmVerify').onclick = async () => {
+            const jab = document.getElementById('verifierJabatan').value.trim();
+            if(!jab) return alert('Mohon isi jabatan verifikator!');
+
+            localStorage.setItem('dk_last_jabatan', jab);
+            showLoader(true);
+            try {
+                const updateData = {
+                    status: status,
+                    verified_by: window.dk.state.user.name,
+                    verifier_role: jab
+                };
+
+                // Keep timestamp if editing
+                if(!isEdit) {
+                    updateData.verified_at = new Date().toISOString();
+                }
+
+                const { error } = await db().from('pembayaran').update(updateData).eq('id', pid);
+                if(error) throw error;
+
+                await db().from('audit_logs').insert([{
+                    organization_id: window.dk.state.orgId,
+                    actor_type: window.dk.state.user.role === 'super_admin' ? 'superadmin' : 'admin',
+                    actor_name: window.dk.state.user.name,
+                    action: isEdit ? `EDIT_VERIFIER_${pid}` : `VERIFY_PAYMENT_${status}_${pid}`
+                }]);
+
+                document.getElementById('verifyModal').classList.add('hidden');
+                await fnLoadData();
+                fnRenderAdminVerify();
+            } catch(e) {
+                alert('Gagal: ' + (e.message || e));
+            } finally {
+                showLoader(false);
+            }
+        };
     };
 
     window.fnRenderMaster = function() {
@@ -922,7 +1000,7 @@
             </div>
           </div>
           <div style="border-top:1px dashed var(--tk-border); padding-top:12px; display:flex; gap:8px;">
-            <button onclick="fnSendWAInfo('${w.nama}', '${w.no_rumah}', '${w.no_wa}')" class="btn-ghost" style="flex:1; background:#DCFCE7; color:#16A34A; border-color:#BBF7D0; font-size:11px;"><i class="ph ph-whatsapp-logo text-sm"></i> Kirim Info Login</button>
+            <button onclick="fnSendWAInfo('${w.id}')" class="btn-ghost" style="flex:1; background:#DCFCE7; color:#16A34A; border-color:#BBF7D0; font-size:11px;"><i class="ph ph-whatsapp-logo text-sm"></i> Kirim Info Login</button>
           </div>
         </div>
       `).join('');
@@ -974,7 +1052,11 @@
       }
     };
 
-    window.fnSendWAInfo = function(nama, rumah, wa) { let phone = wa || ''; if(phone.startsWith('0')) phone = '62' + phone.substring(1); if(!phone) return alert('Oopss, Nomor WA warga ini belum diisi.'); const link = window.location.href.split('?')[0]; let text = `Halo Bapak/Ibu *${nama}* 👋\nIni adalah akses login Anda untuk Portal Warga di komunitas *${window.dk.state.orgCode}*.\n\n🏢 *ID Komunitas:* ${window.dk.state.orgCode}\n🏠 *No Rumah / Blok:* ${rumah}\n🔑 *PIN Login:* 1234 _(Atau PIN terbaru Anda)_\n\nSilakan akses sistem melalui link berikut:\n🌐 ${link}\n\n_Harap rahasiakan PIN Anda._`; window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank'); };
+    window.fnSendWAInfo = function(wId) {
+      const w = window.dk.state.data.warga.find(x => x.id === wId);
+      if(!w) return;
+      let phone = w.no_wa || ''; if(phone.startsWith('0')) phone = '62' + phone.substring(1); if(!phone) return alert('Oopss, Nomor WA warga ini belum diisi.'); const link = window.location.href.split('?')[0]; let text = `Halo Bapak/Ibu *${w.nama}* 👋\nIni adalah akses login Anda untuk Portal Warga di komunitas *${window.dk.state.orgCode}*.\n\n🏢 *ID Komunitas:* ${window.dk.state.orgCode}\n🏠 *No Rumah / Blok:* ${w.no_rumah}\n🔑 *PIN Login:* 1234 _(Atau PIN terbaru Anda)_\n\nSilakan akses sistem melalui link berikut:\n🌐 ${link}\n\n_Harap rahasiakan PIN Anda._`; window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank');
+    };
     window.fnDownloadTemplateCSV = function() { const csv = "NamaLengkap,NoRumah,NoWhatsApp,PIN_Default\nBudi Santoso,A-01,081234567890,1234\nSiti Rahma,A-02,089876543210,1234"; const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Template_Data_Warga.csv`; a.click(); };
     window.fnProsesImportCSV = function() {
       const f = document.getElementById('csvWarga');
@@ -1023,10 +1105,12 @@
         const payload = { organization_id: window.dk.state.orgId, username: user, nama_admin: nama, password_hash: hashed || pass, role: 'admin', must_change_password: true };
 
         // Attempt to save jab to column first, fallback to permissions JSONB
-        const { error: err1 } = await db().from('admin').insert([{ ...payload, jabatan: finalJabatan }]);
+        let { error: err1 } = await db().from('admin').insert([{ ...payload, jabatan: finalJabatan }]);
+
         if(err1) {
+            if (err1.message?.includes('security policy')) throw err1;
             console.warn('Jabatan column might be missing, falling back to permissions JSONB', err1);
-            const { error: err2 } = await db().from('admin').insert([{ ...payload, permissions: { jabatan: finalJabatan } }]);
+            let { error: err2 } = await db().from('admin').insert([{ ...payload, permissions: { jabatan: finalJabatan } }]);
             if(err2) throw err2;
             alert('⚠️ Admin berhasil ditambahkan!\nCatatan: Kolom "jabatan" belum ada di DB, data disimpan di metadata.');
         } else {
@@ -1038,7 +1122,9 @@
         await fnLoadData(); fnRenderMaster();
       } catch(e) {
         console.error(e);
-        alert('Gagal menambah admin: ' + (e.message || e));
+        let msg = e.message || e;
+        if(msg.includes('security policy')) msg = "Akses Ditolak (RLS Error): Anda tidak memiliki izin untuk menambah admin baru. Silakan hubungi Super Admin untuk memperbaiki kebijakan database.";
+        alert('Gagal menambah admin: ' + msg);
       } finally {
         showLoader(false);
       }
@@ -1165,7 +1251,15 @@
     };
 
     window.fnToggleKasForm = function(type) { document.getElementById('formKasOut').style.display = type!=='OUT' ? 'none' : 'block'; document.getElementById('formKasIn').style.display = type!=='IN' ? 'none' : 'block'; const btnOut = document.getElementById('btnTabOut'), btnIn = document.getElementById('btnTabIn'); if(type==='OUT') { btnOut.style.cssText='flex: 1; background: #FEF2F2; color: var(--tk-danger); font-weight: 800; font-size: 13px; padding: 12px; border-radius: 12px; border: none; cursor: pointer; transition: 0.2s;'; btnIn.style.cssText='flex: 1; color: var(--tk-text-secondary); font-weight: 700; font-size: 13px; padding: 12px; border-radius: 12px; border: none; cursor: pointer; background: transparent; transition: 0.2s;'; fnRenderExpenseItems(); } else { btnIn.style.cssText='flex: 1; background: #DCFCE7; color: var(--tk-success); font-weight: 800; font-size: 13px; padding: 12px; border-radius: 12px; border: none; cursor: pointer; transition: 0.2s;'; btnOut.style.cssText='flex: 1; color: var(--tk-text-secondary); font-weight: 700; font-size: 13px; padding: 12px; border-radius: 12px; border: none; cursor: pointer; background: transparent; transition: 0.2s;'; } };
-    window.fnRenderExpenseItems = function() { const container = document.getElementById('expenseItemsContainer'); let html = '', total = 0; window.dk.state.expenseItems.forEach((it, i) => { total += Number(it.nom||0); html += `<div style="display:flex;gap:12px;align-items:center;"><input type="text" placeholder="Rincian Barang" value="${it.ket}" onchange="window.dk.state.expenseItems[${i}].ket=this.value;fnRenderExpenseItems()" style="flex:1;background:white;"><input type="number" placeholder="Rp" value="${it.nom}" onchange="window.dk.state.expenseItems[${i}].nom=this.value;fnRenderExpenseItems()" style="width:120px;text-align:right;background:white;font-weight:700;">${i>0 ? `<button onclick="fnRemoveExpenseItem(${i})" class="w-10 h-10 flex items-center justify-center rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition"><i class="ph ph-trash text-lg"></i></button>` : '<div style="width:40px;"></div>'}</div>`; }); container.innerHTML = html; document.getElementById('expenseTotal').innerText = formatRp(total); };
+    window.fnRenderExpenseItems = function() {
+      const container = document.getElementById('expenseItemsContainer'); let html = '', total = 0;
+      window.dk.state.expenseItems.forEach((it, i) => {
+        total += Number(it.nom||0);
+        const ketVal = it.ket.replace(/"/g, '&quot;');
+        html += `<div style="display:flex;gap:12px;align-items:center;"><input type="text" placeholder="Rincian Barang" value="${ketVal}" onchange="window.dk.state.expenseItems[${i}].ket=this.value;fnRenderExpenseItems()" style="flex:1;background:white;"><input type="number" placeholder="Rp" value="${it.nom}" onchange="window.dk.state.expenseItems[${i}].nom=this.value;fnRenderExpenseItems()" style="width:120px;text-align:right;background:white;font-weight:700;">${i>0 ? `<button onclick="fnRemoveExpenseItem(${i})" class="w-10 h-10 flex items-center justify-center rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition"><i class="ph ph-trash text-lg"></i></button>` : '<div style="width:40px;"></div>'}</div>`;
+      });
+      container.innerHTML = html; document.getElementById('expenseTotal').innerText = formatRp(total);
+    };
     window.fnAddExpenseItem = function() { window.dk.state.expenseItems.push({ket:'', nom:''}); fnRenderExpenseItems(); }; window.fnRemoveExpenseItem = function(idx) { window.dk.state.expenseItems.splice(idx,1); fnRenderExpenseItems(); };
     window.fnTambahKas = async function(type) {
       showLoader(true);
@@ -1511,7 +1605,9 @@
         const statusClass = p.status==='DISETUJUI' ? 'badge-success' : p.status==='DITOLAK' ? 'badge-danger' : 'badge-warning';
         const statusText = p.status==='MENUNGGU VERIFIKASI' ? 'VERIFIKASI' : p.status;
         const iconName = p.status==='DISETUJUI' ? 'check-circle' : p.status==='DITOLAK' ? 'x-circle' : 'clock';
-        return `<div style="background:white;padding:20px;border-radius:20px;border:1px solid var(--tk-border);box-shadow:0 4px 12px rgba(0,0,0,0.02);margin-bottom:16px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;"><p style="font-weight:900;color:var(--tk-primary);font-size:24px;margin:0;letter-spacing:-1px;">${formatRp(p.total_nominal)}</p><span class="badge ${statusClass}"><i class="ph ph-${iconName} text-sm"></i> ${statusText}</span></div><p style="font-size:12px;font-weight:700;color:var(--tk-text-secondary);margin-bottom:12px;display:flex;align-items:center;gap:4px;"><i class="ph ph-calendar-blank"></i> ${new Date(p.tanggal).toLocaleDateString('id-ID')} • ${p.metode}</p><div style="font-size:12px;color:var(--tk-text-secondary);background:#F8FAFC;padding:16px;border-radius:16px;margin-bottom:16px;line-height:1.6;border:1px solid var(--tk-border);">${rincian}</div><div style="display:flex;gap:8px;">${p.bukti_url ? `<button onclick="viewBuktiTransfer('${p.bukti_url}')" class="btn-ghost" style="flex:1;text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:4px;background:#F1F5F9;"><i class="ph ph-image"></i> Foto Bukti</button>` : ''}${p.status==='DISETUJUI' ? `<button onclick="fnShowStrukById('${p.id}')" class="btn-secondary" style="flex:1;padding:10px;"><i class="ph ph-receipt"></i> Buka Struk</button>` : ''}</div></div>`;
+        const bUrl = p.bukti_url ? p.bukti_url.replace(/'/g, "\\'") : '';
+        const bBtn = bUrl ? `<button onclick="viewBuktiTransfer('${bUrl}')" class="btn-ghost" style="flex:1;text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:4px;background:#F1F5F9;"><i class="ph ph-image"></i> Foto Bukti</button>` : '';
+        return `<div style="background:white;padding:20px;border-radius:20px;border:1px solid var(--tk-border);box-shadow:0 4px 12px rgba(0,0,0,0.02);margin-bottom:16px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;"><p style="font-weight:900;color:var(--tk-primary);font-size:24px;margin:0;letter-spacing:-1px;">${formatRp(p.total_nominal)}</p><span class="badge ${statusClass}"><i class="ph ph-${iconName} text-sm"></i> ${statusText}</span></div><p style="font-size:12px;font-weight:700;color:var(--tk-text-secondary);margin-bottom:12px;display:flex;align-items:center;gap:4px;"><i class="ph ph-calendar-blank"></i> ${new Date(p.tanggal).toLocaleDateString('id-ID')} • ${p.metode}</p><div style="font-size:12px;color:var(--tk-text-secondary);background:#F8FAFC;padding:16px;border-radius:16px;margin-bottom:16px;line-height:1.6;border:1px solid var(--tk-border);">${rincian}</div><div style="display:flex;gap:8px;">${bBtn}${p.status==='DISETUJUI' ? `<button onclick="fnShowStrukById('${p.id}')" class="btn-secondary" style="flex:1;padding:10px;"><i class="ph ph-receipt"></i> Buka Struk</button>` : ''}</div></div>`;
       }).join('');
     };
 
