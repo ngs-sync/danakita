@@ -240,8 +240,14 @@
         const jab = document.getElementById('new-adm-jabatan').value.trim() || 'Pengurus';
         const { data: hashedPass } = await db().rpc('hash_password', { raw_pass: p });
         let { error } = await db().from('admin').insert([{ organization_id: orgId, username: u, nama_admin: n, password_hash: hashedPass || p, role: 'admin', jabatan: jab }]);
-        if(error && (error.code === 'PGRST100' || error.message.includes('jabatan'))) {
-            error = (await db().from('admin').insert([{ organization_id: orgId, username: u, nama_admin: n, password_hash: hashedPass || p, role: 'admin', permissions: { jabatan: jab } }])).error;
+        if(error) {
+            if (error.message?.includes('security policy')) {
+                alert("Akses Ditolak (RLS Error): Anda tidak memiliki izin database untuk menambah admin. Silakan periksa kebijakan RLS di dashboard Supabase Anda.");
+                return;
+            }
+            if (error.code === 'PGRST100' || error.message.includes('jabatan')) {
+                error = (await db().from('admin').insert([{ organization_id: orgId, username: u, nama_admin: n, password_hash: hashedPass || p, role: 'admin', permissions: { jabatan: jab } }])).error;
+            }
         }
         await db().from('audit_logs').insert([{ organization_id: orgId, actor_type: 'superadmin', actor_name: getActiveSession()?.nama, action: 'ADD_CLIENT_ADMIN' }]);
         if(error) { alert("Gagal tambah: " + error.message); return; }
