@@ -254,11 +254,9 @@
             <div style="background:#F8FAFC; padding:20px; border-radius:20px; border:1px solid var(--tk-border); margin-bottom:20px;">
               <div style="margin-bottom:16px;"><label style="display:block; font-size:12px; font-weight:800; color:var(--tk-text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">Metode Pembayaran</label><select id="metodeBayar" onchange="fnToggleBukti()" style="background:white; border-color:#E2E8F0;"><option value="">-- Pilih Metode --</option><option value="TRANSFER">Transfer Bank</option><option value="CASH">Titip Tunai (Cash)</option></select></div>
               <div id="bankInfoSection" style="display:none; background:white; padding:16px; border-radius:14px; border:1px dashed var(--tk-primary); margin-bottom:16px;">
-                <p style="font-size:10px; font-weight:800; color:var(--tk-primary); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Tujuan Transfer:</p>
-                <div id="bankDetailDisplay">
-                    <p style="font-size:14px; font-weight:900; color:var(--tk-text-primary); margin:0;" id="txtBankName">-</p>
-                    <p style="font-size:18px; font-weight:900; color:var(--tk-primary); margin:4px 0;" id="txtBankNo">-</p>
-                    <p style="font-size:12px; font-weight:700; color:var(--tk-text-secondary); margin:0;" id="txtBankOwner">-</p>
+                <p style="font-size:10px; font-weight:800; color:var(--tk-primary); text-transform:uppercase; letter-spacing:1px; margin-bottom:12px;">Tujuan Transfer:</p>
+                <div id="bankDetailDisplay" style="display:flex; flex-direction:column; gap:12px;">
+                    <!-- List of accounts will be here -->
                 </div>
               </div>
               <div id="buktiSection" style="display:none;"><label style="display:block; font-size:12px; font-weight:800; color:var(--tk-text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">Upload Bukti Transfer</label><div style="display:flex; gap:8px; flex-direction:column;"><input type="file" id="fileBukti" accept="image/*" style="background:white; border-color:#E2E8F0; padding:10px;"><p style="font-size:10px; color:var(--tk-text-tertiary);"><i class="ph ph-info"></i> Otomatis dikompres hemat kuota (~100KB).</p></div></div>
@@ -288,16 +286,22 @@
 
       <div id="viewAdminMaster" class="tab-content a-sec">
         <div class="card">
-          <h3 style="font-weight:900; color:var(--tk-text-primary); margin-bottom:20px; font-size:18px; display:flex; align-items:center; gap:8px;"><i class="ph ph-bank text-[#00A6ED]"></i> Rekening Bendahara</h3>
-          <div style="background:#F0F9FF; padding:16px; border-radius:16px; border:1px solid #B9E6FE; display:flex; flex-direction:column; gap:12px;">
-            <p class="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Detail Rekening Untuk Transfer Warga</p>
+          <h3 style="font-weight:900; color:var(--tk-text-primary); margin-bottom:20px; font-size:18px; display:flex; align-items:center; gap:8px;"><i class="ph ph-bank text-[#00A6ED]"></i> Rekening Pembayaran</h3>
+          <div id="formRekening" style="background:#F0F9FF; padding:16px; border-radius:16px; border:1px solid #B9E6FE; display:flex; flex-direction:column; gap:12px; margin-bottom:24px;">
+            <input type="hidden" id="editRekId">
+            <p id="labelRekening" class="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Tambah Rekening Baru</p>
             <div class="grid-2">
                 <input type="text" id="cfgBankName" placeholder="Nama Bank (Cth: BCA)">
                 <input type="text" id="cfgBankNo" placeholder="Nomor Rekening">
             </div>
             <input type="text" id="cfgBankOwner" placeholder="Nama Pemilik Rekening (Atas Nama)">
-            <button onclick="fnSimpanConfigBank()" class="btn-primary mt-2 !bg-blue-600"><i class="ph ph-floppy-disk"></i> Simpan Rekening</button>
+            <div style="display:flex; gap:8px;">
+                <button id="btnCancelRek" onclick="fnResetRekeningForm()" class="btn-ghost hidden !bg-slate-200 !text-slate-600 !flex-1">Batal</button>
+                <button id="btnSaveRek" onclick="fnSimpanRekening()" class="btn-primary !bg-blue-600 !flex-[2]"><i class="ph ph-plus-circle"></i> Simpan Rekening</button>
+            </div>
           </div>
+          <h4 style="font-weight:800; color:var(--tk-text-secondary); font-size:12px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--tk-border);">Daftar Rekening Aktif</h4>
+          <div id="listRekening" style="display:flex; flex-direction:column; gap:12px;"></div>
         </div>
 
         <div class="card">
@@ -935,12 +939,7 @@
 
     window.fnRenderMaster = function() {
       try {
-        const orgSession = JSON.parse(localStorage.getItem('dk_org'));
-        const config = orgSession?.config || {};
-        const bank = config.bank_rekening || { nama_bank: '', no_rek: '', atas_nama: '' };
-        document.getElementById('cfgBankName').value = bank.nama_bank || '';
-        document.getElementById('cfgBankNo').value = bank.no_rek || '';
-        document.getElementById('cfgBankOwner').value = bank.atas_nama || '';
+        fnRenderBankAccounts();
 
         if (!window.dk.state.hasTargetWargaColumn) {
           document.getElementById('divTargetWarga').classList.add('hidden');
@@ -954,7 +953,14 @@
         if(listAdmin) {
             listAdmin.innerHTML = window.dk.state.data.admin.map(adm => {
                 const jabatan = adm.jabatan || adm.permissions?.jabatan || 'Pengurus';
-                return `<div style="background:white; padding:12px; border-radius:12px; border:1px solid var(--tk-border); display:flex; justify-content:space-between; align-items:center;"><div style="display:flex; align-items:center; gap:10px;"><div style="width:32px; height:32px; border-radius:10px; background:var(--tk-primary-light); color:var(--tk-primary); display:flex; align-items:center; justify-content:center;"><i class="ph ph-user text-lg"></i></div><div><p style="font-size:13px; font-weight:800; color:var(--tk-text-primary); margin:0;">${adm.nama_admin}</p><p style="font-size:11px; font-weight:700; color:var(--tk-text-tertiary); margin:0;">@${adm.username} • ${jabatan}</p></div></div><span class="badge badge-primary text-[10px]">${adm.role}</span></div>`;
+                const isMe = window.dk.state.user?.id === adm.id;
+                const actions = isMe ? '' : `
+                    <div style="display:flex; gap:6px;">
+                        <button onclick="fnEditAdminById('${adm.id}')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-50 text-blue-500 hover:bg-blue-500 hover:text-white transition"><i class="ph ph-pencil-simple"></i></button>
+                        <button onclick="fnHapusAdmin('${adm.id}')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition"><i class="ph ph-trash"></i></button>
+                    </div>
+                `;
+                return `<div style="background:white; padding:12px; border-radius:12px; border:1px solid var(--tk-border); display:flex; justify-content:space-between; align-items:center;"><div style="display:flex; align-items:center; gap:10px;"><div style="width:32px; height:32px; border-radius:10px; background:#F1F5F9; color:var(--tk-primary); display:flex; align-items:center; justify-content:center;"><i class="ph ph-user text-lg"></i></div><div><p style="font-size:13px; font-weight:800; color:var(--tk-text-primary); margin:0;">${adm.nama_admin}${isMe?' (Saya)':''}</p><p style="font-size:11px; font-weight:700; color:var(--tk-text-tertiary); margin:0;">@${adm.username} • ${jabatan}</p></div></div>${actions}</div>`;
             }).join('');
         }
         const pList = document.getElementById('listProj');
@@ -1134,31 +1140,74 @@
         }
       });
     };
+    window.fnEditAdminById = function(id) {
+        const adm = window.dk.state.data.admin.find(x => x.id === id);
+        if(adm) {
+            document.getElementById('newAdmUser').value = adm.username;
+            document.getElementById('newAdmNama').value = adm.nama_admin;
+            document.getElementById('newAdmJabatan').value = adm.jabatan || adm.permissions?.jabatan || '';
+            document.getElementById('newAdmPass').placeholder = '(Kosongkan jika tidak ganti)';
+            window.dk.state.editingAdminId = id;
+            document.querySelector('#viewAdminMaster button[onclick="fnTambahTimAdmin()"]').innerHTML = '<i class="ph ph-floppy-disk"></i> Update Admin';
+            document.getElementById('newAdmUser').parentElement.parentElement.scrollIntoView({ behavior: 'smooth' });
+        }
+    };
+
+    window.fnHapusAdmin = async function(id) {
+        if(!confirm('Hapus akses admin ini?')) return;
+        showLoader(true);
+        try {
+            const { error } = await db().from('admin').delete().eq('id', id);
+            if(error) throw error;
+            await fnLoadData();
+            fnRenderMaster();
+            alert('✅ Admin berhasil dihapus.');
+        } catch(e) {
+            alert('Gagal hapus: ' + e.message);
+        } finally {
+            showLoader(false);
+        }
+    };
+
     window.fnTambahTimAdmin = async function() {
       const user = document.getElementById('newAdmUser').value.trim(), nama = document.getElementById('newAdmNama').value.trim(), jab = document.getElementById('newAdmJabatan').value.trim(), pass = document.getElementById('newAdmPass').value.trim();
-      if(!user || !nama || !pass) return alert('Username, Nama, dan Password wajib diisi!');
-      if(pass.length < 6) return alert('Password minimal 6 karakter!');
+      if(!user || !nama) return alert('Username dan Nama wajib diisi!');
+
       showLoader(true);
       try {
-        const { data: hashed } = await db().rpc('hash_password', { raw_pass: pass });
+        const editId = window.dk.state.editingAdminId;
         const finalJabatan = jab || 'Pengurus';
-        const payload = { organization_id: window.dk.state.orgId, username: user, nama_admin: nama, password_hash: hashed || pass, role: 'admin', must_change_password: true };
+        let payload = { organization_id: window.dk.state.orgId, username: user, nama_admin: nama, role: 'admin' };
 
-        // Attempt to save jab to column first, fallback to permissions JSONB
-        let { error: err1 } = await db().from('admin').insert([{ ...payload, jabatan: finalJabatan }]);
-
-        if(err1) {
-            if (err1.message?.includes('security policy')) throw err1;
-            console.warn('Jabatan column might be missing, falling back to permissions JSONB', err1);
-            let { error: err2 } = await db().from('admin').insert([{ ...payload, permissions: { jabatan: finalJabatan } }]);
-            if(err2) throw err2;
-            alert('⚠️ Admin berhasil ditambahkan!\nCatatan: Kolom "jabatan" belum ada di DB, data disimpan di metadata.');
-        } else {
-            alert('✅ Admin baru berhasil ditambahkan!');
+        if(pass) {
+            if(pass.length < 6) { alert('Password minimal 6 karakter!'); showLoader(false); return; }
+            const { data: hashed } = await db().rpc('hash_password', { raw_pass: pass });
+            payload.password_hash = hashed || pass;
         }
 
-        await db().from('audit_logs').insert([{ organization_id: window.dk.state.orgId, actor_type: 'admin', actor_name: window.dk.state.user.name, action: 'ADMIN_CREATED' }]);
-        document.getElementById('newAdmUser').value=''; document.getElementById('newAdmNama').value=''; document.getElementById('newAdmJabatan').value=''; document.getElementById('newAdmPass').value='';
+        let res;
+        if(editId) {
+            res = await db().from('admin').update({ ...payload, jabatan: finalJabatan }).eq('id', editId);
+            if(res.error && (res.error.code === 'PGRST100' || res.error.message.includes('jabatan'))) {
+                res = await db().from('admin').update({ ...payload, permissions: { jabatan: finalJabatan } }).eq('id', editId);
+            }
+        } else {
+            if(!pass) { alert('Password wajib diisi untuk admin baru!'); showLoader(false); return; }
+            res = await db().from('admin').insert([{ ...payload, jabatan: finalJabatan, must_change_password: true }]);
+            if(res.error && (res.error.code === 'PGRST100' || res.error.message.includes('jabatan'))) {
+                res = await db().from('admin').insert([{ ...payload, permissions: { jabatan: finalJabatan }, must_change_password: true }]);
+            }
+        }
+
+        if(res.error) throw res.error;
+
+        alert(editId ? '✅ Data admin berhasil diupdate!' : '✅ Admin baru berhasil ditambahkan!');
+        await db().from('audit_logs').insert([{ organization_id: window.dk.state.orgId, actor_type: 'admin', actor_name: window.dk.state.user.name, action: editId ? 'ADMIN_UPDATED' : 'ADMIN_CREATED' }]);
+
+        document.getElementById('newAdmUser').value=''; document.getElementById('newAdmNama').value=''; document.getElementById('newAdmJabatan').value=''; document.getElementById('newAdmPass').value=''; document.getElementById('newAdmPass').placeholder = 'Password Sementara';
+        window.dk.state.editingAdminId = null;
+        document.querySelector('#viewAdminMaster button[onclick="fnTambahTimAdmin()"]').innerHTML = '<i class="ph ph-plus-circle"></i> Tambah Admin';
+
         await fnLoadData(); fnRenderMaster();
       } catch(e) {
         console.error(e);
@@ -1613,14 +1662,96 @@
 
         if(isTransfer) {
             const orgSession = JSON.parse(localStorage.getItem('dk_org'));
-            const bank = orgSession?.config?.bank_rekening || { nama_bank: 'Belum Diatur', no_rek: '-', atas_nama: '-' };
-            document.getElementById('txtBankName').innerText = bank.nama_bank;
-            document.getElementById('txtBankNo').innerText = bank.no_rek;
-            document.getElementById('txtBankOwner').innerText = 'A.N ' + bank.atas_nama;
+            const accounts = orgSession?.config?.bank_accounts || [];
+            const container = document.getElementById('bankDetailDisplay');
+
+            if(accounts.length === 0) {
+                container.innerHTML = '<p style="text-align:center; font-size:12px; color:var(--tk-text-tertiary); italic;">Rekening belum diatur oleh admin.</p>';
+            } else {
+                container.innerHTML = accounts.map(acc => `
+                    <div style="background:#F8FAFC; padding:12px; border-radius:12px; border:1px solid #E2E8F0;">
+                        <p style="font-size:13px; font-weight:900; color:var(--tk-text-primary); margin:0;">${acc.nama_bank}</p>
+                        <p style="font-size:16px; font-weight:900; color:var(--tk-primary); margin:2px 0;">${acc.no_rek}</p>
+                        <p style="font-size:11px; font-weight:700; color:var(--tk-text-secondary); margin:0;">A.N ${acc.atas_nama}</p>
+                    </div>
+                `).join('');
+            }
         }
     };
 
-    window.fnSimpanConfigBank = async function() {
+    window.fnRenderBankAccounts = function() {
+        const orgSession = JSON.parse(localStorage.getItem('dk_org'));
+        const accounts = orgSession?.config?.bank_accounts || [];
+        const container = document.getElementById('listRekening');
+
+        if(!container) return;
+        if(accounts.length === 0) {
+            container.innerHTML = '<p class="text-center text-xs text-slate-400 py-4 italic">Belum ada rekening terdaftar.</p>';
+            return;
+        }
+
+        container.innerHTML = accounts.map((acc, idx) => `
+            <div style="background:white; padding:12px; border-radius:12px; border:1px solid var(--tk-border); display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <p style="font-size:13px; font-weight:800; color:var(--tk-text-primary); margin:0;">${acc.nama_bank}</p>
+                    <p style="font-size:11px; font-weight:700; color:var(--tk-primary); margin:0;">${acc.no_rek} • ${acc.atas_nama}</p>
+                </div>
+                <div style="display:flex; gap:6px;">
+                    <button onclick="fnEditRekening(${idx})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-50 text-blue-500 hover:bg-blue-500 hover:text-white transition"><i class="ph ph-pencil-simple"></i></button>
+                    <button onclick="fnHapusRekening(${idx})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition"><i class="ph ph-trash"></i></button>
+                </div>
+            </div>
+        `).join('');
+    };
+
+    window.fnResetRekeningForm = function() {
+        document.getElementById('editRekId').value = '';
+        document.getElementById('cfgBankName').value = '';
+        document.getElementById('cfgBankNo').value = '';
+        document.getElementById('cfgBankOwner').value = '';
+        document.getElementById('labelRekening').innerText = 'Tambah Rekening Baru';
+        document.getElementById('btnSaveRek').innerHTML = '<i class="ph ph-plus-circle"></i> Simpan Rekening';
+        document.getElementById('btnCancelRek').classList.add('hidden');
+    };
+
+    window.fnEditRekening = function(idx) {
+        const orgSession = JSON.parse(localStorage.getItem('dk_org'));
+        const acc = orgSession?.config?.bank_accounts[idx];
+        if(!acc) return;
+
+        document.getElementById('editRekId').value = idx;
+        document.getElementById('cfgBankName').value = acc.nama_bank;
+        document.getElementById('cfgBankNo').value = acc.no_rek;
+        document.getElementById('cfgBankOwner').value = acc.atas_nama;
+        document.getElementById('labelRekening').innerText = 'Edit Rekening';
+        document.getElementById('btnSaveRek').innerHTML = '<i class="ph ph-floppy-disk"></i> Update Rekening';
+        document.getElementById('btnCancelRek').classList.remove('hidden');
+        document.getElementById('formRekening').scrollIntoView({ behavior: 'smooth' });
+    };
+
+    window.fnHapusRekening = async function(idx) {
+        if(!confirm('Hapus rekening ini?')) return;
+        showLoader(true);
+        try {
+            const orgSession = JSON.parse(localStorage.getItem('dk_org'));
+            const config = orgSession?.config || {};
+            if(!config.bank_accounts) config.bank_accounts = [];
+            config.bank_accounts.splice(idx, 1);
+
+            const { error } = await db().from('organizations').update({ config }).eq('id', window.dk.state.orgId);
+            if(error) throw error;
+
+            localStorage.setItem('dk_org', JSON.stringify(orgSession));
+            fnRenderBankAccounts();
+        } catch(e) {
+            alert('Gagal hapus: ' + e.message);
+        } finally {
+            showLoader(false);
+        }
+    };
+
+    window.fnSimpanRekening = async function() {
+        const idx = document.getElementById('editRekId').value;
         const nama = document.getElementById('cfgBankName').value.trim();
         const no = document.getElementById('cfgBankNo').value.trim();
         const owner = document.getElementById('cfgBankOwner').value.trim();
@@ -1630,19 +1761,25 @@
         showLoader(true);
         try {
             const orgSession = JSON.parse(localStorage.getItem('dk_org'));
-            const currentConfig = orgSession?.config || {};
-            const newConfig = {
-                ...currentConfig,
-                bank_rekening: { nama_bank: nama, no_rek: no, atas_nama: owner }
-            };
+            const config = orgSession?.config || {};
+            if(!config.bank_accounts) config.bank_accounts = [];
 
-            const { error } = await db().from('organizations').update({ config: newConfig }).eq('id', window.dk.state.orgId);
+            const newAcc = { nama_bank: nama, no_rek: no, atas_nama: owner };
+            if(idx !== '') {
+                config.bank_accounts[idx] = newAcc;
+            } else {
+                config.bank_accounts.push(newAcc);
+            }
+
+            const { error } = await db().from('organizations').update({ config }).eq('id', window.dk.state.orgId);
             if(error) throw error;
 
-            orgSession.config = newConfig;
+            orgSession.config = config;
             localStorage.setItem('dk_org', JSON.stringify(orgSession));
 
-            alert('✅ Rekening bendahara berhasil disimpan!');
+            fnResetRekeningForm();
+            fnRenderBankAccounts();
+            alert('✅ Rekening berhasil disimpan!');
         } catch(e) {
             alert('Gagal simpan rekening: ' + (e.message || e));
         } finally {
