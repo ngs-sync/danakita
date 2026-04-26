@@ -106,8 +106,11 @@
         if (error) { alert('Terjadi kesalahan sistem: ' + error.message); return; }
         if (data?.success) {
           window.initSupabaseClient(data.token);
-          const { data: saInfo } = await db().from('super_admins').select('role, nama').eq('id', data.data.id).single();
-          const sessionData = { ...data.data, nama: saInfo?.nama, role: saInfo?.role || 'super_admin', token: data.token };
+          let { data: saInfo, error: saErr } = await db().from('super_admins').select('role, nama, jabatan').eq('id', data.data.id).single();
+          if (saErr) {
+              saInfo = (await db().from('super_admins').select('role, nama').eq('id', data.data.id).single()).data;
+          }
+          const sessionData = { ...data.data, nama: saInfo?.nama, role: saInfo?.role || 'super_admin', jabatan: saInfo?.jabatan || (saInfo?.role === 'super_admin' ? 'Super Admin' : 'Finance'), token: data.token };
           localStorage.setItem('sa_session', JSON.stringify(sessionData));
           document.getElementById('login-section').classList.add('!hidden');
           document.getElementById('dashboard-section').classList.remove('!hidden');

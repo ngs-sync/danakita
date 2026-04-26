@@ -183,7 +183,7 @@
         </div>
         <div id="verifyInfo" style="background:#F8FAFC; padding:16px; border-radius:16px; border:1px solid var(--tk-border); margin-bottom:20px;"></div>
         <div id="verifyForm" style="display:flex; flex-direction:column; gap:16px;">
-            <div id="divVerifierJab">
+            <div id="divVerifierJab" class="hidden">
                 <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Jabatan Verifikator</label>
                 <input type="text" id="verifierJabatan" placeholder="Cth: Bendahara / Sekretaris" maxlength="50" style="margin-top:4px;">
             </div>
@@ -519,6 +519,8 @@
         if(error) { err.textContent = error.message; err.style.display = 'block'; return; }
         if(data?.success) {
             const role = data.data.nama_admin.includes('(Super Admin)') ? 'super_admin' : 'admin';
+            const jab = data.data.jabatan || data.data.permissions?.jabatan || (role === 'super_admin' ? 'Super Admin' : 'Pengurus');
+            window.dk.state.user = { type:'admin', id:data.data.id, name:data.data.nama_admin, is_agreed_policy: data.data.is_agreed_policy, role: role, jabatan: jab };
             window.dk.state.user = { type:'admin', id:data.data.id, name:data.data.nama_admin, is_agreed_policy: data.data.is_agreed_policy, role: role };
             window.dk.state.token = data.token; window.initSupabaseClient(data.token); document.getElementById('loginModal').classList.add('hidden'); fnShowApp();
         } else { err.textContent = data?.msg || 'Gagal Login'; err.style.display = 'block'; }
@@ -894,15 +896,12 @@
             <p style="font-size:11px; color:${status==='DISETUJUI'?'var(--tk-success)':'var(--tk-danger)'}; font-weight:900; text-transform:uppercase; margin-top:8px;">${isEdit ? 'Update Data' : 'Set Status: ' + status}</p>
         `;
 
-        // Auto-fill jabatan from previous session or profile if available
-        document.getElementById('verifierJabatan').value = p.verifier_role || p.permissions?.verifier_role || localStorage.getItem('dk_last_jabatan') || '';
+        // Auto-fill jabatan from logged in user
+        const jab = window.dk.state.user.jabatan || 'Pengurus';
+        document.getElementById('verifierJabatan').value = jab;
         document.getElementById('verifyModal').classList.remove('hidden');
 
         document.getElementById('btnConfirmVerify').onclick = async () => {
-            const jab = document.getElementById('verifierJabatan').value.trim();
-            if(!jab) return alert('Mohon isi jabatan verifikator!');
-
-            localStorage.setItem('dk_last_jabatan', jab);
             showLoader(true);
             try {
                 const updateData = {
@@ -916,7 +915,16 @@
                     updateData.verified_at = new Date().toISOString();
                 }
 
-                const { error } = await db().from('pembayaran').update(updateData).eq('id', pid);
+                // Resiliency: try updating with verifier_role, fallback if column missing
+                let { error } = await db().from('pembayaran').update(updateData).eq('id', pid);
+
+                if(error && (error.message?.includes('verifier_role') || error.code?.startsWith('42') || error.code === 'PGRST106')) {
+                    console.warn('Verifier_role column might be missing, retrying without it');
+                    delete updateData.verifier_role;
+                    const retry = await db().from('pembayaran').update(updateData).eq('id', pid);
+                    error = retry.error;
+                }
+
                 if(error) throw error;
 
                 await db().from('audit_logs').insert([{
