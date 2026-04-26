@@ -521,6 +521,7 @@
             const role = data.data.nama_admin.includes('(Super Admin)') ? 'super_admin' : 'admin';
             const jab = data.data.jabatan || data.data.permissions?.jabatan || (role === 'super_admin' ? 'Super Admin' : 'Pengurus');
             window.dk.state.user = { type:'admin', id:data.data.id, name:data.data.nama_admin, is_agreed_policy: data.data.is_agreed_policy, role: role, jabatan: jab };
+            window.dk.state.user = { type:'admin', id:data.data.id, name:data.data.nama_admin, is_agreed_policy: data.data.is_agreed_policy, role: role };
             window.dk.state.token = data.token; window.initSupabaseClient(data.token); document.getElementById('loginModal').classList.add('hidden'); fnShowApp();
         } else { err.textContent = data?.msg || 'Gagal Login'; err.style.display = 'block'; }
       } catch(e) {
