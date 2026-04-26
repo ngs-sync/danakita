@@ -129,7 +129,7 @@
 
   <div id="modal-kode" class="modal-overlay hidden">
     <div class="modal-content text-center">
-      <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6"><i class="ph ph-buildings text-4xl"></i></div>
+      <div class="w-20 h-20 bg-white border border-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-6 overflow-hidden p-1 shadow-sm"><img src="logo.png" class="w-full h-full object-contain"></div>
       <h2 style="font-size: 22px; font-weight: 900; color: var(--tk-text-primary); margin-bottom: 8px; letter-spacing: -0.5px;">Kode Organisasi</h2>
       <p style="font-size: 13px; color: var(--tk-text-secondary); margin-bottom: 24px;">Masukkan ID unik Komunitas/RT Anda untuk mengakses sistem.</p>
       <div class="relative mb-4">
@@ -183,7 +183,7 @@
         </div>
         <div id="verifyInfo" style="background:#F8FAFC; padding:16px; border-radius:16px; border:1px solid var(--tk-border); margin-bottom:20px;"></div>
         <div id="verifyForm" style="display:flex; flex-direction:column; gap:16px;">
-            <div id="divVerifierJab">
+            <div id="divVerifierJab" class="hidden">
                 <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Jabatan Verifikator</label>
                 <input type="text" id="verifierJabatan" placeholder="Cth: Bendahara / Sekretaris" maxlength="50" style="margin-top:4px;">
             </div>
@@ -213,7 +213,7 @@
 
   <header class="app-header">
     <div style="display: flex; align-items: center; gap: 16px; max-width: 640px; margin: 0 auto;">
-      <div style="width: 44px; height: 44px; border-radius: 14px; background: linear-gradient(135deg, #F1F5F9, #E2E8F0); display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.05);"><i id="org-logo-fallback" class="ph ph-buildings text-2xl text-slate-500"></i></div>
+      <div id="brand-logo-container" style="width: 44px; height: 44px; border-radius: 14px; background: white; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid #f1f5f9; box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow: hidden; p-0.5"><img src="logo.png" id="brand-logo" style="width: 100%; height: 100%; object-fit: contain;"></div>
       <div style="flex: 1;"><h1 style="font-size: 18px; font-weight: 900; color: var(--tk-text-primary); margin: 0; letter-spacing: -0.5px;">DANAKITA</h1><p id="org-display-name" style="font-size: 11px; color: var(--tk-primary); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Memuat...</p></div>
       <button id="logoutBtn" onclick="fnLogout()" class="btn-danger hidden px-3 py-2 border-radius: 12px; font-size: 12px;"><i class="ph ph-sign-out text-lg"></i> Keluar</button>
     </div>
@@ -252,7 +252,13 @@
             <p style="text-align:center; font-size:11px; font-weight:800; color:var(--tk-text-tertiary); text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">Total Tagihan Terpilih</p>
             <h2 id="totalBayarDisplay" style="font-size:36px; font-weight:900; text-align:center; color:var(--tk-primary); margin:0 0 24px; letter-spacing:-1px;">Rp 0</h2>
             <div style="background:#F8FAFC; padding:20px; border-radius:20px; border:1px solid var(--tk-border); margin-bottom:20px;">
-              <div style="margin-bottom:16px;"><label style="display:block; font-size:12px; font-weight:800; color:var(--tk-text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">Metode Pembayaran</label><select id="metodeBayar" onchange="fnToggleBukti()" style="background:white; border-color:#E2E8F0;"><option value="TRANSFER">Transfer Bank</option><option value="CASH">Titip Tunai (Cash)</option></select></div>
+              <div style="margin-bottom:16px;"><label style="display:block; font-size:12px; font-weight:800; color:var(--tk-text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">Metode Pembayaran</label><select id="metodeBayar" onchange="fnToggleBukti()" style="background:white; border-color:#E2E8F0;"><option value="">-- Pilih Metode --</option><option value="TRANSFER">Transfer Bank</option><option value="CASH">Titip Tunai (Cash)</option></select></div>
+              <div id="bankInfoSection" style="display:none; background:white; padding:16px; border-radius:14px; border:1px dashed var(--tk-primary); margin-bottom:16px;">
+                <p style="font-size:10px; font-weight:800; color:var(--tk-primary); text-transform:uppercase; letter-spacing:1px; margin-bottom:12px;">Tujuan Transfer:</p>
+                <div id="bankDetailDisplay" style="display:flex; flex-direction:column; gap:12px;">
+                    <!-- List of accounts will be here -->
+                </div>
+              </div>
               <div id="buktiSection" style="display:none;"><label style="display:block; font-size:12px; font-weight:800; color:var(--tk-text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">Upload Bukti Transfer</label><div style="display:flex; gap:8px; flex-direction:column;"><input type="file" id="fileBukti" accept="image/*" style="background:white; border-color:#E2E8F0; padding:10px;"><p style="font-size:10px; color:var(--tk-text-tertiary);"><i class="ph ph-info"></i> Otomatis dikompres hemat kuota (~100KB).</p></div></div>
             </div>
             <button onclick="fnSubmitPembayaran()" class="btn-primary" style="padding:18px; font-size:16px;">Kirim Pembayaran <i class="ph ph-paper-plane-right font-bold text-lg"></i></button>
@@ -279,6 +285,25 @@
       </div>
 
       <div id="viewAdminMaster" class="tab-content a-sec">
+        <div class="card">
+          <h3 style="font-weight:900; color:var(--tk-text-primary); margin-bottom:20px; font-size:18px; display:flex; align-items:center; gap:8px;"><i class="ph ph-bank text-[#00A6ED]"></i> Rekening Pembayaran</h3>
+          <div id="formRekening" style="background:#F0F9FF; padding:16px; border-radius:16px; border:1px solid #B9E6FE; display:flex; flex-direction:column; gap:12px; margin-bottom:24px;">
+            <input type="hidden" id="editRekId">
+            <p id="labelRekening" class="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Tambah Rekening Baru</p>
+            <div class="grid-2">
+                <input type="text" id="cfgBankName" placeholder="Nama Bank (Cth: BCA)">
+                <input type="text" id="cfgBankNo" placeholder="Nomor Rekening">
+            </div>
+            <input type="text" id="cfgBankOwner" placeholder="Nama Pemilik Rekening (Atas Nama)">
+            <div style="display:flex; gap:8px;">
+                <button id="btnCancelRek" onclick="fnResetRekeningForm()" class="btn-ghost hidden !bg-slate-200 !text-slate-600 !flex-1">Batal</button>
+                <button id="btnSaveRek" onclick="fnSimpanRekening()" class="btn-primary !bg-blue-600 !flex-[2]"><i class="ph ph-plus-circle"></i> Simpan Rekening</button>
+            </div>
+          </div>
+          <h4 style="font-weight:800; color:var(--tk-text-secondary); font-size:12px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--tk-border);">Daftar Rekening Aktif</h4>
+          <div id="listRekening" style="display:flex; flex-direction:column; gap:12px;"></div>
+        </div>
+
         <div class="card">
           <h3 style="font-weight:900; color:var(--tk-text-primary); margin-bottom:20px; font-size:18px; display:flex; align-items:center; gap:8px;"><i class="ph ph-users text-[#00A6ED]"></i> Data Warga</h3>
           <div style="display:flex; gap:8px; margin-bottom:16px;">
@@ -493,8 +518,9 @@
         const { data, error } = await tempDb.rpc('rpc_login_admin', { p_username: u, p_password: p, p_org_id: window.dk.state.orgId });
         if(error) { err.textContent = error.message; err.style.display = 'block'; return; }
         if(data?.success) {
-            window.dk.state.user = { type:'admin', id:data.data.id, name:data.data.nama_admin, is_agreed_policy: data.data.is_agreed_policy };
-            if(data.data.nama_admin.includes('(Super Admin)')) window.dk.state.user.role = 'super_admin';
+            const role = data.data.nama_admin.includes('(Super Admin)') ? 'super_admin' : 'admin';
+            const jab = data.data.jabatan || data.data.permissions?.jabatan || (role === 'super_admin' ? 'Super Admin' : 'Pengurus');
+            window.dk.state.user = { type:'admin', id:data.data.id, name:data.data.nama_admin, is_agreed_policy: data.data.is_agreed_policy, role: role, jabatan: jab };
             window.dk.state.token = data.token; window.initSupabaseClient(data.token); document.getElementById('loginModal').classList.add('hidden'); fnShowApp();
         } else { err.textContent = data?.msg || 'Gagal Login'; err.style.display = 'block'; }
       } catch(e) {
@@ -543,7 +569,7 @@
       if(window.dk.state.user.type === 'admin') {
         document.getElementById('areaAdmin').style.display = 'block'; document.getElementById('areaWarga').style.display = 'none';
         document.getElementById('navAdmin').classList.remove('hidden'); document.getElementById('navWarga').classList.add('hidden');
-        document.getElementById('logoutBtn').classList.remove('hidden'); document.getElementById('org-logo-fallback').className = "ph ph-shield-check text-2xl text-blue-500";
+        document.getElementById('logoutBtn').classList.remove('hidden');
         fnLoadData().then(() => {
           try { fnRenderAdminVerify(); fnRenderMaster(); fnRenderKas(); fnRenderLaporan(); } catch(e) { console.error("Render Error:", e); alert("Kesalahan tampilan: " + e.message); }
         }).catch(e => { console.error("Load Data Error:", e); alert("Gagal memuat data awal."); });
@@ -758,17 +784,18 @@
             const startPeriode = p.start_periode || `${currentYear}-01`;
             const [startY, startM] = startPeriode.split('-').map(Number);
 
-            // Batasi hanya tahun berjalan
-            let mStart = (startY < currentYear) ? 1 : startM;
-            if (startY > currentYear) return;
-
             let missingMonths = [];
-            for (let m = mStart; m <= currentMonth; m++) {
-              const per = `${currentYear}-${m.toString().padStart(2, '0')}`;
-              if (!paid[p.id]?.includes(per)) {
-                missingMonths.push(monthNames[m-1]);
-                totalUnpaidNominal += Number(p.nominal_default);
-              }
+            for (let y = startY; y <= currentYear; y++) {
+                let mStart = (y === startY) ? startM : 1;
+                let mEnd = (y === currentYear) ? currentMonth : 12;
+
+                for (let m = mStart; m <= mEnd; m++) {
+                    const per = `${y}-${m.toString().padStart(2, '0')}`;
+                    if (!paid[p.id]?.includes(per)) {
+                        missingMonths.push(y === currentYear ? monthNames[m-1] : `${monthNames[m-1]} ${y}`);
+                        totalUnpaidNominal += Number(p.nominal_default);
+                    }
+                }
             }
             if (missingMonths.length > 0) {
               unpaidInfo.push(`• <b>${p.nama_project}</b>: ${missingMonths.join(', ')}`);
@@ -826,13 +853,24 @@
 
       let info = [];
       const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth() + 1;
+
       window.dk.state.data.project.filter(p => p.tipe !== 'non_iuran').forEach(p => {
         const isTargeted = Array.isArray(p.target_warga) && p.target_warga.length > 0;
         if (isTargeted && !p.target_warga.includes(w.id)) return;
         if (p.tipe === 'bulanan') {
-          for (let m = 1; m <= (now.getMonth() + 1); m++) {
-            const per = `${now.getFullYear()}-${m.toString().padStart(2, '0')}`;
-            if (!paid[p.id]?.includes(per)) info.push(`- ${p.nama_project}: ${monthNames[m-1]}`);
+          const startPeriode = p.start_periode || `${currentYear}-01`;
+          const [startY, startM] = startPeriode.split('-').map(Number);
+          for (let y = startY; y <= currentYear; y++) {
+            let mStart = (y === startY) ? startM : 1;
+            let mEnd = (y === currentYear) ? currentMonth : 12;
+            for (let m = mStart; m <= mEnd; m++) {
+              const per = `${y}-${m.toString().padStart(2, '0')}`;
+              if (!paid[p.id]?.includes(per)) {
+                  info.push(`- ${p.nama_project}: ${monthNames[m-1]}${y !== currentYear ? ' ' + y : ''}`);
+              }
+            }
           }
         } else if (p.tipe === 'sekali' && !paid[p.id]?.includes('SEKALI')) {
           info.push(`- ${p.nama_project}: Belum Bayar`);
@@ -840,7 +878,7 @@
       });
 
       const rincianText = info.join('\n');
-      const text = `Halo Bapak/Ibu *${w.nama}* 👋\n\nMenginformasikan mengenai status iuran Anda di *${window.dk.state.orgCode}*.\n\n*Rincian Tunggakan Tahun ${now.getFullYear()}:*\n${rincianText}\n\n*Total Tunggakan: ${formatRp(total)}*\n\nMohon segera melakukan pembayaran melalui portal warga. Terima kasih! 🙏`;
+      const text = `Halo Bapak/Ibu *${w.nama}* 👋\n\nMenginformasikan mengenai status iuran Anda di *${window.dk.state.orgCode}*.\n\n*Rincian Tunggakan:*\n${rincianText}\n\n*Total Tunggakan: ${formatRp(total)}*\n\nMohon segera melakukan pembayaran melalui portal warga. Terima kasih! 🙏`;
       window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank');
     };
 
@@ -857,15 +895,12 @@
             <p style="font-size:11px; color:${status==='DISETUJUI'?'var(--tk-success)':'var(--tk-danger)'}; font-weight:900; text-transform:uppercase; margin-top:8px;">${isEdit ? 'Update Data' : 'Set Status: ' + status}</p>
         `;
 
-        // Auto-fill jabatan from previous session or profile if available
-        document.getElementById('verifierJabatan').value = p.verifier_role || p.permissions?.verifier_role || localStorage.getItem('dk_last_jabatan') || '';
+        // Auto-fill jabatan from logged in user
+        const jab = window.dk.state.user.jabatan || 'Pengurus';
+        document.getElementById('verifierJabatan').value = jab;
         document.getElementById('verifyModal').classList.remove('hidden');
 
         document.getElementById('btnConfirmVerify').onclick = async () => {
-            const jab = document.getElementById('verifierJabatan').value.trim();
-            if(!jab) return alert('Mohon isi jabatan verifikator!');
-
-            localStorage.setItem('dk_last_jabatan', jab);
             showLoader(true);
             try {
                 const updateData = {
@@ -879,7 +914,16 @@
                     updateData.verified_at = new Date().toISOString();
                 }
 
-                const { error } = await db().from('pembayaran').update(updateData).eq('id', pid);
+                // Resiliency: try updating with verifier_role, fallback if column missing
+                let { error } = await db().from('pembayaran').update(updateData).eq('id', pid);
+
+                if(error && (error.message?.includes('verifier_role') || error.code?.startsWith('42') || error.code === 'PGRST106')) {
+                    console.warn('Verifier_role column might be missing, retrying without it');
+                    delete updateData.verifier_role;
+                    const retry = await db().from('pembayaran').update(updateData).eq('id', pid);
+                    error = retry.error;
+                }
+
                 if(error) throw error;
 
                 await db().from('audit_logs').insert([{
@@ -902,6 +946,8 @@
 
     window.fnRenderMaster = function() {
       try {
+        fnRenderBankAccounts();
+
         if (!window.dk.state.hasTargetWargaColumn) {
           document.getElementById('divTargetWarga').classList.add('hidden');
         } else {
@@ -914,7 +960,14 @@
         if(listAdmin) {
             listAdmin.innerHTML = window.dk.state.data.admin.map(adm => {
                 const jabatan = adm.jabatan || adm.permissions?.jabatan || 'Pengurus';
-                return `<div style="background:white; padding:12px; border-radius:12px; border:1px solid var(--tk-border); display:flex; justify-content:space-between; align-items:center;"><div style="display:flex; align-items:center; gap:10px;"><div style="width:32px; height:32px; border-radius:10px; background:var(--tk-primary-light); color:var(--tk-primary); display:flex; align-items:center; justify-content:center;"><i class="ph ph-user text-lg"></i></div><div><p style="font-size:13px; font-weight:800; color:var(--tk-text-primary); margin:0;">${adm.nama_admin}</p><p style="font-size:11px; font-weight:700; color:var(--tk-text-tertiary); margin:0;">@${adm.username} • ${jabatan}</p></div></div><span class="badge badge-primary text-[10px]">${adm.role}</span></div>`;
+                const isMe = window.dk.state.user?.id === adm.id;
+                const actions = isMe ? '' : `
+                    <div style="display:flex; gap:6px;">
+                        <button onclick="fnEditAdminById('${adm.id}')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-50 text-blue-500 hover:bg-blue-500 hover:text-white transition"><i class="ph ph-pencil-simple"></i></button>
+                        <button onclick="fnHapusAdmin('${adm.id}')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition"><i class="ph ph-trash"></i></button>
+                    </div>
+                `;
+                return `<div style="background:white; padding:12px; border-radius:12px; border:1px solid var(--tk-border); display:flex; justify-content:space-between; align-items:center;"><div style="display:flex; align-items:center; gap:10px;"><div style="width:32px; height:32px; border-radius:10px; background:#F1F5F9; color:var(--tk-primary); display:flex; align-items:center; justify-content:center;"><i class="ph ph-user text-lg"></i></div><div><p style="font-size:13px; font-weight:800; color:var(--tk-text-primary); margin:0;">${adm.nama_admin}${isMe?' (Saya)':''}</p><p style="font-size:11px; font-weight:700; color:var(--tk-text-tertiary); margin:0;">@${adm.username} • ${jabatan}</p></div></div>${actions}</div>`;
             }).join('');
         }
         const pList = document.getElementById('listProj');
@@ -1094,31 +1147,74 @@
         }
       });
     };
+    window.fnEditAdminById = function(id) {
+        const adm = window.dk.state.data.admin.find(x => x.id === id);
+        if(adm) {
+            document.getElementById('newAdmUser').value = adm.username;
+            document.getElementById('newAdmNama').value = adm.nama_admin;
+            document.getElementById('newAdmJabatan').value = adm.jabatan || adm.permissions?.jabatan || '';
+            document.getElementById('newAdmPass').placeholder = '(Kosongkan jika tidak ganti)';
+            window.dk.state.editingAdminId = id;
+            document.querySelector('#viewAdminMaster button[onclick="fnTambahTimAdmin()"]').innerHTML = '<i class="ph ph-floppy-disk"></i> Update Admin';
+            document.getElementById('newAdmUser').parentElement.parentElement.scrollIntoView({ behavior: 'smooth' });
+        }
+    };
+
+    window.fnHapusAdmin = async function(id) {
+        if(!confirm('Hapus akses admin ini?')) return;
+        showLoader(true);
+        try {
+            const { error } = await db().from('admin').delete().eq('id', id);
+            if(error) throw error;
+            await fnLoadData();
+            fnRenderMaster();
+            alert('✅ Admin berhasil dihapus.');
+        } catch(e) {
+            alert('Gagal hapus: ' + e.message);
+        } finally {
+            showLoader(false);
+        }
+    };
+
     window.fnTambahTimAdmin = async function() {
       const user = document.getElementById('newAdmUser').value.trim(), nama = document.getElementById('newAdmNama').value.trim(), jab = document.getElementById('newAdmJabatan').value.trim(), pass = document.getElementById('newAdmPass').value.trim();
-      if(!user || !nama || !pass) return alert('Username, Nama, dan Password wajib diisi!');
-      if(pass.length < 6) return alert('Password minimal 6 karakter!');
+      if(!user || !nama) return alert('Username dan Nama wajib diisi!');
+
       showLoader(true);
       try {
-        const { data: hashed } = await db().rpc('hash_password', { raw_pass: pass });
+        const editId = window.dk.state.editingAdminId;
         const finalJabatan = jab || 'Pengurus';
-        const payload = { organization_id: window.dk.state.orgId, username: user, nama_admin: nama, password_hash: hashed || pass, role: 'admin', must_change_password: true };
+        let payload = { organization_id: window.dk.state.orgId, username: user, nama_admin: nama, role: 'admin' };
 
-        // Attempt to save jab to column first, fallback to permissions JSONB
-        let { error: err1 } = await db().from('admin').insert([{ ...payload, jabatan: finalJabatan }]);
-
-        if(err1) {
-            if (err1.message?.includes('security policy')) throw err1;
-            console.warn('Jabatan column might be missing, falling back to permissions JSONB', err1);
-            let { error: err2 } = await db().from('admin').insert([{ ...payload, permissions: { jabatan: finalJabatan } }]);
-            if(err2) throw err2;
-            alert('⚠️ Admin berhasil ditambahkan!\nCatatan: Kolom "jabatan" belum ada di DB, data disimpan di metadata.');
-        } else {
-            alert('✅ Admin baru berhasil ditambahkan!');
+        if(pass) {
+            if(pass.length < 6) { alert('Password minimal 6 karakter!'); showLoader(false); return; }
+            const { data: hashed } = await db().rpc('hash_password', { raw_pass: pass });
+            payload.password_hash = hashed || pass;
         }
 
-        await db().from('audit_logs').insert([{ organization_id: window.dk.state.orgId, actor_type: 'admin', actor_name: window.dk.state.user.name, action: 'ADMIN_CREATED' }]);
-        document.getElementById('newAdmUser').value=''; document.getElementById('newAdmNama').value=''; document.getElementById('newAdmJabatan').value=''; document.getElementById('newAdmPass').value='';
+        let res;
+        if(editId) {
+            res = await db().from('admin').update({ ...payload, jabatan: finalJabatan }).eq('id', editId);
+            if(res.error && (res.error.code === 'PGRST100' || res.error.message.includes('jabatan'))) {
+                res = await db().from('admin').update({ ...payload, permissions: { jabatan: finalJabatan } }).eq('id', editId);
+            }
+        } else {
+            if(!pass) { alert('Password wajib diisi untuk admin baru!'); showLoader(false); return; }
+            res = await db().from('admin').insert([{ ...payload, jabatan: finalJabatan, must_change_password: true }]);
+            if(res.error && (res.error.code === 'PGRST100' || res.error.message.includes('jabatan'))) {
+                res = await db().from('admin').insert([{ ...payload, permissions: { jabatan: finalJabatan }, must_change_password: true }]);
+            }
+        }
+
+        if(res.error) throw res.error;
+
+        alert(editId ? '✅ Data admin berhasil diupdate!' : '✅ Admin baru berhasil ditambahkan!');
+        await db().from('audit_logs').insert([{ organization_id: window.dk.state.orgId, actor_type: 'admin', actor_name: window.dk.state.user.name, action: editId ? 'ADMIN_UPDATED' : 'ADMIN_CREATED' }]);
+
+        document.getElementById('newAdmUser').value=''; document.getElementById('newAdmNama').value=''; document.getElementById('newAdmJabatan').value=''; document.getElementById('newAdmPass').value=''; document.getElementById('newAdmPass').placeholder = 'Password Sementara';
+        window.dk.state.editingAdminId = null;
+        document.querySelector('#viewAdminMaster button[onclick="fnTambahTimAdmin()"]').innerHTML = '<i class="ph ph-plus-circle"></i> Tambah Admin';
+
         await fnLoadData(); fnRenderMaster();
       } catch(e) {
         console.error(e);
@@ -1566,11 +1662,142 @@
       });
     };
     window.fnToggleIuran = function(pid, el, price, periode) { if(!window.dk.state.selectedCart[pid]) window.dk.state.selectedCart[pid] = { periods:[], nominal:0, base:price }; let cart = window.dk.state.selectedCart[pid]; if(el.checked) { if(!cart.periods.includes(periode)) cart.periods.push(periode); } else { cart.periods = cart.periods.filter(x => x !== periode); } cart.nominal = cart.periods.length * price; if(cart.periods.length === 0) delete window.dk.state.selectedCart[pid]; let total = Object.values(window.dk.state.selectedCart).reduce((s,c)=>s+c.nominal, 0); document.getElementById('totalBayarDisplay').innerText = formatRp(total); document.getElementById('summaryBayar').style.display = total === 0 ? 'none' : 'block'; };
-    window.fnToggleBukti = function() { document.getElementById('buktiSection').style.display = document.getElementById('metodeBayar').value === 'TRANSFER' ? 'block' : 'none'; };
+    window.fnToggleBukti = function() {
+        const isTransfer = document.getElementById('metodeBayar').value === 'TRANSFER';
+        document.getElementById('buktiSection').style.display = isTransfer ? 'block' : 'none';
+        document.getElementById('bankInfoSection').style.display = isTransfer ? 'block' : 'none';
+
+        if(isTransfer) {
+            const orgSession = JSON.parse(localStorage.getItem('dk_org'));
+            const accounts = orgSession?.config?.bank_accounts || [];
+            const container = document.getElementById('bankDetailDisplay');
+
+            if(accounts.length === 0) {
+                container.innerHTML = '<p style="text-align:center; font-size:12px; color:var(--tk-text-tertiary); italic;">Rekening belum diatur oleh admin.</p>';
+            } else {
+                container.innerHTML = accounts.map(acc => `
+                    <div style="background:#F8FAFC; padding:12px; border-radius:12px; border:1px solid #E2E8F0;">
+                        <p style="font-size:13px; font-weight:900; color:var(--tk-text-primary); margin:0;">${acc.nama_bank}</p>
+                        <p style="font-size:16px; font-weight:900; color:var(--tk-primary); margin:2px 0;">${acc.no_rek}</p>
+                        <p style="font-size:11px; font-weight:700; color:var(--tk-text-secondary); margin:0;">A.N ${acc.atas_nama}</p>
+                    </div>
+                `).join('');
+            }
+        }
+    };
+
+    window.fnRenderBankAccounts = function() {
+        const orgSession = JSON.parse(localStorage.getItem('dk_org'));
+        const accounts = orgSession?.config?.bank_accounts || [];
+        const container = document.getElementById('listRekening');
+
+        if(!container) return;
+        if(accounts.length === 0) {
+            container.innerHTML = '<p class="text-center text-xs text-slate-400 py-4 italic">Belum ada rekening terdaftar.</p>';
+            return;
+        }
+
+        container.innerHTML = accounts.map((acc, idx) => `
+            <div style="background:white; padding:12px; border-radius:12px; border:1px solid var(--tk-border); display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <p style="font-size:13px; font-weight:800; color:var(--tk-text-primary); margin:0;">${acc.nama_bank}</p>
+                    <p style="font-size:11px; font-weight:700; color:var(--tk-primary); margin:0;">${acc.no_rek} • ${acc.atas_nama}</p>
+                </div>
+                <div style="display:flex; gap:6px;">
+                    <button onclick="fnEditRekening(${idx})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-50 text-blue-500 hover:bg-blue-500 hover:text-white transition"><i class="ph ph-pencil-simple"></i></button>
+                    <button onclick="fnHapusRekening(${idx})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition"><i class="ph ph-trash"></i></button>
+                </div>
+            </div>
+        `).join('');
+    };
+
+    window.fnResetRekeningForm = function() {
+        document.getElementById('editRekId').value = '';
+        document.getElementById('cfgBankName').value = '';
+        document.getElementById('cfgBankNo').value = '';
+        document.getElementById('cfgBankOwner').value = '';
+        document.getElementById('labelRekening').innerText = 'Tambah Rekening Baru';
+        document.getElementById('btnSaveRek').innerHTML = '<i class="ph ph-plus-circle"></i> Simpan Rekening';
+        document.getElementById('btnCancelRek').classList.add('hidden');
+    };
+
+    window.fnEditRekening = function(idx) {
+        const orgSession = JSON.parse(localStorage.getItem('dk_org'));
+        const acc = orgSession?.config?.bank_accounts[idx];
+        if(!acc) return;
+
+        document.getElementById('editRekId').value = idx;
+        document.getElementById('cfgBankName').value = acc.nama_bank;
+        document.getElementById('cfgBankNo').value = acc.no_rek;
+        document.getElementById('cfgBankOwner').value = acc.atas_nama;
+        document.getElementById('labelRekening').innerText = 'Edit Rekening';
+        document.getElementById('btnSaveRek').innerHTML = '<i class="ph ph-floppy-disk"></i> Update Rekening';
+        document.getElementById('btnCancelRek').classList.remove('hidden');
+        document.getElementById('formRekening').scrollIntoView({ behavior: 'smooth' });
+    };
+
+    window.fnHapusRekening = async function(idx) {
+        if(!confirm('Hapus rekening ini?')) return;
+        showLoader(true);
+        try {
+            const orgSession = JSON.parse(localStorage.getItem('dk_org'));
+            const config = orgSession?.config || {};
+            if(!config.bank_accounts) config.bank_accounts = [];
+            config.bank_accounts.splice(idx, 1);
+
+            const { error } = await db().from('organizations').update({ config }).eq('id', window.dk.state.orgId);
+            if(error) throw error;
+
+            localStorage.setItem('dk_org', JSON.stringify(orgSession));
+            fnRenderBankAccounts();
+        } catch(e) {
+            alert('Gagal hapus: ' + e.message);
+        } finally {
+            showLoader(false);
+        }
+    };
+
+    window.fnSimpanRekening = async function() {
+        const idx = document.getElementById('editRekId').value;
+        const nama = document.getElementById('cfgBankName').value.trim();
+        const no = document.getElementById('cfgBankNo').value.trim();
+        const owner = document.getElementById('cfgBankOwner').value.trim();
+
+        if(!nama || !no || !owner) return alert('Mohon lengkapi detail rekening!');
+
+        showLoader(true);
+        try {
+            const orgSession = JSON.parse(localStorage.getItem('dk_org'));
+            const config = orgSession?.config || {};
+            if(!config.bank_accounts) config.bank_accounts = [];
+
+            const newAcc = { nama_bank: nama, no_rek: no, atas_nama: owner };
+            if(idx !== '') {
+                config.bank_accounts[idx] = newAcc;
+            } else {
+                config.bank_accounts.push(newAcc);
+            }
+
+            const { error } = await db().from('organizations').update({ config }).eq('id', window.dk.state.orgId);
+            if(error) throw error;
+
+            orgSession.config = config;
+            localStorage.setItem('dk_org', JSON.stringify(orgSession));
+
+            fnResetRekeningForm();
+            fnRenderBankAccounts();
+            alert('✅ Rekening berhasil disimpan!');
+        } catch(e) {
+            alert('Gagal simpan rekening: ' + (e.message || e));
+        } finally {
+            showLoader(false);
+        }
+    };
 
     window.fnSubmitPembayaran = async function() {
       const wId = window.dk.state.user?.id; const metode = document.getElementById('metodeBayar').value; const fileInput = document.getElementById('fileBukti');
       if(Object.keys(window.dk.state.selectedCart).length === 0) return alert('Pilih tagihan!');
+      if(!metode) return alert('Pilih metode pembayaran!');
       if(metode === 'TRANSFER' && !fileInput?.files?.length) return alert('Upload bukti transfer!');
       
       showLoader(true);
