@@ -148,7 +148,7 @@
           <h2 style="font-size: 22px; font-weight: 900; color: var(--tk-text-primary); margin: 0; letter-spacing: -0.5px;" id="modal-title">Login Warga</h2>
           <p style="font-size: 11px; color: var(--tk-primary); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 6px;" id="modal-org-name">-</p>
         </div>
-        <button onclick="fnGantiKomunitas()" class="w-10 h-10 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center hover:bg-slate-200 transition" title="Ganti Komunitas"><i class="ph ph-arrows-left-right text-lg"></i></button>
+        <div style="width: 44px; height: 44px; border-radius: 12px; background: white; border: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 2px;"><img src="logo.png" style="width: 100%; height: 100%; object-fit: contain;"></div>
       </div>
       <div style="display: flex; gap: 4px; background: #F1F5F9; padding: 6px; border-radius: 16px; margin-bottom: 24px;">
         <button onclick="switchLoginTab('warga')" id="tab-warga" class="flex-1 py-2.5 rounded-xl text-sm font-bold bg-white shadow text-green-600 transition">Portal Warga</button>
@@ -521,7 +521,6 @@
             const role = data.data.nama_admin.includes('(Super Admin)') ? 'super_admin' : 'admin';
             const jab = data.data.jabatan || data.data.permissions?.jabatan || (role === 'super_admin' ? 'Super Admin' : 'Pengurus');
             window.dk.state.user = { type:'admin', id:data.data.id, name:data.data.nama_admin, is_agreed_policy: data.data.is_agreed_policy, role: role, jabatan: jab };
-            window.dk.state.user = { type:'admin', id:data.data.id, name:data.data.nama_admin, is_agreed_policy: data.data.is_agreed_policy, role: role };
             window.dk.state.token = data.token; window.initSupabaseClient(data.token); document.getElementById('loginModal').classList.add('hidden'); fnShowApp();
         } else { err.textContent = data?.msg || 'Gagal Login'; err.style.display = 'block'; }
       } catch(e) {
@@ -782,7 +781,7 @@
           if (isTargeted && !p.target_warga.includes(w.id)) return;
 
           if (p.tipe === 'bulanan') {
-            const startPeriode = p.start_periode || `${currentYear}-01`;
+            const startPeriode = p.start_periode || `${currentYear}-${currentMonth.toString().padStart(2, '0')}`;
             const [startY, startM] = startPeriode.split('-').map(Number);
 
             let missingMonths = [];
@@ -861,7 +860,7 @@
         const isTargeted = Array.isArray(p.target_warga) && p.target_warga.length > 0;
         if (isTargeted && !p.target_warga.includes(w.id)) return;
         if (p.tipe === 'bulanan') {
-          const startPeriode = p.start_periode || `${currentYear}-01`;
+          const startPeriode = p.start_periode || `${currentYear}-${currentMonth.toString().padStart(2, '0')}`;
           const [startY, startM] = startPeriode.split('-').map(Number);
           for (let y = startY; y <= currentYear; y++) {
             let mStart = (y === startY) ? startM : 1;
@@ -897,8 +896,18 @@
         `;
 
         // Auto-fill jabatan from logged in user
-        const jab = window.dk.state.user.jabatan || 'Pengurus';
-        document.getElementById('verifierJabatan').value = jab;
+        const jab = window.dk.state.user.jabatan;
+        const divJab = document.getElementById('divVerifierJab');
+        const inpJab = document.getElementById('verifierJabatan');
+
+        if (jab) {
+            divJab.classList.add('hidden');
+            inpJab.value = jab;
+        } else {
+            divJab.classList.remove('hidden');
+            if(!inpJab.value) inpJab.value = 'Pengurus';
+        }
+
         document.getElementById('verifyModal').classList.remove('hidden');
 
         document.getElementById('btnConfirmVerify').onclick = async () => {
@@ -907,7 +916,7 @@
                 const updateData = {
                     status: status,
                     verified_by: window.dk.state.user.name,
-                    verifier_role: jab
+                    verifier_role: inpJab.value || 'Pengurus'
                 };
 
                 // Keep timestamp if editing
@@ -1741,8 +1750,11 @@
         if(!confirm('Hapus rekening ini?')) return;
         showLoader(true);
         try {
-            const orgSession = JSON.parse(localStorage.getItem('dk_org'));
-            const config = orgSession?.config || {};
+            // Fetch latest config from DB to prevent overwriting other admin/superadmin changes
+            const { data: latestOrg, error: fetchErr } = await db().from('organizations').select('config').eq('id', window.dk.state.orgId).single();
+            if(fetchErr) throw fetchErr;
+
+            const config = latestOrg?.config || {};
             if(!config.bank_accounts) config.bank_accounts = [];
             config.bank_accounts.splice(idx, 1);
 
@@ -1768,8 +1780,11 @@
 
         showLoader(true);
         try {
-            const orgSession = JSON.parse(localStorage.getItem('dk_org'));
-            const config = orgSession?.config || {};
+            // Fetch latest config from DB to prevent overwriting other admin/superadmin changes
+            const { data: latestOrg, error: fetchErr } = await db().from('organizations').select('config').eq('id', window.dk.state.orgId).single();
+            if(fetchErr) throw fetchErr;
+
+            const config = latestOrg?.config || {};
             if(!config.bank_accounts) config.bank_accounts = [];
 
             const newAcc = { nama_bank: nama, no_rek: no, atas_nama: owner };
@@ -1782,6 +1797,7 @@
             const { error } = await db().from('organizations').update({ config }).eq('id', window.dk.state.orgId);
             if(error) throw error;
 
+            const orgSession = JSON.parse(localStorage.getItem('dk_org') || '{}');
             orgSession.config = config;
             localStorage.setItem('dk_org', JSON.stringify(orgSession));
 
