@@ -198,9 +198,14 @@
       const start = document.getElementById('edit-start').value;
       const end = document.getElementById('edit-end').value;
 
-      const org = allOrgs.find(o => o.id === orgId);
-      const currentConfig = org ? (org.config || {}) : {};
-      const newConfig = {
+      showLoader(true);
+      try {
+        // Fetch latest config from DB to prevent overwriting other admin/bank details changes
+        const { data: latestOrg, error: fetchErr } = await db().from('organizations').select('config').eq('id', orgId).single();
+        if(fetchErr) throw fetchErr;
+
+        const currentConfig = latestOrg ? (latestOrg.config || {}) : {};
+        const newConfig = {
           ...currentConfig,
           warga_portal: {
               show_dashboard_saldo: document.getElementById('edit-show-saldo').checked,
@@ -208,8 +213,6 @@
           }
       };
 
-      showLoader(true);
-      try {
         await db().from('organizations').update({ kontak_wa_admin: wa, validity_start: start, validity_end: end, config: newConfig }).eq('id', orgId);
         await db().from('audit_logs').insert([{ organization_id: orgId, actor_type: 'superadmin', actor_name: getActiveSession()?.nama, action: 'UPDATE_CLIENT_PROFILE' }]);
         alert("Profil berhasil diupdate!");
