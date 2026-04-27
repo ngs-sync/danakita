@@ -280,12 +280,20 @@
         <div class="relative mb-6"><i class="ph ph-magnifying-glass absolute left-4 top-3.5 text-slate-400 text-lg"></i><input type="text" id="searchVerify" onkeyup="fnRenderAdminVerify()" placeholder="Cari Nama atau Blok..." class="pl-11 bg-white border-slate-200 shadow-sm"></div>
         <div id="pendingList" style="display:flex; flex-direction:column; gap:16px;"></div>
         <div id="processedList" style="display:flex; flex-direction:column; gap:16px; display:none;"></div>
-        <div id="paginationProcessed" class="hidden" style="margin-top:20px; text-align:center;">
-          <button onclick="fnChangeProcessedPage()" class="btn-ghost" style="background:#F1F5F9; color:var(--tk-primary); font-weight:800; font-size:12px; padding:10px 24px; border-radius:12px; border:1px solid var(--tk-border);">Lihat Lebih Banyak (Selesai)</button>
+        <div id="paginationProcessed" class="hidden" style="margin-top:32px; border-top:1px solid #f1f5f9; padding-top:32px;">
+          <div style="display:flex; align-items:center; justify-content:center; gap:32px;">
+            <button id="btnPrevProcessed" onclick="fnChangeProcessedPage(-1)" class="w-14 h-14 flex items-center justify-center rounded-[20px] bg-[#F8FAFC] text-slate-400 hover:bg-slate-100 transition"><i class="ph ph-caret-left text-xl"></i></button>
+            <span id="textProcessedPage" style="font-size:13px; font-weight:900; color:#475569; text-transform:uppercase; letter-spacing:1.5px;">HAL 1 / 1</span>
+            <button id="btnNextProcessed" onclick="fnChangeProcessedPage(1)" class="w-14 h-14 flex items-center justify-center rounded-[20px] bg-[#F8FAFC] text-slate-400 hover:bg-slate-100 transition"><i class="ph ph-caret-right text-xl"></i></button>
+          </div>
         </div>
         <div id="unpaidList" style="display:flex; flex-direction:column; gap:16px; display:none;"></div>
-        <div id="paginationUnpaid" class="hidden" style="margin-top:20px; text-align:center;">
-          <button onclick="fnChangeUnpaidPage()" class="btn-ghost" style="background:#F1F5F9; color:var(--tk-primary); font-weight:800; font-size:12px; padding:10px 24px; border-radius:12px; border:1px solid var(--tk-border);">Lihat Lebih Banyak (Belum Bayar)</button>
+        <div id="paginationUnpaid" class="hidden" style="margin-top:32px; border-top:1px solid #f1f5f9; padding-top:32px;">
+          <div style="display:flex; align-items:center; justify-content:center; gap:32px;">
+            <button id="btnPrevUnpaid" onclick="fnChangeUnpaidPage(-1)" class="w-14 h-14 flex items-center justify-center rounded-[20px] bg-[#F8FAFC] text-slate-400 hover:bg-slate-100 transition"><i class="ph ph-caret-left text-xl"></i></button>
+            <span id="textUnpaidPage" style="font-size:13px; font-weight:900; color:#475569; text-transform:uppercase; letter-spacing:1.5px;">HAL 1 / 1</span>
+            <button id="btnNextUnpaid" onclick="fnChangeUnpaidPage(1)" class="w-14 h-14 flex items-center justify-center rounded-[20px] bg-[#F8FAFC] text-slate-400 hover:bg-slate-100 transition"><i class="ph ph-caret-right text-xl"></i></button>
+          </div>
         </div>
         <div id="emptyPending" style="background:white; border-radius:24px; padding:40px 20px; text-align:center; border:1px dashed var(--tk-border); display:none;"><i class="ph ph-check-circle text-4xl text-green-400 mb-2"></i><p style="font-size:14px; font-weight:700; color:var(--tk-text-secondary);">Semua beres!</p><p style="font-size:12px; color:var(--tk-text-tertiary); margin-top:4px;">Tidak ada data ditampilkan.</p></div>
       </div>
@@ -426,7 +434,7 @@
       window.dk.db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, options);
     };
     window.initSupabaseClient(); // Initialize with Anon Key immediately
-    window.dk.state = { orgId: null, orgCode: '', user: null, token: null, data: { warga:[], project:[], pembayaran:[], detail:[], pengeluaran:[], danaLain:[] }, selectedCart: {}, expenseItems: [{ket:'', nom:''}], wargaPage: 1, processedPage: 1, unpaidPage: 1, editingMutationId: null, hasTargetWargaColumn: true };
+    window.dk.state = { orgId: null, orgCode: '', user: null, token: null, data: { warga:[], project:[], pembayaran:[], detail:[], pengeluaran:[], danaLain:[] }, selectedCart: {}, expenseItems: [{ket:'', nom:''}], wargaPage: 1, processedPage: 1, unpaidPage: 1, lastKeywordVerify: '', lastKeywordUnpaid: '', editingMutationId: null, hasTargetWargaColumn: true };
     const months = ['01','02','03','04','05','06','07','08','09','10','11','12']; const monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
     let currentStrukData = null; let currentVerifyPid = null, currentVerifyStatus = null; const db = () => window.dk.db;
 
@@ -752,13 +760,13 @@
       fnRenderAdminVerify();
     };
 
-    window.fnChangeProcessedPage = function() {
-        window.dk.state.processedPage++;
+    window.fnChangeProcessedPage = function(inc) {
+        window.dk.state.processedPage += inc;
         fnRenderAdminVerify();
     };
 
-    window.fnChangeUnpaidPage = function() {
-        window.dk.state.unpaidPage++;
+    window.fnChangeUnpaidPage = function(inc) {
+        window.dk.state.unpaidPage += inc;
         fnRenderUnpaid();
     };
 
@@ -774,6 +782,12 @@
         };
         pendingData = pendingData.filter(filterFn);
         approvedData = approvedData.filter(filterFn);
+      }
+
+      // Reset page if search is used
+      if (keyword && window.dk.state.lastKeywordVerify !== keyword) {
+          window.dk.state.processedPage = 1;
+          window.dk.state.lastKeywordVerify = keyword;
       }
 
       // Sort Approved: Newest First
@@ -800,12 +814,27 @@
             document.getElementById('emptyPending').style.display = pendingData.length === 0 ? 'block' : 'none';
         } else if(isProcessedActive) {
             const limit = 5;
-            const end = window.dk.state.processedPage * limit;
-            const paginated = approvedData.slice(0, end);
+            const totalPages = Math.ceil(approvedData.length / limit) || 1;
+            if (window.dk.state.processedPage > totalPages) window.dk.state.processedPage = totalPages;
+            if (window.dk.state.processedPage < 1) window.dk.state.processedPage = 1;
+
+            const start = (window.dk.state.processedPage - 1) * limit;
+            const paginated = approvedData.slice(start, start + limit);
 
             document.getElementById('processedList').innerHTML = paginated.length > 0 ? paginated.map(p => renderCard(p, false)).join('') : '';
             document.getElementById('emptyPending').style.display = approvedData.length === 0 ? 'block' : 'none';
-            document.getElementById('paginationProcessed').style.display = (approvedData.length > end) ? 'block' : 'none';
+
+            const pagBox = document.getElementById('paginationProcessed');
+            if (approvedData.length > limit) {
+                pagBox.style.display = 'block';
+                document.getElementById('textProcessedPage').innerText = `HAL ${window.dk.state.processedPage} / ${totalPages}`;
+                document.getElementById('btnPrevProcessed').disabled = window.dk.state.processedPage === 1;
+                document.getElementById('btnNextProcessed').disabled = window.dk.state.processedPage === totalPages;
+                document.getElementById('btnPrevProcessed').style.opacity = window.dk.state.processedPage === 1 ? '0.3' : '1';
+                document.getElementById('btnNextProcessed').style.opacity = window.dk.state.processedPage === totalPages ? '0.3' : '1';
+            } else {
+                pagBox.style.display = 'none';
+            }
         }
       }
     };
@@ -813,6 +842,11 @@
     window.fnRenderUnpaid = function() {
       const container = document.getElementById('unpaidList');
       const keyword = document.getElementById('searchVerify')?.value.toLowerCase() || '';
+
+      if (keyword && window.dk.state.lastKeywordUnpaid !== keyword) {
+          window.dk.state.unpaidPage = 1;
+          window.dk.state.lastKeywordUnpaid = keyword;
+      }
       const now = new Date();
       const currentYear = now.getFullYear();
       const currentMonth = now.getMonth() + 1;
@@ -876,8 +910,12 @@
       });
 
       const limit = 10;
-      const end = window.dk.state.unpaidPage * limit;
-      const paginated = allUnpaid.slice(0, end);
+      const totalPages = Math.ceil(allUnpaid.length / limit) || 1;
+      if (window.dk.state.unpaidPage > totalPages) window.dk.state.unpaidPage = totalPages;
+      if (window.dk.state.unpaidPage < 1) window.dk.state.unpaidPage = 1;
+
+      const start = (window.dk.state.unpaidPage - 1) * limit;
+      const paginated = allUnpaid.slice(start, start + limit);
 
       let html = paginated.map(item => {
           const { w, unpaidInfo, totalUnpaidNominal } = item;
@@ -906,7 +944,18 @@
       }).join('');
 
       container.innerHTML = html || '<p class="text-center text-xs text-slate-400 py-8 italic">Semua warga sudah lunas iuran tahun ini.</p>';
-      document.getElementById('paginationUnpaid').style.display = (allUnpaid.length > end) ? 'block' : 'none';
+
+      const pagBox = document.getElementById('paginationUnpaid');
+      if (allUnpaid.length > limit) {
+          pagBox.style.display = 'block';
+          document.getElementById('textUnpaidPage').innerText = `HAL ${window.dk.state.unpaidPage} / ${totalPages}`;
+          document.getElementById('btnPrevUnpaid').disabled = window.dk.state.unpaidPage === 1;
+          document.getElementById('btnNextUnpaid').disabled = window.dk.state.unpaidPage === totalPages;
+          document.getElementById('btnPrevUnpaid').style.opacity = window.dk.state.unpaidPage === 1 ? '0.3' : '1';
+          document.getElementById('btnNextUnpaid').style.opacity = window.dk.state.unpaidPage === totalPages ? '0.3' : '1';
+      } else {
+          pagBox.style.display = 'none';
+      }
     };
 
     window.fnSendReminderWA = function(wId, total) {
