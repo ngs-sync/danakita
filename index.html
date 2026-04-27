@@ -285,19 +285,19 @@
         <div class="relative mb-6"><i class="ph ph-magnifying-glass absolute left-4 top-3.5 text-slate-400 text-lg"></i><input type="text" id="searchVerify" onkeyup="fnRenderAdminVerify()" placeholder="Cari Nama atau Blok..." class="pl-11 bg-white border-slate-200 shadow-sm"></div>
         <div id="pendingList" style="display:flex; flex-direction:column; gap:16px;"></div>
         <div id="processedList" style="display:flex; flex-direction:column; gap:16px; display:none;"></div>
-        <div id="paginationProcessed" class="hidden" style="margin-top:32px; border-top:1px solid #f1f5f9; padding-top:32px;">
-          <div style="display:flex; align-items:center; justify-content:center; gap:32px;">
-            <button id="btnPrevProcessed" onclick="fnChangeProcessedPage(-1)" class="w-14 h-14 flex items-center justify-center rounded-[20px] bg-[#F8FAFC] text-slate-400 hover:bg-slate-100 transition"><i class="ph ph-caret-left text-xl"></i></button>
-            <span id="textProcessedPage" style="font-size:13px; font-weight:900; color:#475569; text-transform:uppercase; letter-spacing:1.5px;">HAL 1 / 1</span>
-            <button id="btnNextProcessed" onclick="fnChangeProcessedPage(1)" class="w-14 h-14 flex items-center justify-center rounded-[20px] bg-[#F8FAFC] text-slate-400 hover:bg-slate-100 transition"><i class="ph ph-caret-right text-xl"></i></button>
+        <div id="paginationProcessed" class="hidden" style="margin-top:24px; border-top:1px dashed var(--tk-border); padding-top:24px;">
+          <div style="display:flex; align-items:center; justify-content:center; gap:16px;">
+            <button id="btnPrevProcessed" onclick="fnChangeProcessedPage(-1)" class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition"><i class="ph ph-caret-left font-bold"></i></button>
+            <span id="textProcessedPage" style="font-size:11px; font-weight:800; color:var(--tk-text-secondary); text-transform:uppercase; letter-spacing:1px;">HAL 1 / 1</span>
+            <button id="btnNextProcessed" onclick="fnChangeProcessedPage(1)" class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition"><i class="ph ph-caret-right font-bold"></i></button>
           </div>
         </div>
         <div id="unpaidList" style="display:flex; flex-direction:column; gap:16px; display:none;"></div>
-        <div id="paginationUnpaid" class="hidden" style="margin-top:32px; border-top:1px solid #f1f5f9; padding-top:32px;">
-          <div style="display:flex; align-items:center; justify-content:center; gap:32px;">
-            <button id="btnPrevUnpaid" onclick="fnChangeUnpaidPage(-1)" class="w-14 h-14 flex items-center justify-center rounded-[20px] bg-[#F8FAFC] text-slate-400 hover:bg-slate-100 transition"><i class="ph ph-caret-left text-xl"></i></button>
-            <span id="textUnpaidPage" style="font-size:13px; font-weight:900; color:#475569; text-transform:uppercase; letter-spacing:1.5px;">HAL 1 / 1</span>
-            <button id="btnNextUnpaid" onclick="fnChangeUnpaidPage(1)" class="w-14 h-14 flex items-center justify-center rounded-[20px] bg-[#F8FAFC] text-slate-400 hover:bg-slate-100 transition"><i class="ph ph-caret-right text-xl"></i></button>
+        <div id="paginationUnpaid" class="hidden" style="margin-top:24px; border-top:1px dashed var(--tk-border); padding-top:24px;">
+          <div style="display:flex; align-items:center; justify-content:center; gap:16px;">
+            <button id="btnPrevUnpaid" onclick="fnChangeUnpaidPage(-1)" class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition"><i class="ph ph-caret-left font-bold"></i></button>
+            <span id="textUnpaidPage" style="font-size:11px; font-weight:800; color:var(--tk-text-secondary); text-transform:uppercase; letter-spacing:1px;">HAL 1 / 1</span>
+            <button id="btnNextUnpaid" onclick="fnChangeUnpaidPage(1)" class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition"><i class="ph ph-caret-right font-bold"></i></button>
           </div>
         </div>
         <div id="emptyPending" style="background:white; border-radius:24px; padding:40px 20px; text-align:center; border:1px dashed var(--tk-border); display:none;"><i class="ph ph-check-circle text-4xl text-green-400 mb-2"></i><p style="font-size:14px; font-weight:700; color:var(--tk-text-secondary);">Semua beres!</p><p style="font-size:12px; color:var(--tk-text-tertiary); margin-top:4px;">Tidak ada data ditampilkan.</p></div>
@@ -439,7 +439,7 @@
       window.dk.db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, options);
     };
     window.initSupabaseClient(); // Initialize with Anon Key immediately
-    window.dk.state = { orgId: null, orgCode: '', user: null, token: null, data: { warga:[], project:[], pembayaran:[], detail:[], pengeluaran:[], danaLain:[] }, selectedCart: {}, expenseItems: [{ket:'', nom:''}], wargaPage: 1, processedPage: 1, unpaidPage: 1, lastKeywordVerify: '', lastKeywordUnpaid: '', editingMutationId: null, hasTargetWargaColumn: true };
+    window.dk.state = { orgId: null, orgCode: '', user: null, token: null, data: { warga:[], project:[], pembayaran:[], detail:[], pengeluaran:[], danaLain:[] }, selectedCart: {}, expenseItems: [{ket:'', nom:''}], wargaPage: 1, processedPage: 1, unpaidPage: 1, lastKeywordWarga: '', lastKeywordVerify: '', lastKeywordUnpaid: '', editingMutationId: null, hasTargetWargaColumn: true };
     const months = ['01','02','03','04','05','06','07','08','09','10','11','12']; const monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
     let currentStrukData = null; let currentVerifyPid = null, currentVerifyStatus = null; const db = () => window.dk.db;
 
@@ -789,10 +789,11 @@
         approvedData = approvedData.filter(filterFn);
       }
 
-      // Reset page if search is used
-      if (keyword && window.dk.state.lastKeywordVerify !== keyword) {
+      // Reset page if search keyword changed
+      const currentKeyword = keyword || '';
+      if (window.dk.state.lastKeywordVerify !== currentKeyword) {
           window.dk.state.processedPage = 1;
-          window.dk.state.lastKeywordVerify = keyword;
+          window.dk.state.lastKeywordVerify = currentKeyword;
       }
 
       // Sort Approved: Newest First
@@ -830,7 +831,7 @@
             document.getElementById('emptyPending').style.display = approvedData.length === 0 ? 'block' : 'none';
 
             const pagBox = document.getElementById('paginationProcessed');
-            if (approvedData.length > limit) {
+            if (totalPages > 1) {
                 pagBox.style.display = 'block';
                 document.getElementById('textProcessedPage').innerText = `HAL ${window.dk.state.processedPage} / ${totalPages}`;
                 document.getElementById('btnPrevProcessed').disabled = window.dk.state.processedPage === 1;
@@ -848,9 +849,11 @@
       const container = document.getElementById('unpaidList');
       const keyword = document.getElementById('searchVerify')?.value.toLowerCase() || '';
 
-      if (keyword && window.dk.state.lastKeywordUnpaid !== keyword) {
+      // Reset page if search keyword changed
+      const currentKeyword = keyword || '';
+      if (window.dk.state.lastKeywordUnpaid !== currentKeyword) {
           window.dk.state.unpaidPage = 1;
-          window.dk.state.lastKeywordUnpaid = keyword;
+          window.dk.state.lastKeywordUnpaid = currentKeyword;
       }
       const now = new Date();
       const currentYear = now.getFullYear();
@@ -951,7 +954,7 @@
       container.innerHTML = html || '<p class="text-center text-xs text-slate-400 py-8 italic">Semua warga sudah lunas iuran tahun ini.</p>';
 
       const pagBox = document.getElementById('paginationUnpaid');
-      if (allUnpaid.length > limit) {
+      if (totalPages > 1) {
           pagBox.style.display = 'block';
           document.getElementById('textUnpaidPage').innerText = `HAL ${window.dk.state.unpaidPage} / ${totalPages}`;
           document.getElementById('btnPrevUnpaid').disabled = window.dk.state.unpaidPage === 1;
@@ -1156,24 +1159,36 @@
 
       if(keyword) {
         filtered = filtered.filter(w => w.nama.toLowerCase().includes(keyword) || w.no_rumah.toLowerCase().includes(keyword));
-        document.getElementById('wargaPagination').innerHTML = '';
-      } else {
-        const perPage = 5;
-        const totalPages = Math.ceil(filtered.length / perPage);
-        if(window.dk.state.wargaPage > totalPages) window.dk.state.wargaPage = 1;
-        if(window.dk.state.wargaPage < 1) window.dk.state.wargaPage = 1;
-
-        const start = (window.dk.state.wargaPage - 1) * perPage;
-        const paged = filtered.slice(start, start + perPage);
-
-        let paginHtml = `
-          <button onclick="fnWargaNav(-1)" ${window.dk.state.wargaPage <= 1 ? 'disabled style="opacity:0.3;cursor:not-allowed;"' : ''} class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 text-slate-600"><i class="ph ph-caret-left font-bold"></i></button>
-          <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Hal ${window.dk.state.wargaPage} / ${totalPages || 1}</span>
-          <button onclick="fnWargaNav(1)" ${window.dk.state.wargaPage >= totalPages ? 'disabled style="opacity:0.3;cursor:not-allowed;"' : ''} class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 text-slate-600"><i class="ph ph-caret-right font-bold"></i></button>
-        `;
-        document.getElementById('wargaPagination').innerHTML = paginHtml;
-        filtered = paged;
       }
+
+      // Reset page if search keyword changed
+      const currentKeyword = keyword || '';
+      if (window.dk.state.lastKeywordWarga !== currentKeyword) {
+          window.dk.state.wargaPage = 1;
+          window.dk.state.lastKeywordWarga = currentKeyword;
+      }
+
+      const perPage = 5;
+      const totalPages = Math.ceil(filtered.length / perPage) || 1;
+      if(window.dk.state.wargaPage > totalPages) window.dk.state.wargaPage = totalPages;
+      if(window.dk.state.wargaPage < 1) window.dk.state.wargaPage = 1;
+
+      const start = (window.dk.state.wargaPage - 1) * perPage;
+      const paged = filtered.slice(start, start + perPage);
+
+      const pagBox = document.getElementById('wargaPagination');
+      if (totalPages > 1) {
+        pagBox.style.display = 'flex';
+        let paginHtml = `
+          <button onclick="fnWargaNav(-1)" ${window.dk.state.wargaPage <= 1 ? 'disabled style="opacity:0.3;cursor:not-allowed;"' : ''} class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition"><i class="ph ph-caret-left font-bold"></i></button>
+          <span class="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Hal ${window.dk.state.wargaPage} / ${totalPages}</span>
+          <button onclick="fnWargaNav(1)" ${window.dk.state.wargaPage >= totalPages ? 'disabled style="opacity:0.3;cursor:not-allowed;"' : ''} class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition"><i class="ph ph-caret-right font-bold"></i></button>
+        `;
+        pagBox.innerHTML = paginHtml;
+      } else {
+        pagBox.style.display = 'none';
+      }
+      filtered = paged;
 
       wList.innerHTML = filtered.map(w => `
         <div class="list-item" style="flex-direction:column; align-items:stretch; gap:12px; padding:16px;">
