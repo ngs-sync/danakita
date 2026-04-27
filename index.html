@@ -170,6 +170,11 @@
           <button onclick="fnLoginAdmin()" class="btn-primary mt-2">Masuk Panel Admin <i class="ph ph-sign-in"></i></button>
         </div>
       </div>
+      <div style="margin-top: 24px; padding-top: 20px; border-top: 1px dashed var(--tk-border);">
+        <button onclick="fnGantiKomunitas()" class="btn-ghost w-full" style="color: var(--tk-text-tertiary); font-size: 12px; font-weight: 700;">
+          <i class="ph ph-arrow-left"></i> Ganti Kode Organisasi
+        </button>
+      </div>
     </div>
   </div>
 
@@ -909,7 +914,7 @@
           return a.w.no_rumah.localeCompare(b.w.no_rumah, undefined, {numeric: true, sensitivity: 'base'});
       });
 
-      const limit = 10;
+      const limit = 5;
       const totalPages = Math.ceil(allUnpaid.length / limit) || 1;
       if (window.dk.state.unpaidPage > totalPages) window.dk.state.unpaidPage = totalPages;
       if (window.dk.state.unpaidPage < 1) window.dk.state.unpaidPage = 1;
