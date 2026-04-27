@@ -292,6 +292,11 @@
             <button id="btnNextProcessed" onclick="fnChangeProcessedPage(1)" class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition"><i class="ph ph-caret-right font-bold"></i></button>
           </div>
         </div>
+        <div id="exportUnpaidContainer" style="margin-bottom: 16px; display: none; justify-content: flex-end;">
+          <button onclick="fnExportExcelUnpaid()" class="btn-ghost" style="color:var(--tk-success); background:#DCFCE7; border:none; font-weight:800; width: auto; padding: 10px 16px;">
+            <i class="ph ph-download-simple"></i> Export Belum Bayar (Excel)
+          </button>
+        </div>
         <div id="unpaidList" style="display:flex; flex-direction:column; gap:16px; display:none;"></div>
         <div id="paginationUnpaid" class="hidden" style="margin-top:24px; border-top:1px dashed var(--tk-border); padding-top:24px;">
           <div style="display:flex; align-items:center; justify-content:center; gap:16px;">
@@ -743,8 +748,10 @@
       const pending = document.getElementById('pendingList'), processed = document.getElementById('processedList'), unpaid = document.getElementById('unpaidList');
       const btnP = document.getElementById('btnPending'), btnPr = document.getElementById('btnProcessed'), btnU = document.getElementById('btnUnpaid');
       const pagP = document.getElementById('paginationProcessed'), pagU = document.getElementById('paginationUnpaid');
+      const exportBtn = document.getElementById('exportUnpaidContainer');
 
       [pending, processed, unpaid, pagP, pagU].forEach(el => el.style.display = 'none');
+      exportBtn.style.display = 'none';
       [btnP, btnPr, btnU].forEach(btn => btn.style.cssText = 'flex: 1; color: var(--tk-text-secondary); font-weight: 700; font-size: 12px; padding: 12px 8px; border-radius: 14px; border: none; cursor: pointer; background: transparent; transition: 0.2s; white-space:nowrap;');
 
       const activeStyle = 'flex: 1; background: #F1F5F9; color: var(--tk-primary); font-weight: 800; font-size: 12px; padding: 12px 8px; border-radius: 14px; border: none; cursor: pointer; transition: 0.2s; white-space:nowrap;';
@@ -758,6 +765,7 @@
       }
       else {
         unpaid.style.display = 'flex'; btnU.style.cssText = activeStyle;
+        exportBtn.style.display = 'flex';
         window.dk.state.unpaidPage = 1;
         fnRenderUnpaid();
       }
@@ -1787,6 +1795,96 @@
 
       XLSX.utils.book_append_sheet(wb, ws, "LPJ Keuangan");
       XLSX.writeFile(wb, `LPJ_Keuangan_${new Date().toISOString().split('T')[0]}.xlsx`);
+    };
+
+    window.fnExportExcelUnpaid = function() {
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth() + 1;
+
+      let rows = [
+        ["Nama Warga", "Blok / No. Rumah", "No. WhatsApp", "Rincian Tunggakan", "Total Nominal Tunggakan"]
+      ];
+
+      window.dk.state.data.warga.forEach(w => {
+        let paid = {};
+        window.dk.state.data.pembayaran.filter(p => p.warga_id === w.id && p.status !== 'DITOLAK').forEach(p => {
+          window.dk.state.data.detail.filter(d => d.pembayaran_id === p.id).forEach(d => {
+            if(!paid[d.project_id]) paid[d.project_id]=[]; paid[d.project_id].push(d.periode);
+          });
+        });
+
+        let unpaidInfo = [];
+        let totalUnpaidNominal = 0;
+
+        window.dk.state.data.project.filter(p => p.tipe !== 'non_iuran').forEach(p => {
+          const isTargeted = Array.isArray(p.target_warga) && p.target_warga.length > 0;
+          if (isTargeted && !p.target_warga.includes(w.id)) return;
+
+          if (p.tipe === 'bulanan') {
+            const startPeriode = p.start_periode || `${currentYear}-${currentMonth.toString().padStart(2, '0')}`;
+            const [startY, startM] = startPeriode.split('-').map(Number);
+
+            let missingMonths = [];
+            for (let y = startY; y <= currentYear; y++) {
+                let mStart = (y === startY) ? startM : 1;
+                let mEnd = (y === currentYear) ? currentMonth : 12;
+
+                for (let m = mStart; m <= mEnd; m++) {
+                    const per = `${y}-${m.toString().padStart(2, '0')}`;
+                    if (!paid[p.id]?.includes(per)) {
+                        missingMonths.push(y === currentYear ? monthNames[m-1] : `${monthNames[m-1]} ${y}`);
+                        totalUnpaidNominal += Number(p.nominal_default);
+                    }
+                }
+            }
+            if (missingMonths.length > 0) {
+              unpaidInfo.push(`${p.nama_project}: ${missingMonths.join(', ')}`);
+            }
+          } else if (p.tipe === 'sekali') {
+            if (!paid[p.id]?.includes('SEKALI')) {
+              unpaidInfo.push(`${p.nama_project}: Belum Bayar`);
+              totalUnpaidNominal += Number(p.nominal_default);
+            }
+          }
+        });
+
+        if (unpaidInfo.length > 0) {
+          rows.push([
+            w.nama,
+            w.no_rumah,
+            w.no_wa || '-',
+            unpaidInfo.join('; '),
+            totalUnpaidNominal
+          ]);
+        }
+      });
+
+      if (rows.length === 1) {
+        alert("Tidak ada data tunggakan untuk diexport.");
+        return;
+      }
+
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+
+      // Styling Header
+      const range = XLSX.utils.decode_range(ws['!ref']);
+      for (let C = range.s.c; C <= range.e.c; ++C) {
+        const address = XLSX.utils.encode_col(C) + "1";
+        if (!ws[address]) continue;
+        ws[address].s = {
+          font: { bold: true },
+          alignment: { horizontal: "center" },
+          fill: { fgColor: { rgb: "E2E8F0" } }
+        };
+      }
+
+      // Column widths
+      ws['!cols'] = [{wch:25}, {wch:15}, {wch:15}, {wch:50}, {wch:20}];
+
+      XLSX.utils.book_append_sheet(wb, ws, "Laporan Tunggakan");
+      XLSX.writeFile(wb, `Laporan_Tunggakan_${new Date().toISOString().split('T')[0]}.xlsx`);
     };
 
     window.fnSetupProfil = function() { const u = window.dk.state.user; if(u && u.type === 'warga') { document.getElementById('profNama').value = u.name; document.getElementById('profRumah').value = u.noRumah; document.getElementById('profWa').value = u.wa || 'Belum diisi'; } };
