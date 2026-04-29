@@ -188,7 +188,15 @@
       currentBillingData = null; const { data: billData } = await db().from('billing_settings').select('*').eq('organization_id', org.id); if(billData && billData.length > 0) currentBillingData = billData[0];
       const { data } = await db().from('admin').select('*').eq('organization_id', org.id); const listContainer = document.getElementById('drw-admin-list'); listContainer.innerHTML = '';
       if(!data || data.length === 0) { listContainer.innerHTML = '<p class="text-xs text-slate-400 italic text-center p-4 bg-slate-50 rounded-xl border border-dashed">Belum ada admin terdaftar.</p>'; } 
-      else { data.forEach(adm => { const btnDel = !isFinance ? `<button onclick="deleteClientAdmin('${adm.id}')" title="Hapus Admin" class="w-8 h-8 rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition"><i class="ph ph-trash text-lg"></i></button>` : ''; const jab = adm.jabatan || adm.permissions?.jabatan || 'Pengurus'; listContainer.innerHTML += `<div class="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm flex justify-between items-center"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-black shadow-inner"><i class="ph ph-user text-xl"></i></div><div><p class="font-black text-slate-800 text-sm">${adm.nama_admin}</p><p class="text-[10px] text-slate-500 font-mono bg-slate-100 px-1.5 py-0.5 rounded inline-block mt-1">@${adm.username} • ${jab}</p></div></div><div class="flex gap-2">${btnDel}</div></div>`; }); }
+      else {
+        data.forEach(adm => {
+          const isPrimary = adm.is_primary === true || adm.permissions?.is_primary === true;
+          const btnDel = !isFinance ? `<button onclick="deleteClientAdmin('${adm.id}')" title="Hapus Admin" class="w-8 h-8 rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition"><i class="ph ph-trash text-lg"></i></button>` : '';
+          const jab = adm.jabatan || adm.permissions?.jabatan || 'Pengurus';
+          const primaryBadge = isPrimary ? `<span class="text-[8px] bg-orange-100 text-orange-600 px-1 rounded ml-1 font-black uppercase tracking-tighter">Primary</span>` : '';
+          listContainer.innerHTML += `<div class="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm flex justify-between items-center"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-black shadow-inner"><i class="ph ph-user text-xl"></i></div><div><p class="font-black text-slate-800 text-sm">${adm.nama_admin}${primaryBadge}</p><p class="text-[10px] text-slate-500 font-mono bg-slate-100 px-1.5 py-0.5 rounded inline-block mt-1">@${adm.username} • ${jab}</p></div></div><div class="flex gap-2">${btnDel}</div></div>`;
+        });
+      }
       showLoader(false);
     }
 
@@ -334,9 +342,24 @@
       await db().from('billing_settings').insert([{ organization_id: newOrg.id, nominal_gross: nominalGross, ppn_percentage: ppnPercent }]);
       const admJab = document.getElementById('reg-admin-jabatan').value.trim() || 'Pengurus';
       const { data: hashedPass } = await db().rpc('hash_password', { raw_pass: document.getElementById('reg-admin-pass').value });
-      let { error: errAdm } = await db().from('admin').insert([{ organization_id: newOrg.id, username: document.getElementById('reg-admin-user').value, nama_admin: document.getElementById('reg-admin-nama').value, password_hash: hashedPass || document.getElementById('reg-admin-pass').value, role: 'admin', jabatan: admJab }]);
-      if(errAdm && (errAdm.code === 'PGRST100' || errAdm.message.includes('jabatan'))) {
-          await db().from('admin').insert([{ organization_id: newOrg.id, username: document.getElementById('reg-admin-user').value, nama_admin: document.getElementById('reg-admin-nama').value, password_hash: hashedPass || document.getElementById('reg-admin-pass').value, role: 'admin', permissions: { jabatan: admJab } }]);
+
+      const adminPayload = {
+        organization_id: newOrg.id,
+        username: document.getElementById('reg-admin-user').value,
+        nama_admin: document.getElementById('reg-admin-nama').value,
+        password_hash: hashedPass || document.getElementById('reg-admin-pass').value,
+        role: 'admin',
+        jabatan: admJab,
+        is_primary: true
+      };
+
+      let { error: errAdm } = await db().from('admin').insert([adminPayload]);
+      if(errAdm) {
+          console.warn("Primary admin insert failed, retrying with permissions fallback", errAdm);
+          delete adminPayload.is_primary;
+          delete adminPayload.jabatan;
+          adminPayload.permissions = { jabatan: admJab, is_primary: true };
+          await db().from('admin').insert([adminPayload]);
       }
       await db().from('audit_logs').insert([{ organization_id: newOrg.id, actor_type: 'superadmin', actor_name: getActiveSession()?.nama, action: 'CREATE_ORG_NEW' }]);
       showLoader(false); closeModal('modal-add-client'); alert("Klien Baru Berhasil Didaftarkan!"); loadClients();
