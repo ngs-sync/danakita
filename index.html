@@ -349,10 +349,14 @@
 
         <div class="card">
           <h3 style="font-weight:900; color:var(--tk-text-primary); margin-bottom:20px; font-size:18px; display:flex; align-items:center; gap:8px;"><i class="ph ph-user-gear text-[#00A6ED]"></i> Manajemen Tim Admin</h3>
-          <div style="background:#F8FAFC; padding:16px; border-radius:16px; border:1px solid var(--tk-border); margin-bottom:24px; display:flex; flex-direction:column; gap:12px;">
+          <div id="formAdmin" style="background:#F8FAFC; padding:16px; border-radius:16px; border:1px solid var(--tk-border); margin-bottom:24px; display:flex; flex-direction:column; gap:12px;">
+            <p id="labelAdminForm" class="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Tambah Admin Baru</p>
             <div class="grid-2"><input type="text" id="newAdmUser" placeholder="Username (Unik)"><input type="text" id="newAdmNama" placeholder="Nama Lengkap"></div>
             <div class="grid-2"><input type="text" id="newAdmJabatan" placeholder="Jabatan (Cth: Bendahara)"><input type="password" id="newAdmPass" placeholder="Password Sementara"></div>
-            <button onclick="fnTambahTimAdmin()" class="btn-primary mt-2"><i class="ph ph-plus-circle"></i> Tambah Admin</button>
+            <div style="display:flex; gap:8px;">
+                <button id="btnCancelAdmin" onclick="fnResetAdminForm()" class="btn-ghost hidden !bg-slate-200 !text-slate-600 !flex-1">Batal</button>
+                <button id="btnSaveAdmin" onclick="fnTambahTimAdmin()" class="btn-primary mt-2 !flex-[2]"><i class="ph ph-plus-circle"></i> Tambah Admin</button>
+            </div>
           </div>
           <h4 style="font-weight:800; color:var(--tk-text-secondary); font-size:12px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--tk-border);">Tim Pengurus Aktif</h4>
           <div id="listAdmin" style="display:flex; flex-direction:column; gap:12px;"></div>
@@ -554,8 +558,17 @@
         if(error) { err.textContent = error.message; err.style.display = 'block'; return; }
         if(data?.success) {
             const role = data.data.nama_admin.includes('(Super Admin)') ? 'super_admin' : 'admin';
+            const isPrimary = data.data.is_primary === true || data.data.permissions?.is_primary === true;
             const jab = data.data.jabatan || data.data.permissions?.jabatan || (role === 'super_admin' ? 'Super Admin' : 'Pengurus');
-            window.dk.state.user = { type:'admin', id:data.data.id, name:data.data.nama_admin, is_agreed_policy: data.data.is_agreed_policy, role: role, jabatan: jab };
+            window.dk.state.user = {
+              type:'admin',
+              id:data.data.id,
+              name:data.data.nama_admin,
+              is_agreed_policy: data.data.is_agreed_policy,
+              role: role,
+              jabatan: jab,
+              is_primary: isPrimary
+            };
             window.dk.state.token = data.token; window.initSupabaseClient(data.token); document.getElementById('loginModal').classList.add('hidden'); fnShowApp();
         } else { err.textContent = data?.msg || 'Gagal Login'; err.style.display = 'block'; }
       } catch(e) {
@@ -1107,16 +1120,38 @@
 
         const listAdmin = document.getElementById('listAdmin');
         if(listAdmin) {
+            const curUser = window.dk.state.user;
+            const canManageAll = curUser?.role === 'super_admin' || curUser?.is_primary === true;
+
+            // Show/Hide "Tambah Admin" form based on permissions
+            const adminForm = document.getElementById('formAdmin');
+            if (adminForm) adminForm.style.display = (canManageAll || window.dk.state.editingAdminId) ? 'flex' : 'none';
+
             listAdmin.innerHTML = window.dk.state.data.admin.map(adm => {
+                const isPrimary = adm.is_primary === true || adm.permissions?.is_primary === true;
                 const jabatan = adm.jabatan || adm.permissions?.jabatan || 'Pengurus';
-                const isMe = window.dk.state.user?.id === adm.id;
-                const actions = isMe ? '' : `
-                    <div style="display:flex; gap:6px;">
-                        <button onclick="fnEditAdminById('${adm.id}')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-50 text-blue-500 hover:bg-blue-500 hover:text-white transition"><i class="ph ph-pencil-simple"></i></button>
-                        <button onclick="fnHapusAdmin('${adm.id}')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition"><i class="ph ph-trash"></i></button>
-                    </div>
-                `;
-                return `<div style="background:white; padding:12px; border-radius:12px; border:1px solid var(--tk-border); display:flex; justify-content:space-between; align-items:center;"><div style="display:flex; align-items:center; gap:10px;"><div style="width:32px; height:32px; border-radius:10px; background:#F1F5F9; color:var(--tk-primary); display:flex; align-items:center; justify-content:center;"><i class="ph ph-user text-lg"></i></div><div><p style="font-size:13px; font-weight:800; color:var(--tk-text-primary); margin:0;">${adm.nama_admin}${isMe?' (Saya)':''}</p><p style="font-size:11px; font-weight:700; color:var(--tk-text-tertiary); margin:0;">@${adm.username} • ${jabatan}</p></div></div>${actions}</div>`;
+                const isMe = curUser?.id === adm.id;
+
+                let actions = '';
+                if (isMe) {
+                    // Everyone can edit themselves
+                    actions = `
+                        <div style="display:flex; gap:6px;">
+                            <button onclick="fnEditAdminById('${adm.id}')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-50 text-blue-500 hover:bg-blue-500 hover:text-white transition"><i class="ph ph-pencil-simple"></i></button>
+                        </div>
+                    `;
+                } else if (canManageAll) {
+                    // Super Admin or Primary Admin can edit/delete anyone else
+                    actions = `
+                        <div style="display:flex; gap:6px;">
+                            <button onclick="fnEditAdminById('${adm.id}')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-50 text-blue-500 hover:bg-blue-500 hover:text-white transition"><i class="ph ph-pencil-simple"></i></button>
+                            <button onclick="fnHapusAdmin('${adm.id}')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition"><i class="ph ph-trash"></i></button>
+                        </div>
+                    `;
+                }
+
+                const primaryBadge = isPrimary ? `<span style="font-size:8px; background:#FEF3C7; color:#D97706; padding:1px 4px; border-radius:4px; margin-left:4px; font-weight:900; text-transform:uppercase; vertical-align:middle;">Primary</span>` : '';
+                return `<div style="background:white; padding:12px; border-radius:12px; border:1px solid var(--tk-border); display:flex; justify-content:space-between; align-items:center;"><div style="display:flex; align-items:center; gap:10px;"><div style="width:32px; height:32px; border-radius:10px; background:#F1F5F9; color:var(--tk-primary); display:flex; align-items:center; justify-content:center;"><i class="ph ph-user text-lg"></i></div><div><p style="font-size:13px; font-weight:800; color:var(--tk-text-primary); margin:0;">${adm.nama_admin}${isMe?' (Saya)':''}${primaryBadge}</p><p style="font-size:11px; font-weight:700; color:var(--tk-text-tertiary); margin:0;">@${adm.username} • ${jabatan}</p></div></div>${actions}</div>`;
             }).join('');
         }
         const pList = document.getElementById('listProj');
@@ -1308,6 +1343,19 @@
         }
       });
     };
+    window.fnResetAdminForm = function() {
+        window.dk.state.editingAdminId = null;
+        document.getElementById('newAdmUser').value = '';
+        document.getElementById('newAdmNama').value = '';
+        document.getElementById('newAdmJabatan').value = '';
+        document.getElementById('newAdmPass').value = '';
+        document.getElementById('newAdmPass').placeholder = 'Password Sementara';
+        document.getElementById('labelAdminForm').innerText = 'Tambah Admin Baru';
+        document.getElementById('btnSaveAdmin').innerHTML = '<i class="ph ph-plus-circle"></i> Tambah Admin';
+        document.getElementById('btnCancelAdmin').classList.add('hidden');
+        fnRenderMaster();
+    };
+
     window.fnEditAdminById = function(id) {
         const adm = window.dk.state.data.admin.find(x => x.id === id);
         if(adm) {
@@ -1316,8 +1364,11 @@
             document.getElementById('newAdmJabatan').value = adm.jabatan || adm.permissions?.jabatan || '';
             document.getElementById('newAdmPass').placeholder = '(Kosongkan jika tidak ganti)';
             window.dk.state.editingAdminId = id;
-            document.querySelector('#viewAdminMaster button[onclick="fnTambahTimAdmin()"]').innerHTML = '<i class="ph ph-floppy-disk"></i> Update Admin';
-            document.getElementById('newAdmUser').parentElement.parentElement.scrollIntoView({ behavior: 'smooth' });
+            document.getElementById('labelAdminForm').innerText = 'Edit Admin';
+            document.getElementById('btnSaveAdmin').innerHTML = '<i class="ph ph-floppy-disk"></i> Update Admin';
+            document.getElementById('btnCancelAdmin').classList.remove('hidden');
+            fnRenderMaster(); // To show the form if it was hidden
+            document.getElementById('formAdmin').scrollIntoView({ behavior: 'smooth' });
         }
     };
 
@@ -1344,6 +1395,7 @@
       showLoader(true);
       try {
         const editId = window.dk.state.editingAdminId;
+        const existingAdm = editId ? window.dk.state.data.admin.find(x => x.id === editId) : null;
         const finalJabatan = jab || 'Pengurus';
         let payload = { organization_id: window.dk.state.orgId, username: user, nama_admin: nama, role: 'admin' };
 
@@ -1357,7 +1409,8 @@
         if(editId) {
             res = await db().from('admin').update({ ...payload, jabatan: finalJabatan }).eq('id', editId);
             if(res.error && (res.error.code === 'PGRST100' || res.error.message.includes('jabatan'))) {
-                res = await db().from('admin').update({ ...payload, permissions: { jabatan: finalJabatan } }).eq('id', editId);
+                const newPerms = { ...(existingAdm?.permissions || {}), jabatan: finalJabatan };
+                res = await db().from('admin').update({ ...payload, permissions: newPerms }).eq('id', editId);
             }
         } else {
             if(!pass) { alert('Password wajib diisi untuk admin baru!'); showLoader(false); return; }
@@ -1372,10 +1425,7 @@
         alert(editId ? '✅ Data admin berhasil diupdate!' : '✅ Admin baru berhasil ditambahkan!');
         await db().from('audit_logs').insert([{ organization_id: window.dk.state.orgId, actor_type: 'admin', actor_name: window.dk.state.user.name, action: editId ? 'ADMIN_UPDATED' : 'ADMIN_CREATED' }]);
 
-        document.getElementById('newAdmUser').value=''; document.getElementById('newAdmNama').value=''; document.getElementById('newAdmJabatan').value=''; document.getElementById('newAdmPass').value=''; document.getElementById('newAdmPass').placeholder = 'Password Sementara';
-        window.dk.state.editingAdminId = null;
-        document.querySelector('#viewAdminMaster button[onclick="fnTambahTimAdmin()"]').innerHTML = '<i class="ph ph-plus-circle"></i> Tambah Admin';
-
+        fnResetAdminForm();
         await fnLoadData(); fnRenderMaster();
       } catch(e) {
         console.error(e);
