@@ -444,7 +444,7 @@
       window.dk.db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, options);
     };
     window.initSupabaseClient(); // Initialize with Anon Key immediately
-    window.dk.state = { orgId: null, orgCode: '', user: null, token: null, data: { warga:[], project:[], pembayaran:[], detail:[], pengeluaran:[], danaLain:[] }, selectedCart: {}, expenseItems: [{ket:'', nom:''}], wargaPage: 1, processedPage: 1, unpaidPage: 1, lastKeywordWarga: '', lastKeywordVerify: '', lastKeywordUnpaid: '', editingMutationId: null, hasTargetWargaColumn: true };
+    window.dk.state = { orgId: null, orgCode: '', user: null, token: null, data: { warga:[], project:[], pembayaran:[], detail:[], pengeluaran:[], danaLain:[] }, bank_accounts: [], selectedCart: {}, expenseItems: [{ket:'', nom:''}], wargaPage: 1, processedPage: 1, unpaidPage: 1, lastKeywordWarga: '', lastKeywordVerify: '', lastKeywordUnpaid: '', editingMutationId: null, hasTargetWargaColumn: true };
     const months = ['01','02','03','04','05','06','07','08','09','10','11','12']; const monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
     let currentStrukData = null; let currentVerifyPid = null, currentVerifyStatus = null; const db = () => window.dk.db;
 
@@ -688,17 +688,18 @@
       const orgId = window.dk.state.orgId;
       try {
         // Try fetching projects without target_warga first if known missing, but for now we try all
-        const [w, p, pay, det, out, inc] = await Promise.all([
+        const [w, p, pay, det, out, inc, bak] = await Promise.all([
           db().from('warga').select('*').eq('organization_id', orgId),
           db().from('project').select('*').eq('organization_id', orgId).eq('status', 'ACTIVE'),
           db().from('pembayaran').select('*').eq('organization_id', orgId),
           db().from('pembayaran_detail').select('*').eq('organization_id', orgId),
           db().from('pengeluaran').select('*').eq('organization_id', orgId),
-          db().from('dana_lain').select('*').eq('organization_id', orgId)
+          db().from('dana_lain').select('*').eq('organization_id', orgId),
+          db().from('bank_accounts').select('*').eq('organization_id', orgId)
         ]);
 
         let projectData = p.data || [];
-        const errs = [w, p, pay, det, out, inc].filter(r => r.error).map(r => r.error.message);
+        const errs = [w, p, pay, det, out, inc, bak].filter(r => r.error).map(r => r.error.message);
 
         if(errs.length > 0) {
           console.error('Data Fetch Errors:', errs);
@@ -724,6 +725,7 @@
           danaLain: inc.data||[],
           admin: []
         };
+        window.dk.state.bank_accounts = bak.data || [];
         if(window.dk.state.user.role === 'admin' || window.dk.state.user.role === 'super_admin') {
             const { data: admins } = await db().from('admin').select('*').eq('organization_id', orgId);
             window.dk.state.data.admin = admins || [];
@@ -2038,8 +2040,7 @@
         document.getElementById('bankInfoSection').style.display = isTransfer ? 'block' : 'none';
 
         if(isTransfer) {
-            const orgSession = JSON.parse(localStorage.getItem('dk_org'));
-            const accounts = orgSession?.config?.bank_accounts || [];
+            const accounts = window.dk.state.bank_accounts || [];
             const container = document.getElementById('bankDetailDisplay');
 
             if(accounts.length === 0) {
@@ -2057,8 +2058,7 @@
     };
 
     window.fnRenderBankAccounts = function() {
-        const orgSession = JSON.parse(localStorage.getItem('dk_org'));
-        const accounts = orgSession?.config?.bank_accounts || [];
+        const accounts = window.dk.state.bank_accounts || [];
         const container = document.getElementById('listRekening');
 
         if(!container) return;
@@ -2067,15 +2067,15 @@
             return;
         }
 
-        container.innerHTML = accounts.map((acc, idx) => `
+        container.innerHTML = accounts.map((acc) => `
             <div style="background:white; padding:12px; border-radius:12px; border:1px solid var(--tk-border); display:flex; justify-content:space-between; align-items:center;">
                 <div>
                     <p style="font-size:13px; font-weight:800; color:var(--tk-text-primary); margin:0;">${acc.nama_bank}</p>
                     <p style="font-size:11px; font-weight:700; color:var(--tk-primary); margin:0;">${acc.no_rek} • ${acc.atas_nama}</p>
                 </div>
                 <div style="display:flex; gap:6px;">
-                    <button onclick="fnEditRekening(${idx})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-50 text-blue-500 hover:bg-blue-500 hover:text-white transition"><i class="ph ph-pencil-simple"></i></button>
-                    <button onclick="fnHapusRekening(${idx})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition"><i class="ph ph-trash"></i></button>
+                    <button onclick="fnEditRekening('${acc.id}')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-50 text-blue-500 hover:bg-blue-500 hover:text-white transition"><i class="ph ph-pencil-simple"></i></button>
+                    <button onclick="fnHapusRekening('${acc.id}')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition"><i class="ph ph-trash"></i></button>
                 </div>
             </div>
         `).join('');
@@ -2091,12 +2091,11 @@
         document.getElementById('btnCancelRek').classList.add('hidden');
     };
 
-    window.fnEditRekening = function(idx) {
-        const orgSession = JSON.parse(localStorage.getItem('dk_org'));
-        const acc = orgSession?.config?.bank_accounts[idx];
+    window.fnEditRekening = function(id) {
+        const acc = window.dk.state.bank_accounts.find(x => x.id === id);
         if(!acc) return;
 
-        document.getElementById('editRekId').value = idx;
+        document.getElementById('editRekId').value = id;
         document.getElementById('cfgBankName').value = acc.nama_bank;
         document.getElementById('cfgBankNo').value = acc.no_rek;
         document.getElementById('cfgBankOwner').value = acc.atas_nama;
@@ -2106,24 +2105,14 @@
         document.getElementById('formRekening').scrollIntoView({ behavior: 'smooth' });
     };
 
-    window.fnHapusRekening = async function(idx) {
+    window.fnHapusRekening = async function(id) {
         if(!confirm('Hapus rekening ini?')) return;
         showLoader(true);
         try {
-            // Fetch latest config from DB to prevent overwriting other admin/superadmin changes
-            const { data: latestOrg, error: fetchErr } = await db().from('organizations').select('config').eq('id', window.dk.state.orgId).single();
-            if(fetchErr) throw fetchErr;
-
-            const config = latestOrg?.config || {};
-            if(!config.bank_accounts) config.bank_accounts = [];
-            config.bank_accounts.splice(idx, 1);
-
-            const { error } = await db().from('organizations').update({ config }).eq('id', window.dk.state.orgId);
+            const { error } = await db().from('bank_accounts').delete().eq('id', id);
             if(error) throw error;
 
-            const orgLocal = JSON.parse(localStorage.getItem('dk_org') || '{}');
-            orgLocal.config = config;
-            localStorage.setItem('dk_org', JSON.stringify(orgLocal));
+            await fnLoadData();
             fnRenderBankAccounts();
         } catch(e) {
             alert('Gagal hapus: ' + e.message);
@@ -2133,7 +2122,7 @@
     };
 
     window.fnSimpanRekening = async function() {
-        const idx = document.getElementById('editRekId').value;
+        const id = document.getElementById('editRekId').value;
         const nama = document.getElementById('cfgBankName').value.trim();
         const no = document.getElementById('cfgBankNo').value.trim();
         const owner = document.getElementById('cfgBankOwner').value.trim();
@@ -2142,28 +2131,24 @@
 
         showLoader(true);
         try {
-            // Fetch latest config from DB to prevent overwriting other admin/superadmin changes
-            const { data: latestOrg, error: fetchErr } = await db().from('organizations').select('config').eq('id', window.dk.state.orgId).single();
-            if(fetchErr) throw fetchErr;
+            const payload = {
+                organization_id: window.dk.state.orgId,
+                nama_bank: nama,
+                no_rek: no,
+                atas_nama: owner
+            };
 
-            const config = latestOrg?.config || {};
-            if(!config.bank_accounts) config.bank_accounts = [];
-
-            const newAcc = { nama_bank: nama, no_rek: no, atas_nama: owner };
-            if(idx !== '') {
-                config.bank_accounts[idx] = newAcc;
+            let res;
+            if(id !== '') {
+                res = await db().from('bank_accounts').update(payload).eq('id', id);
             } else {
-                config.bank_accounts.push(newAcc);
+                res = await db().from('bank_accounts').insert([{ id: genId('BAK'), ...payload }]);
             }
 
-            const { error } = await db().from('organizations').update({ config }).eq('id', window.dk.state.orgId);
-            if(error) throw error;
-
-            const orgSession = JSON.parse(localStorage.getItem('dk_org') || '{}');
-            orgSession.config = config;
-            localStorage.setItem('dk_org', JSON.stringify(orgSession));
+            if(res.error) throw res.error;
 
             fnResetRekeningForm();
+            await fnLoadData();
             fnRenderBankAccounts();
             alert('✅ Rekening berhasil disimpan!');
         } catch(e) {
