@@ -540,6 +540,23 @@
       }
     };
 
+    window.fnHapusWarga = async function(id) {
+      if(!confirm('Yakin ingin menghapus warga ini? Status warga akan diubah menjadi INACTIVE.')) return;
+      showLoader(true);
+      try {
+        const { error } = await db().from('warga').update({ status: 'INACTIVE' }).eq('id', id);
+        if(error) throw error;
+        await fnLoadData();
+        fnRenderMaster();
+        alert('✅ Data warga berhasil dinonaktifkan.');
+      } catch(e) {
+        console.error(e);
+        alert('Gagal menghapus warga: ' + (e.message || e));
+      } finally {
+        showLoader(false);
+      }
+    };
+
     window.switchLoginTab = function(type) {
       const isAdm = type === 'admin';
       document.getElementById('tab-admin').className = isAdm ? 'flex-1 py-2.5 rounded-xl text-sm font-bold bg-white shadow text-blue-600 transition' : 'flex-1 py-2.5 rounded-xl text-sm font-bold text-slate-500 transition hover:bg-slate-200';
@@ -1246,6 +1263,7 @@
             </div>
             <div style="display:flex;gap:8px;">
               <button onclick="fnOpenEditWargaById('${w.id}')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-50 text-blue-500 hover:bg-blue-500 hover:text-white transition"><i class="ph ph-pencil-simple text-lg"></i></button>
+              <button onclick="fnHapusWarga('${w.id}')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition"><i class="ph ph-trash text-lg"></i></button>
             </div>
           </div>
           <div style="border-top:1px dashed var(--tk-border); padding-top:12px; display:flex; gap:8px;">
@@ -1304,7 +1322,11 @@
     window.fnSendWAInfo = function(wId) {
       const w = window.dk.state.data.warga.find(x => x.id === wId);
       if(!w) return;
-      let phone = w.no_wa || ''; if(phone.startsWith('0')) phone = '62' + phone.substring(1); if(!phone) return alert('Oopss, Nomor WA warga ini belum diisi.'); const link = window.location.href.split('?')[0]; let text = `Halo Bapak/Ibu *${w.nama}* 👋\nIni adalah akses login Anda untuk Portal Warga di komunitas *${window.dk.state.orgCode}*.\n\n🏢 *ID Komunitas:* ${window.dk.state.orgCode}\n🏠 *No Rumah / Blok:* ${w.no_rumah}\n🔑 *PIN Login:* 1234 _(ini pin default anda silahkan mengganti di menu profile di portal warga)_\n\nSilakan akses sistem melalui link berikut:\n🌐 ${link}\n\n_Harap rahasiakan PIN Anda._`; window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank');
+      let phone = w.no_wa || ''; if(phone.startsWith('0')) phone = '62' + phone.substring(1); if(!phone) return alert('Oopss, Nomor WA warga ini belum diisi.');
+      const orgName = document.getElementById('org-display-name').innerText;
+      const link = window.location.href.split('?')[0];
+      let text = `Halo Bapak/Ibu *${w.nama}* 👋\nIni adalah akses login Anda untuk Portal Warga di komunitas *${orgName}*.\n\n🏢 *ID Komunitas:* ${window.dk.state.orgCode}\n🏠 *No Rumah / Blok:* ${w.no_rumah}\n🔑 *PIN Login:* 1234 _(ini pin default anda silahkan mengganti di menu profile di portal warga)_\n\nSilakan akses sistem melalui link berikut:\n🌐 ${link}\n\n_Harap rahasiakan PIN Anda._`;
+      window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank');
     };
     window.fnDownloadTemplateCSV = function() { const csv = "NamaLengkap,NoRumah,NoWhatsApp,PIN_Default\nBudi Santoso,A-01,081234567890,1234\nSiti Rahma,A-02,089876543210,1234"; const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Template_Data_Warga.csv`; a.click(); };
     window.fnProsesImportCSV = function() {
