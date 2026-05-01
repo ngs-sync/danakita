@@ -89,6 +89,175 @@
     }
     .print-safe { page-break-inside: avoid; }
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    /* Login UI Improvements */
+    .login-modal-content {
+        background: #FFFFFF !important;
+        border-radius: 32px !important;
+        padding: 40px 32px !important;
+        width: 100% !important;
+        max-width: 460px !important;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1) !important;
+        border: 1px solid #f1f5f9 !important;
+        text-align: center !important;
+        animation: modalSlide 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
+    .login-logo-circle {
+        width: 84px;
+        height: 84px;
+        background: #0052CC;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 24px;
+        padding: 0;
+        box-shadow: 0 10px 20px rgba(0, 82, 204, 0.2);
+        overflow: hidden;
+    }
+    .login-logo-circle img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+    .login-title-text {
+        font-size: 36px;
+        font-weight: 800;
+        color: #1e293b;
+        margin-bottom: 8px;
+        letter-spacing: -1px;
+    }
+    .login-subtitle-text {
+        font-size: 16px;
+        color: #64748b;
+        line-height: 1.6;
+        margin-bottom: 24px;
+        font-weight: 500;
+    }
+    .login-btn-primary {
+        background: #0052CC !important;
+        color: white !important;
+        font-weight: 700 !important;
+        padding: 16px !important;
+        border-radius: 14px !important;
+        width: 100% !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 12px !important;
+        font-size: 16px !important;
+        transition: all 0.2s !important;
+        border: none !important;
+        box-shadow: 0 4px 12px rgba(0, 82, 204, 0.25) !important;
+    }
+    .login-btn-primary:active {
+        transform: scale(0.98) !important;
+        box-shadow: 0 2px 6px rgba(0, 82, 204, 0.2) !important;
+    }
+    .login-input-wrapper {
+        position: relative;
+        margin-bottom: 20px;
+        text-align: left;
+    }
+    .login-input-label {
+        display: block;
+        font-size: 13px;
+        font-weight: 700;
+        color: #475569;
+        margin-bottom: 10px;
+    }
+    .login-input-field {
+        width: 100% !important;
+        padding: 16px 16px 16px 48px !important;
+        border: 1.5px solid #e2e8f0 !important;
+        border-radius: 14px !important;
+        background: #ffffff !important;
+        font-size: 16px !important;
+        color: #1e293b !important;
+        transition: all 0.2s !important;
+    }
+    .login-input-field:focus {
+        border-color: #0052CC !important;
+        background: #fff !important;
+        box-shadow: 0 0 0 4px rgba(0, 82, 204, 0.1) !important;
+    }
+    .login-input-icon-left {
+        position: absolute;
+        left: 16px;
+        top: 43px;
+        color: #94a3b8;
+        font-size: 22px;
+    }
+    .login-tab-switcher {
+        display: flex;
+        background: #f1f5f9;
+        padding: 6px;
+        border-radius: 14px;
+        margin-bottom: 28px;
+    }
+    .login-tab-btn {
+        flex: 1;
+        padding: 12px;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: 700;
+        color: #64748b;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: 0.2s;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+    }
+    .login-tab-btn.active {
+        background: white;
+        color: #0052CC;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+    .login-footer-nav {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        margin-top: 32px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #94a3b8;
+    }
+    .login-info-box {
+        background: #FFFBEB;
+        border: 1px solid #FEF3C7;
+        border-radius: 16px;
+        padding: 16px;
+        display: flex;
+        gap: 16px;
+        text-align: left;
+        margin-top: 24px;
+    }
+    .login-info-icon {
+        width: 44px;
+        height: 44px;
+        background: #FBBF24;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 20px;
+        flex-shrink: 0;
+    }
+    .login-info-text {
+        font-size: 14px;
+        color: #92400E;
+        line-height: 1.5;
+    }
+    .login-info-text b {
+        color: #78350F;
+        display: block;
+        margin-bottom: 4px;
+        font-weight: 800;
+    }
   </style>
 </head>
 <body>
@@ -128,52 +297,96 @@
   </div>
 
   <div id="modal-kode" class="modal-overlay hidden">
-    <div class="modal-content text-center">
-      <div class="w-20 h-20 bg-white border border-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-6 overflow-hidden p-1 shadow-sm"><img src="logo.png" class="w-full h-full object-contain"></div>
-      <h2 style="font-size: 22px; font-weight: 900; color: var(--tk-text-primary); margin-bottom: 8px; letter-spacing: -0.5px;">Kode Organisasi</h2>
-      <p style="font-size: 13px; color: var(--tk-text-secondary); margin-bottom: 24px;">Masukkan ID unik Komunitas/RT Anda untuk mengakses sistem.</p>
-      <div class="relative mb-4">
-        <i class="ph ph-key absolute left-4 top-3.5 text-slate-400 text-xl"></i>
-        <input type="text" id="inpKode" placeholder="Contoh: KPI-01" class="pl-12 !font-mono !font-bold !text-blue-600 uppercase">
+    <div class="login-modal-content">
+      <div class="login-logo-circle"><img src="logo.png"></div>
+      <h1 class="login-title-text">DanaKita</h1>
+      <p class="login-subtitle-text">Masukkan Kode Komunitas atau ID Organisasi Anda untuk melanjutkan.</p>
+
+      <div class="login-input-wrapper">
+        <label class="login-input-label">ID Organisasi / Kode Komunitas</label>
+        <i class="ph ph-buildings login-input-icon-left"></i>
+        <input type="text" id="inpKode" placeholder="CONTOH : DIR-01" class="login-input-field uppercase !font-bold">
       </div>
-      <p id="errorKode" style="color: var(--tk-danger); font-size: 12px; font-weight: 600; display: none; margin-bottom: 16px; background: #FEE2E2; padding: 8px; border-radius: 8px;"></p>
-      <button onclick="fnValidateKode()" class="btn-primary mt-2">Lanjutkan <i class="ph ph-arrow-right font-bold"></i></button>
+
+      <p id="errorKode" style="color: var(--tk-danger); font-size: 12px; font-weight: 600; display: none; margin-bottom: 20px; background: #FEE2E2; padding: 12px; border-radius: 12px; text-align: left;"></p>
+
+      <button onclick="fnValidateKode()" class="login-btn-primary">
+        Verifikasi Organisasi <i class="ph ph-seal-check"></i>
+      </button>
+
+      <div class="login-info-box">
+        <div class="login-info-icon"><i class="ph ph-question"></i></div>
+        <div class="login-info-text">
+          <b>Baru di DanaKita?</b>
+          Hubungi administrator komunitas Anda untuk mendapatkan ID Organisasi yang valid atau daftar sebagai mitra baru.
+        </div>
+      </div>
+
+      <div class="login-footer-nav">
+        <span>Pusat Bantuan</span>
+        <span>Kebijakan Privasi</span>
+        <span>Ketentuan Layanan</span>
+      </div>
     </div>
   </div>
 
   <div id="loginModal" class="modal-overlay hidden">
-    <div class="modal-content">
-      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;">
-        <div>
-          <h2 style="font-size: 22px; font-weight: 900; color: var(--tk-text-primary); margin: 0; letter-spacing: -0.5px;" id="modal-title">Login Warga</h2>
-          <p style="font-size: 11px; color: var(--tk-primary); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 6px;" id="modal-org-name">-</p>
-        </div>
-        <div style="width: 44px; height: 44px; border-radius: 12px; background: white; border: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 2px;"><img src="logo.png" style="width: 100%; height: 100%; object-fit: contain;"></div>
-      </div>
-      <div style="display: flex; gap: 4px; background: #F1F5F9; padding: 6px; border-radius: 16px; margin-bottom: 24px;">
-        <button onclick="switchLoginTab('warga')" id="tab-warga" class="flex-1 py-2.5 rounded-xl text-sm font-bold bg-white shadow text-green-600 transition">Portal Warga</button>
-        <button onclick="switchLoginTab('admin')" id="tab-admin" class="flex-1 py-2.5 rounded-xl text-sm font-bold text-slate-500 transition hover:bg-slate-200">Admin Pengurus</button>
-      </div>
-      <div id="form-warga">
-        <div style="display: flex; flex-direction: column; gap: 16px;">
-          <div class="relative"><i class="ph ph-house-line absolute left-4 top-3.5 text-slate-400 text-lg"></i><input type="text" id="inpRumah" placeholder="No. Rumah (Cth: A-12)" class="pl-11 uppercase"></div>
-          <div class="relative"><i class="ph ph-password absolute left-4 top-3.5 text-slate-400 text-lg"></i><input type="password" id="inpPin" placeholder="PIN Warga" maxlength="6" class="pl-11" style="letter-spacing: 4px; font-family: monospace; font-size: 18px;"></div>
-          <p id="loginErrorWarga" style="color: var(--tk-danger); font-size: 12px; font-weight: 600; display: none; margin: 0; background: #FEE2E2; padding: 8px; border-radius: 8px;"></p>
-          <button onclick="fnLoginWarga()" class="btn-secondary mt-2">Masuk Portal Warga <i class="ph ph-sign-in"></i></button>
-        </div>
-      </div>
-      <div id="form-admin" class="hidden">
-        <div style="display: flex; flex-direction: column; gap: 16px;">
-          <div class="relative"><i class="ph ph-user absolute left-4 top-3.5 text-slate-400 text-lg"></i><input type="text" id="inpUser" placeholder="Username" class="pl-11"></div>
-          <div class="relative"><i class="ph ph-lock-key absolute left-4 top-3.5 text-slate-400 text-lg"></i><input type="password" id="inpPass" placeholder="Password" class="pl-11"></div>
-          <p id="loginError" style="color: var(--tk-danger); font-size: 12px; font-weight: 600; display: none; margin: 0; background: #FEE2E2; padding: 8px; border-radius: 8px;"></p>
-          <button onclick="fnLoginAdmin()" class="btn-primary mt-2">Masuk Panel Admin <i class="ph ph-sign-in"></i></button>
-        </div>
-      </div>
-      <div style="margin-top: 24px; padding-top: 20px; border-top: 1px dashed var(--tk-border);">
-        <button onclick="fnGantiKomunitas()" class="btn-ghost w-full" style="color: var(--tk-text-tertiary); font-size: 12px; font-weight: 700;">
-          <i class="ph ph-arrow-left"></i> Ganti Kode Organisasi
+    <div class="login-modal-content">
+      <div class="login-logo-circle"><img src="logo.png"></div>
+      <h1 class="login-title-text">DanaKita</h1>
+      <p class="login-subtitle-text">Selamat datang kembali!<br>" <span id="modal-org-name" class="font-bold text-slate-800">nama klien</span> "</p>
+
+      <button onclick="fnGantiKomunitas()" class="mb-6 text-[#0052CC] font-bold text-sm flex items-center justify-center gap-2 mx-auto hover:opacity-80 transition">
+        <i class="ph ph-arrow-left"></i> Ganti Organisasi
+      </button>
+
+      <div class="login-tab-switcher">
+        <button onclick="switchLoginTab('warga')" id="tab-warga" class="login-tab-btn active">
+          <i class="ph ph-users"></i> Warga
         </button>
+        <button onclick="switchLoginTab('admin')" id="tab-admin" class="login-tab-btn">
+          <i class="ph ph-briefcase"></i> Pengurus
+        </button>
+      </div>
+
+      <div id="form-warga">
+        <div class="login-input-wrapper">
+          <label class="login-input-label">Username</label>
+          <i class="ph ph-envelope login-input-icon-left"></i>
+          <input type="text" id="inpRumah" placeholder="block/no rumah : NO 19" class="login-input-field uppercase">
+        </div>
+        <div class="login-input-wrapper">
+          <label class="login-input-label">Kata Sandi</label>
+          <i class="ph ph-lock login-input-icon-left"></i>
+          <input type="password" id="inpPin" placeholder="••••••" maxlength="6" class="login-input-field">
+        </div>
+        <p id="loginErrorWarga" style="color: var(--tk-danger); font-size: 12px; font-weight: 600; display: none; margin-bottom: 20px; background: #FEE2E2; padding: 12px; border-radius: 12px; text-align: left;"></p>
+        <button onclick="fnLoginWarga()" class="login-btn-primary">
+          Masuk Sekarang <i class="ph ph-arrow-right"></i>
+        </button>
+      </div>
+
+      <div id="form-admin" class="hidden">
+        <div class="login-input-wrapper">
+          <label class="login-input-label">Username Admin</label>
+          <i class="ph ph-user login-input-icon-left"></i>
+          <input type="text" id="inpUser" placeholder="Masukkan Username" class="login-input-field">
+        </div>
+        <div class="login-input-wrapper">
+          <label class="login-input-label">Password</label>
+          <i class="ph ph-lock-key login-input-icon-left"></i>
+          <input type="password" id="inpPass" placeholder="••••••••" class="login-input-field">
+        </div>
+        <p id="loginError" style="color: var(--tk-danger); font-size: 12px; font-weight: 600; display: none; margin-bottom: 20px; background: #FEE2E2; padding: 12px; border-radius: 12px; text-align: left;"></p>
+        <button onclick="fnLoginAdmin()" class="login-btn-primary">
+          Masuk Sekarang <i class="ph ph-arrow-right"></i>
+        </button>
+      </div>
+
+      <div class="login-footer-nav">
+        <span>Pusat Bantuan</span>
+        <span>Kebijakan Privasi</span>
+        <span>Ketentuan Layanan</span>
       </div>
     </div>
   </div>
@@ -559,10 +772,10 @@
 
     window.switchLoginTab = function(type) {
       const isAdm = type === 'admin';
-      document.getElementById('tab-admin').className = isAdm ? 'flex-1 py-2.5 rounded-xl text-sm font-bold bg-white shadow text-blue-600 transition' : 'flex-1 py-2.5 rounded-xl text-sm font-bold text-slate-500 transition hover:bg-slate-200';
-      document.getElementById('tab-warga').className = !isAdm ? 'flex-1 py-2.5 rounded-xl text-sm font-bold bg-white shadow text-green-600 transition' : 'flex-1 py-2.5 rounded-xl text-sm font-bold text-slate-500 transition hover:bg-slate-200';
-      document.getElementById('form-admin').classList.toggle('hidden', !isAdm); document.getElementById('form-warga').classList.toggle('hidden', isAdm);
-      document.getElementById('modal-title').innerText = isAdm ? 'Login Pengurus' : 'Login Warga';
+      document.getElementById('tab-admin').classList.toggle('active', isAdm);
+      document.getElementById('tab-warga').classList.toggle('active', !isAdm);
+      document.getElementById('form-admin').classList.toggle('hidden', !isAdm);
+      document.getElementById('form-warga').classList.toggle('hidden', isAdm);
     }
 
     window.fnLoginAdmin = async function() {
