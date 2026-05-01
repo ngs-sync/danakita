@@ -101,6 +101,8 @@
         border: 1px solid #f1f5f9 !important;
         text-align: center !important;
         animation: modalSlide 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        max-height: 95vh !important;
+        overflow-y: auto !important;
     }
     .login-logo-circle {
         width: 84px;
@@ -257,6 +259,27 @@
         display: block;
         margin-bottom: 4px;
         font-weight: 800;
+    }
+
+    @media (max-width: 480px) {
+        .login-modal-content {
+            padding: 32px 20px !important;
+            border-radius: 28px !important;
+        }
+        .login-title-text {
+            font-size: 28px !important;
+        }
+        .login-subtitle-text {
+            font-size: 14px !important;
+        }
+        .login-logo-circle {
+            width: 72px;
+            height: 72px;
+            margin-bottom: 16px;
+        }
+        .login-tab-switcher {
+            margin-bottom: 20px;
+        }
     }
   </style>
 </head>
