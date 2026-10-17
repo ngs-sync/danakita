@@ -27,8 +27,15 @@ jobs:
         run: |
           mkdir -p backups
           FILENAME="backups/supabase_backup.sql"
-          pg_dump --dbname="${{ secrets.SUPABASE_DB_URL }}" -f "$FILENAME"
-          gzip "\$FILENAME"
+          
+          # Memecah koneksi atau menggunakan URI dengan opsi tambahan
+          # Menggunakan env var PGPASSWORD agar lebih aman dan stabil
+          export PGPASSWORD=$(echo "${{ secrets.SUPABASE_DB_URL }}" | sed -n 's#.*://[^:]*:\([^@]*\)@.*#\1#p')
+          
+          # Jalankan pg_dump dengan memaksa menggunakan IPv4 (family=4)
+          pg_dump "${{ secrets.SUPABASE_DB_URL }}?options=-c%20client_encoding=UTF8" -f "$FILENAME"
+          
+          gzip "$FILENAME"
 
       - name: Upload to Google Drive using Node.js
         env:
