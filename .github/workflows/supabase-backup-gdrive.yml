@@ -30,14 +30,14 @@ jobs:
       - name: Run pg_dump from Supabase
         run: |
           mkdir -p backups
-          pg_dump "\${{ secrets.SUPABASE_DB_URL }}" -f backups/supabase_backup_\${{ env.TIMESTAMP }}.sql
+          # Menambahkan parameter -d agar memaksa menggunakan koneksi string URI secara eksplisit
+          pg_dump -d "\${{ secrets.SUPABASE_DB_URL }}" -f backups/supabase_backup_\${{ env.TIMESTAMP }}.sql
           gzip backups/supabase_backup_\${{ env.TIMESTAMP }}.sql
 
       - name: Upload to Google Drive using Node.js
         env:
           GDRIVE_CREDENTIALS: \${{ secrets.GDRIVE_CREDENTIALS }}
           GDRIVE_FOLDER_ID: \${{ secrets.GDRIVE_FOLDER_ID }}
-          FILE_PATH: backups/supabase_backup_\${{ env.Timestamp }}.sql.gz
         run: |
           node -e '
             const { google } = require("googleapis");
@@ -54,6 +54,8 @@ jobs:
               
               const files = fs.readdirSync("backups");
               const targetFile = files.find(f => f.endsWith(".sql.gz"));
+              if (!targetFile) throw new Error("Backup file not found!");
+              
               const filePath = `backups/${targetFile}`;
 
               const fileMetadata = {
