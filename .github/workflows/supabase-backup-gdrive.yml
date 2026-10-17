@@ -23,16 +23,16 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y postgresql-client
 
-      - name: Create Backup File Name with Timestamp
-        id: timestamp
-        run: echo "TIMESTAMP=$(date +'\%Y-\%m-\%d_\%H-\%M-\%S')" >> $GITHUB_ENV
-
       - name: Run pg_dump from Supabase
         run: |
           mkdir -p backups
-          # Menambahkan parameter -d agar memaksa menggunakan koneksi string URI secara eksplisit
-          pg_dump -d "\${{ secrets.SUPABASE_DB_URL }}" -f backups/supabase_backup_\${{ env.TIMESTAMP }}.sql
-          gzip backups/supabase_backup_\${{ env.TIMESTAMP }}.sql
+          # Menggunakan format penanggalan yang aman dari karakter escaping
+          TIMESTAMP=\$(date +'%Y-%m-%d_%H-%M-%S')
+          
+          # Menjalankan pg_dump dengan argumen --dbname secara eksplisit
+          pg_dump --dbname="${{ secrets.SUPABASE_DB_URL }}" -f "backups/supabase_backup_${TIMESTAMP}.sql"
+          
+          gzip "backups/supabase_backup_\${TIMESTAMP}.sql"
 
       - name: Upload to Google Drive using Node.js
         env:
