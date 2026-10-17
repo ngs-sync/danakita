@@ -26,12 +26,8 @@ jobs:
       - name: Run pg_dump from Supabase
         run: |
           mkdir -p backups
-          # Menggunakan format penanggalan yang aman dari karakter escaping
           TIMESTAMP=\$(date +'%Y-%m-%d_%H-%M-%S')
-          
-          # Menjalankan pg_dump dengan argumen --dbname secara eksplisit
           pg_dump --dbname="${{ secrets.SUPABASE_DB_URL }}" -f "backups/supabase_backup_${TIMESTAMP}.sql"
-          
           gzip "backups/supabase_backup_\${TIMESTAMP}.sql"
 
       - name: Upload to Google Drive using Node.js
