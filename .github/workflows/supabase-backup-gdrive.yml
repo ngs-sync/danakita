@@ -26,9 +26,9 @@ jobs:
       - name: Run pg_dump from Supabase
         run: |
           mkdir -p backups
-          TIMESTAMP=\$(date +'%Y-%m-%d_%H-%M-%S')
-          pg_dump --dbname="${{ secrets.SUPABASE_DB_URL }}" -f "backups/supabase_backup_${TIMESTAMP}.sql"
-          gzip "backups/supabase_backup_\${TIMESTAMP}.sql"
+          FILENAME="backups/supabase_backup.sql"
+          pg_dump --dbname="${{ secrets.SUPABASE_DB_URL }}" -f "$FILENAME"
+          gzip "\$FILENAME"
 
       - name: Upload to Google Drive using Node.js
         env:
@@ -55,7 +55,7 @@ jobs:
               const filePath = `backups/${targetFile}`;
 
               const fileMetadata = {
-                name: targetFile,
+                name: "supabase_backup_" + Date.now() + ".sql.gz",
                 parents: [process.env.GDRIVE_FOLDER_ID],
               };
               const media = {
