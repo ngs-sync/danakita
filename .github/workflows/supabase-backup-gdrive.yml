@@ -2,9 +2,8 @@ name: Supabase Automatic Backup to Google Drive
 
 on:
   schedule:
-    # Berjalan otomatis setiap hari pukul 00:00 UTC (07:00 WIB)
     - cron: '0 0 * * *'
-  workflow_dispatch: # Tombol untuk menjalankan backup secara manual
+  workflow_dispatch:
 
 jobs:
   backup:
@@ -14,6 +13,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: Install PostgreSQL Client
         run: |
           sudo apt-get update
@@ -21,18 +25,56 @@ jobs:
 
       - name: Create Backup File Name with Timestamp
         id: timestamp
-        run: echo "TIMESTAMP=$(date +'%Y-%m-%d_%H-%M-%S')" >> $GITHUB_ENV
+        run: echo "TIMESTAMP=$(date +'\%Y-\%m-\%d_\%H-\%M-\%S')" >> $GITHUB_ENV
 
       - name: Run pg_dump from Supabase
         run: |
           mkdir -p backups
-          pg_dump "${{ secrets.SUPABASE_DB_URL }}" -f backups/supabase_backup_${{ env.TIMESTAMP }}.sql
-          gzip backups/supabase_backup_${{ env.TIMESTAMP }}.sql
+          pg_dump "\${{ secrets.SUPABASE_DB_URL }}" -f backups/supabase_backup_\${{ env.TIMESTAMP }}.sql
+          gzip backups/supabase_backup_\${{ env.TIMESTAMP }}.sql
 
-      - name: Upload Backup to Google Drive
-        uses: adityak20/gdrive-upload-action@v0.1.2
-        with:
-          credentials: ${{ secrets.GDRIVE_CREDENTIALS }}
-          filename: backups/supabase_backup_${{ env.TIMESTAMP }}.sql.gz
-          folderId: ${{ secrets.GDRIVE_FOLDER_ID }}
-          overwrite: false
+      - name: Upload to Google Drive using Node.js
+        env:
+          GDRIVE_CREDENTIALS: \${{ secrets.GDRIVE_CREDENTIALS }}
+          GDRIVE_FOLDER_ID: \${{ secrets.GDRIVE_FOLDER_ID }}
+          FILE_PATH: backups/supabase_backup_\${{ env.Timestamp }}.sql.gz
+        run: |
+          node -e '
+            const { google } = require("googleapis");
+            const fs = require("fs");
+
+            async function uploadFile() {
+              const credentials = JSON.parse(process.env.GDRIVE_CREDENTIALS);
+              const auth = new google.auth.GoogleAuth({
+                credentials,
+                scopes: ["https://www.googleapis.com/auth/drive.file"],
+              });
+
+              const drive = google.drive({ version: "v3", auth });
+              
+              const files = fs.readdirSync("backups");
+              const targetFile = files.find(f => f.endsWith(".sql.gz"));
+              const filePath = `backups/${targetFile}`;
+
+              const fileMetadata = {
+                name: targetFile,
+                parents: [process.env.GDRIVE_FOLDER_ID],
+              };
+              const media = {
+                mimeType: "application/gzip",
+                body: fs.createReadStream(filePath),
+              };
+
+              const response = await drive.files.create({
+                resource: fileMetadata,
+                media: media,
+                fields: "id",
+              });
+              console.log("File uploaded successfully, ID:", response.data.id);
+            }
+
+            uploadFile().catch(err => {
+              console.error(err);
+              process.exit(1);
+            });
+          '
